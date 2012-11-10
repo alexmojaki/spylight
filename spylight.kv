@@ -1,8 +1,34 @@
 #:kivy 1.4.1
 
-<SpylightGame>
-    size: root.size
+<Character>:
+    size: 32,32
+    pos:  32,32
     canvas:
         Rectangle:
-            pos: 10,10
-            size: 50, 500
+            pos:self.pos
+            size:self.size
+            source: self.sprite
+
+<Wall>:
+    size: 32, 32
+
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'art/wall.png'
+
+<MapView>:
+    canvas:
+        StencilPush
+        Triangle:
+            points: self.spy.points
+        StencilUse
+        Rectangle:
+            pos:0,0
+            size:self.width, self.height
+            texture:self.groundTexture
+        StencilUnUse
+        StencilPop
+
+<SpylightGame>:
