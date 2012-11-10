@@ -1,0 +1,47 @@
+SLMap -- Format des fichiers de description des cartes (fichiers .map)
+======================================================================
+
+*** Version 1 de la spécification ***
+
+Format général
+--------------
+La description des cartes est réalisée dans un fichier texte écrit et lu ligne
+par ligne. Les retours à la ligne sont représentés par la séquence de caractère
+CRLF (carriage return, line feed).
+Ce format est appelé SLMap et les fichiers SLMap ont pour extension ".map".
+Dans la suite de cette spécification, le format est décrit de façon linéaire,
+ligne par ligne.
+
+Commentaires
+------------
+Toute ligne peut commencer (premier caractère de la ligne) par un # (dièze).
+Cette ligne sera alors ignorée.
+
+I. En-tête du fichier SLMap
+----------------------------
+§ Description du
+La première ligne du fichier est un descripteur du format SLMap. Ce descripteur
+indique que le fichier est au format SLMap et donne la version du format
+utilsée. Aujourd'hui il n'existe qu'un seul numéro de version du format: 1.
+Concrètement tous les fichiers SLMap commencent donc par la ligne:
+
+SLMap 1
+
+N.B. Cette première ligne ne peut pas être un commentaire. La première ligne de
+tout fichier SLMap doit donc obligatoirement être la ligne ci-dessus.
+
+§ Titre de la carte
+La deuxième ligne du fichier (n'étant pas une ligne de commentaire) est
+interprétée comme le titre de la carte. Toute la ligne jusqu'à la fin de ligne
+(c'est-à-dire CRLF, voir Format général) est utilisée.
+
+§ Dimensions de la carte
+La prochaine ligne non commentée doit contenir deux valeurs numériques entières
+positives et non nulles séparées par un espace (le caractère ayant pour code
+ASCII 32 en notation décimale).
+La première de ces deux valeurs représente le nombre de blocs composants la
+carte en largeur.
+La deuxième, le nombres de blocs en hauteur.
+
+II. Corps du fichier SLMap
+À faire

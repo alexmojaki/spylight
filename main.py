@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 from os.path import join
 from kivy.app import App
@@ -7,10 +8,15 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 
+import logging
+
+from slmap import SLMap
+
 class SpylightGame(Widget):
 
     def __init__(self, **kwargs):
         super(SpylightGame, self).__init__(**kwargs)
+        self.add_widget(MapView())
 
 class MapView(Widget):
     def getTexture(self,name, size):
@@ -34,8 +40,13 @@ class MapView(Widget):
             # Rectangle(pos=(96, 0), size=(128, 128), texture=self.fbo.texture)
 
 class SpylightApp(App):
+    def initLogger(self):
+        self.logger = logging.getLogger("SpylightApp")
+        self.logger.addHandler(logging.FileHandler("spylight.log"))
+        self.logger.setLevel(logging.INFO)
+
     def build(self):
-        return MapView()
+        
         # root = Widget()
 
         # texture = Image('art/ground.png').texture
@@ -46,7 +57,12 @@ class SpylightApp(App):
 
         # root.add_widget(MapView())
         # root.add_widget(SpylightGame())
-
+        self.initLogger()
+        
+        map = SLMap("test.map")
+        self.logger.info("Map loaded: " + map.title)
+        self.logger.info("Map size: (" + str(map.x) + ", " + str(map.y) + ")")
+        return SpylightGame()
 
 if __name__ == '__main__':
     SpylightApp().run()
