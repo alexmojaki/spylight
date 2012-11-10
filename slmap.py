@@ -56,7 +56,7 @@ class SLMap:
 
             elif currentDirective == WALL_DIRECTIVE:
                 x, y, t = lineSplit[0], lineSplit[1], lineSplit[2]
-                if this.wallType.
-                this.wallType[x]
+                self.wallType[y * self.width + x] = t
 
     def getWallType(x, y):
+        return self.wallType[y * self.width + x]
