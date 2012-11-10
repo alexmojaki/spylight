@@ -70,6 +70,16 @@ class MapView(Widget):
 
     def __init__(self, map, spy):
         self.spy = spy
+
+        with self.canvas:
+            for x in xrange(map.width):
+                for y in xrange(map.height):
+                    if map.getItem(x, y) == 0:
+                        term = Terminal()
+                        term.pos = (x*CELL_SIZE, y*CELL_SIZE)
+                        self.add_widget(term)
+
+
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
@@ -208,6 +218,8 @@ class Character(Widget):
         self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
         self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
 
+        self.notifyServer()
+
         # print 'Position',self.pos, 'Triangle', self.points
 
     def canGo(self,pos2):
@@ -219,6 +231,12 @@ class Character(Widget):
         logger.debug(pos2, (pos2[0]+margin)/CELL_SIZE,(pos2[1]+margin)/CELL_SIZE)
 
         return ret
+
+    def notifyServer(self):
+        #Window.mouse_pos
+        #pos
+        # autre truc
+
 
 class Spy(Character):
     def __init__(self, **kwargs):
@@ -234,6 +252,7 @@ class Spy(Character):
         super(Spy,self).activate()
         logger.info('Spy is activating!')
 
+
 class Mercenary(Character):
     def __init__(self, **kwargs):
         logger.info('init mercenary')
@@ -248,10 +267,17 @@ class Mercenary(Character):
         super(Mercenary,self).activate()
         logger.info('Mercenary is activating!')
 
+
 class Wall(Widget):
     pass
 
+
+class Terminal(Widget):
+    pass
+
+
 Factory.register("MapView", MapView)
+
 
 class SpylightApp(App):
 
