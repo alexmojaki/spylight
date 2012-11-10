@@ -7,7 +7,7 @@ class SLMap:
     HEADER_PARSED = -1
 
     # Body directives
-    WALL_DIRECTIVE = range(0, 1)
+    WALL_DIRECTIVE, ITEM_DIRECTIVE = range(0, 2)
     NO_DIRECTIVE = -1
 
 
