@@ -1,23 +1,22 @@
 #:kivy 1.4.1
 
-<Spy>:
+<Character>:
     size: 32,32
     pos:  32,32
     canvas:
         Rectangle:
             pos:self.pos
             size:self.size
-            source: 'art/spy.png'
-
+            source: self.sprite
 
 <Wall>:
-    size: 32, 32 
+    size: 32, 32
 
     canvas:
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'art/wall2.png'
+            source: 'art/wall.png'
 
 <MapView>:
     canvas:
