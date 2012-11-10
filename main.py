@@ -14,11 +14,9 @@ from slmap import SLMap
 
 class SpylightGame(Widget):
 
-    def __init__(self, **kwargs, logger):
+    def __init__(self, **kwargs):
         super(SpylightGame, self).__init__(**kwargs)
-        self.logger = logger
-        print self.parent
-        self.add_widget(MapView(self.size))
+        # self.add_widget(MapView(self.size))
 
 class MapView(Widget):
     def getTexture(self,name, size):
@@ -28,16 +26,23 @@ class MapView(Widget):
         texture.uvsize = size
         return texture
 
-    def __init__(self,size):
+    def __init__(self, map):
         super(MapView, self).__init__()
+        tile_size = 32
         ground = self.getTexture(name='ground', size=(32,32))
-        print str(size);
+        wall = self.getTexture(name='wall', size=(32,32))
+
         # texture = Image('art/ground.png').texture
         # texture.wrap = 'repeat'
         # texture.uvsize = (32, 32)
         with self.canvas:
             Color(1, 1, 1)
-            Rectangle(pos=(0,0), size=size, texture=ground)
+            Rectangle(pos=(0,0), size=(800,600), texture=ground)
+
+            for x in xrange(map.width):
+                for y in xrange(map.height):
+                    if map.getWallType(x, y) != -1:
+                        Rectangle(pos(x*tile_size, y*tile_size), size(tile_size, tile_size), wall)
             # show our fbo on the widget in different size
             # Rectangle(pos=(32, 0), size=(64, 64), texture=self.fbo.texture)
             # Rectangle(pos=(96, 0), size=(128, 128), texture=self.fbo.texture)
@@ -64,9 +69,11 @@ class SpylightApp(App):
         
         map = SLMap("test.map")
         self.logger.info("Map loaded: " + map.title)
-
         self.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
-        return SpylightGame(self.logger)
+
+        root = SpylightGame()
+        root.add_widget(MapView(map=map))
+        return root
 
 if __name__ == '__main__':
     SpylightApp().run()
