@@ -12,7 +12,6 @@ from kivy.vector import Vector
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
 
-
 import logging
 
 from slmap import SLMap
@@ -85,8 +84,19 @@ class Spy(Widget):
 
     def __init__(self, **kwargs):
         super(Spy, self).__init__(**kwargs)
+
+        self.zPressed = False
+        self.qPressed = False
+        self.sPressed = False
+        self.dPressed = False
+
+        self.pos = Vector(0,0)
+
+        self.velocity = Vector(0,0)
+
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
         # with self.canvas:
         #     Color(0.5,0.5,0.5)
@@ -98,49 +108,70 @@ class Spy(Widget):
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        print 'The key', keycode, 'have been pressed'
-        print ' - text is %r' % text
-        print ' - modifiers are %r' % modifiers
-
+        # print 'The key', keycode, 'have been pressed'
+        # print ' - text is %r' % text
+        # print ' - modifiers are %r' % modifiers
+        
         # Keycode is composed of an integer + a string
-        # If we hit escape, release the keyboard
-        if keycode[1] == 'escape':
-            keyboard.release()
         if keycode[1] == 'z':
-            # self.velocity[1] = 1;
-            self.pos = Vector(0,2) + self.pos
+            self.zPressed = True
         if keycode[1] == 'q':
-            # self.velocity[0] = -1;
-            self.pos = Vector(-2,0) + self.pos
+            self.qPressed = True
         if keycode[1] == 's':
-            # self.velocity[1] = -1;
-            self.pos = Vector(0,-2) + self.pos
+            self.sPressed = True
         if keycode[1] == 'd':
-            # self.velocity[0] = 1;
-            self.pos = Vector(2,0) + self.pos
+            self.dPressed = True
 
+        return True
 
-        # print 'bleh', self.velocity[0]
-        # print '_on_keyboard_down',self.velocity
-        # Return True to accept the key. Otherwise, it will be used by
-        # the system.
+    def _on_keyboard_up(self, truc, keycode):
+
+        if keycode[1] == 'z':
+            self.zPressed = False
+        if keycode[1] == 'q':
+            self.qPressed = False
+        if keycode[1] == 's':
+            self.sPressed = False
+        if keycode[1] == 'd':
+            self.dPressed = False
+
         return True
 
     def update(self, truc, **kwargs):
-        pass
-        # self.deceleration = 0.5
-        # self.pos = Vector(*self.velocity) + self.pos
-        # print 'update',self.velocity
 
-        # if self.velocity_x < 0:
-        #     self.velocity_x = self.velocity_x + self.deceleration
-        # elif self.velocity_x > 0:
-        #     self.velocity_x = self.velocity_x - self.deceleration
-        # if self.velocity_y < 0:
-        #     self.velocity_y = self.velocity_y + self.deceleration
-        # elif self.velocity_y > 0:
-        #     self.velocity_y = self.velocity_y - self.deceleration
+        maxVelocity = 4
+        deceleration = 1
+        # print 'update', self.velocity
 
+        if self.zPressed:
+            if self.sPressed:
+                self.velocity[1] = 0
+            else:
+                self.velocity[1] = maxVelocity
+        else:
+             if self.sPressed:
+                self.velocity[1] = -maxVelocity
+
+        if self.qPressed:
+            if self.dPressed:
+                self.velocity[0] = 0
+            else:
+                self.velocity[0] = -maxVelocity
+        else:
+            if self.dPressed:
+                self.velocity[0] = maxVelocity
+
+        # print 'velocity ' + str(self.velocity)
+
+        self.pos = self.velocity + self.pos
+
+        # print 'pos ' + str(self.pos)
+
+        for i in xrange(0,2):
+            if self.velocity[i] < 0:
+                self.velocity[i] += deceleration
+            elif self.velocity[i] > 0:
+                self.velocity[i] -= deceleration
 
 
 if __name__ == '__main__':
