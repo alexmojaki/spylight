@@ -33,9 +33,8 @@ class GameServerEngine(object):
         print "Activate() at pos=", player.pos, "Not yet implemented"# @TODO
         
         
-        
 
-class TCPServer(SocketServer.BaseRequestHandler):
+class SLTCPServer(SocketServer.BaseRequestHandler):
     """
     The RequestHandler class for our server.
 
@@ -43,10 +42,10 @@ class TCPServer(SocketServer.BaseRequestHandler):
     override the handle() method to implement communication to the
     client.
     """
-
-    def __init__(self):
-        super(TCPServer, self).__init__()
-        self.gs = GameServerEngine()
+    def __init(self):
+        if not self.__initialized:
+            self.__initialized
+            self.gs = GameServerEngine()
 
     def handle(self):
         # self.request is the TCP socket connected to the client
@@ -55,12 +54,13 @@ class TCPServer(SocketServer.BaseRequestHandler):
             total_data=[]
             data=''
             while True:
-                data =the_socket.recv(8192)
+                data = the_socket.recv(8192)
+                print "DATA:", data
                 if End in data:
                     total_data.append(data[:data.find(End)])
                     break
                 total_data.append(data)
-                if len(total_data)>1:
+                if len(total_data) > 1:
                     #check if end_of_data was split
                     last_pair=total_data[-2]+total_data[-1]
                     if End in last_pair:
@@ -73,8 +73,9 @@ class TCPServer(SocketServer.BaseRequestHandler):
                 self.data = recv_end(self.request)
                 print "{} wrote:".format(self.client_address[0])
                 print self.data
-            except:
+            except Exception as e:
                 print "Socket error 2"
+                print e
                 break
 
                 lines = [_.strip().split(" ") for _ in data.strip().split("\n")]
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     HOST = "localhost"
 
     # Create the server, binding to localhost on port 9999
-    server = SocketServer.TCPServer((HOST, PORT), TCPServer)
+    server = SocketServer.TCPServer((HOST, PORT), SLTCPServer)
 
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
