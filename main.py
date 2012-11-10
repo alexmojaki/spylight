@@ -8,6 +8,7 @@ from kivy.graphics import Color, Rectangle, StencilPush, StencilUse, StencilPop,
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
 from kivy.vector import Vector
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
@@ -207,6 +208,10 @@ class SpylightApp(App):
         game = SpylightGame()
         game.add_widget(MapView(map=map, spy=spy))
         game.add_widget(spy)
+
+        self.soundBeep = SoundLoader.load("music/beep.wav")
+        self.soundShot = SoundLoader.load("music/shot.wav")
+        self.soundReload = SoundLoader.load("music/reload.wav")
 
         Clock.schedule_interval(spy.update, 1.0 / 60.0)
         return game
