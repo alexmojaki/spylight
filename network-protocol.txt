@@ -1,0 +1,44 @@
+Client/Server Network Protocol:
+
+Data to be transferred:
+- player pos
+- player mouse position
+- shoot
+- object drop (a trap, a mirror...)
+- activate (object at current position...)
+- 
+
+x, y = [int(_) for _ in str.strip().split(" ")] 
+
+spy tram example: 
+
+--------
+s
+x y
+sh
+d 1
+
+--------
+
+Explained :
+--------
+s = I am the spy
+x y = I am currently at x,y
+sh = I wanna shoot him up
+d 1 = I want to drop an object of typeid=1
+--blank line--
+--------
+
+Mercenary:
+--------
+m
+x y
+d 2
+--------
+
+Explained:
+--------
+m = I am a mercernary
+x y = ...
+d 2 = I want to drop an object of typeid=1
+--------
