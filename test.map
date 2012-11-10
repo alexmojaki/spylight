@@ -7,8 +7,9 @@ Carte de test
 12 12
 
 # wa: wall directive
-# x, y, t: x=row, y=col, t=type
+# x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
 # type can be:
+# 0=block wall
 # 1=horizontal wall
 # 2=vertical wall
 # 3=top-left corner walls
@@ -20,6 +21,10 @@ Carte de test
 # 9=T-left walls
 # 10=T-top walls
 # 11=cross-walls
+# 12=Right-end wall
+# 13=Bottom-end wall
+# 14=Left-end wall
+# 15=Top-end wall
 
 # borders
 wa:
