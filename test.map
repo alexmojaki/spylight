@@ -9,7 +9,17 @@ Carte de test
 # wa: wall directive
 # x, y, t: x=row, y=col, t=type
 # type can be:
-# 1=
+# 1=horizontal wall
+# 2=vertical wall
+# 3=top-left corner walls
+# 4=top-right corner walls
+# 5=bottom-left corner walls
+# 6=bottom-right corner walls
+# 7=T-right walls
+# 8=T-bottom walls
+# 9=T-left walls
+# 10=T-top walls
+# 11=cross-walls
 wa:
 12,3,0
 12,3,1
