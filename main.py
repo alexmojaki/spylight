@@ -28,15 +28,28 @@ server = None
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
-
     def __init__(self, character, map, **kwargs):
         super(SpylightGame, self).__init__(**kwargs)
+
+        self.soundBeep = SoundLoader.load("music/beep.wav")
+        self.soundShot = SoundLoader.load("music/shot.wav")
+        self.soundReload = SoundLoader.load("music/reload.wav")
+
         self.character = character
         self.add_widget(MapView(map=map, spy=self.character))
         self.add_widget(character)
 
     def update(self, useless, **kwargs):
         self.character.update(kwargs)
+
+    def playBeep(self):
+        self.soundBeep.play()
+
+    def playShot(self):
+        self.soundShot.play()
+
+    def playReload(self):
+        self.soundReaload.play()
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -226,12 +239,8 @@ class SpylightApp(App):
 
         game = SpylightGame(character=char, map=map)
 
-        self.soundBeep = SoundLoader.load("music/beep.wav")
-        self.soundShot = SoundLoader.load("music/shot.wav")
-        self.soundReload = SoundLoader.load("music/reload.wav")
-
         Clock.schedule_interval(game.update, 1.0 / 60.0)
-        
+
         return game
 
 if __name__ == '__main__':
@@ -239,7 +248,6 @@ if __name__ == '__main__':
     if len(sys.argv) >= 2:
         character = sys.argv[0]
         server = sys.argv[1]
-
 
     SpylightApp().run() 
 
