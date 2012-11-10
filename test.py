@@ -1,6 +1,8 @@
 from kivy.app import App
+<<<<<<< HEAD
 from kivy.core.image import Image
 from kivy.core.window import Window
+# from kivy.core.image import Image
 from kivy.graphics import Color, Rectangle
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty
@@ -32,6 +34,17 @@ class MyGrid(Widget):
 
 #   def addTorchStencil(x, y):
 #       pass
+
+class MyGrid(Widget):
+    def __init__(self):
+        super(MyGrid,self).__init__()
+        # texture = Image('art/wall2.png').texture
+        # texture.wrap = 'repeat'
+        # texture.uvsize = (32, 32)
+        with self.canvas:
+            Color(1, 1, 1)
+            # Rectangle(pos=(0, 0), size=(2000, 2000), texture=texture)
+            # Image(pos=(0,0), size=(40,40), source='alt/ground.png')
 
 class MyApp(App):
     def build(self):
