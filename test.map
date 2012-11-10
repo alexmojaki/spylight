@@ -111,3 +111,6 @@ wa:
 # x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
 # type can be:
 # 0=terminal
+
+it:
+4,8,0
