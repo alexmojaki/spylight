@@ -64,5 +64,5 @@ class SLMap:
         mapfile.close()
 
 
-    def getWallType(x, y):
+    def getWallType(self, x, y):
         return self.wallType[y * self.width + x]

@@ -23,6 +23,7 @@ class SpylightApp(App):
         map = SLMap("test.map")
         self.logger.info("Map loaded: " + map.title)
         self.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
+        self.logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
         return SpylightGame()
 
 if __name__ == '__main__':
