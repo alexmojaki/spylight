@@ -7,7 +7,7 @@ from kivy.uix.widget import Widget
 class MyGrid(Widget):
     def __init__(self):
         super(MyGrid,self).__init__()
-        texture = Image('art/ground.png').texture
+        texture = Image('art/wall.png').texture
         texture.wrap = 'repeat'
         texture.uvsize = (32, 32)
         with self.canvas:

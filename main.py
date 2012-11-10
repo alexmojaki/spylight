@@ -4,6 +4,7 @@
 from os.path import join
 from kivy.app import App
 from kivy.core.image import Image
+from kivy.uix.image import Image as UIImage
 from kivy.graphics import Color, Rectangle
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
@@ -24,10 +25,14 @@ class MapView(Widget):
         texture = Image(filename).texture
         texture.wrap = 'repeat'
         texture.uvsize = size
+        self.logger.info(filename)
+        print texture
+        self.logger.info(texture)
         return texture
 
     def __init__(self, map):
         super(MapView, self).__init__()
+        self.logger = logging.getLogger("SpylightApp")
         tile_size = 32
         ground = self.getTexture(name='ground', size=(32,32))
         wall = self.getTexture(name='wall', size=(32,32))
@@ -42,7 +47,8 @@ class MapView(Widget):
             for x in xrange(map.width):
                 for y in xrange(map.height):
                     if map.getWallType(x, y) != -1:
-                        Rectangle(pos(x*tile_size, y*tile_size), size(tile_size, tile_size), wall)
+                        # Rectangle(pos=(x*tile_size, y*tile_size), size=(tile_size, tile_size), texture=wall)
+                        UIImage(pos=(x*tile_size, y*tile_size), source=wall)
             # show our fbo on the widget in different size
             # Rectangle(pos=(32, 0), size=(64, 64), texture=self.fbo.texture)
             # Rectangle(pos=(96, 0), size=(128, 128), texture=self.fbo.texture)
@@ -54,7 +60,7 @@ class SpylightApp(App):
         self.logger.setLevel(logging.INFO)
 
     def build(self):
-        
+
         # root = Widget()
 
         # texture = Image('art/ground.png').texture
@@ -66,13 +72,14 @@ class SpylightApp(App):
         # root.add_widget(MapView())
         # root.add_widget(SpylightGame())
         self.initLogger()
-        
+
         map = SLMap("test.map")
         self.logger.info("Map loaded: " + map.title)
         self.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
         root = SpylightGame()
         root.add_widget(MapView(map=map))
+        self.logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
         return root
 
 if __name__ == '__main__':
