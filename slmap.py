@@ -10,10 +10,10 @@ class SLMap:
     WALL_DIRECTIVE = range(0, 1)
     NO_DIRECTIVE = -1
 
-    this.wallType = dict()
 
     def __init__(self, filename):
         self.load(filename)
+
 
     def load(self, filename):
         mapfile = open(filename, "r")
@@ -21,42 +21,48 @@ class SLMap:
         if mapfile.readline() != "SLMap 1\n":
             return False
 
-        headerStage = MAP_TITLE # No header line parsed yet.
-        currentDirective = NO_DIRECTIVE # No directive found yet.
+        headerStage = self.MAP_TITLE # No header line parsed yet.
+        currentDirective = self.NO_DIRECTIVE # No directive found yet.
 
         for line in mapfile:
             line = line.strip()
             lineSplit = line.split()
 
-            if line[0] == "#":
-                # Comment
-                continue
-
-            elif line == "":
+            if line == "":
                 # Empty line
                 continue
 
-            elif headerStage == MAP_TITLE:
+            elif line[0] == "#":
+                # Comment
+                continue
+
+            # Header parsing
+            elif headerStage == self.MAP_TITLE:
                 # Map title
                 self.title = line
-                headerStage = MAP_DIMENSIONS # Now, we know the title of the map
+                headerStage = self.MAP_DIMENSIONS # Now, we know the title of the map
 
-            elif headerStage == MAP_DIMENSIONS:
+            elif headerStage == self.MAP_DIMENSIONS:
                 # Map dimensions
                 self.width, self.height = [int(_) for _ in lineSplit]
                 self.wallType = [-1] * (self.width * self.height)
-                headerStage = HEADER_PARSED # Now, we know the size of the map
-                                            # Header reading done
+                headerStage = self.HEADER_PARSED # Now, we know the size of the map
+                                                 # Header reading done
 
+            # Body parsing
             elif lineSplit[0] == "wa:":
-                # Wall directives
-                currentDirective = WALL_DIRECTIVE # Wall directive
+                # Wall directive beginning
+                currentDirective = self.WALL_DIRECTIVE
 
             # Put other directives here!
 
-            elif currentDirective == WALL_DIRECTIVE:
-                x, y, t = lineSplit[0], lineSplit[1], lineSplit[2]
+            elif currentDirective == self.WALL_DIRECTIVE:
+                # Wall directive
+                x, y, t = [int(_) for _ in line.split(",")]
                 self.wallType[y * self.width + x] = t
+
+        mapfile.close()
+
 
     def getWallType(x, y):
         return self.wallType[y * self.width + x]
