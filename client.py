@@ -1,59 +1,72 @@
 #!/usr/bin/python
 import socket
 import sys
+import network_protocol as np
+from time import sleep
 
 class ClientNetworker(object):
     """docstring for ClientNetworker"""
-    OBJECT_TXT = "\nd "
-    SHOOT_TXT = "\nsh "
-    ACTIVATE_TXT = "\nd "
-    SPY_TXT = "s" # no new line there, first line of the msg
-    MERCERNARY_TXT = "m" # no new line there, first line of the msg
-    SPY_TYPE = 1
-    MERCENARY_TYPE = 2
-    MSG_END = "\n\n"
-    
+
     def __init__(self, playerType):
         super(ClientNetworker, self).__init__()
-        if playerType == SPY_TYPE:
-            self.data = self.SPY_TXT
-        elif playerType == MERCENARY_TYPE:
-            self.data = self.MERCERNARY_TXT
+        if playerType == np.SPY_TYPE:
+            self.__player_data = np.SPY_TXT
+        elif playerType == np.MERCENARY_TYPE:
+            self.__player_data = np.MERCERNARY_TXT
+        self.__reset_data()
 
-    def object(self, id):
-        self.data += self.OBJECT_TXT + str(id)
+    def drop(self, id):
+        self.__drop_data = "\n" + np.OBJECT_TXT + " " + str(id)
 
     def shoot(self):
-        self.data += self.SHOOT_TXT
+        self.__shoot_data = "\n" + np.SHOOT_TXT
 
     def activate(self):
-        self.data += self.ACTIVATE_TXT
+        self.__activate_data = "\n" + np.ACTIVATE_TXT
+
+    def pos(self, x, y):
+        self.__pos_data = "\n" + str(x) + " " + str(y)
+
+    def run(self):
+        self.__run_data = "\n" + np.RUN_TXT
+
+    def mouse_pos(self, x, y):
+        self.__mouse_pos_data = "\n" + str(x) + " " + str(y)
 
     def connect(self, host, port):
-        self.s = sock.connect((host, port))
+        self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__s.connect((host, port))
+
     def send(self):
-        self.s.sendall(data + self.MSG_END)
+        tosend = self.__player_data + self.__pos_data + self.__mouse_pos_data + self.__run_data + self.__shoot_data + self.__activate_data + self.__drop_data + np.MSG_END
+        print "Sending:", tosend
+        self.__s.sendall(tosend)
+        # Clear the values of the data so that we don't resend them at next round
+        # We don't do it for __pos_data as, at worst, the player will keep its mouse position
+        self.__reset_data()
+
+    def __reset_data(self):
+        self.__shoot_data = ""
+        self.__activate_data = ""
+        self.__drop_data = ""
+        self.__mouse_pos_data = ""
+        self.__run_data = ""
+
+    def recv(self):
+        return np.recv_end(self.__s)
 
 
-if sys.argv[0] is not None:
-        PORT = int(sys.argv[0])
-    if PORT is None or PORT < 0:
-        PORT = 9999
-    
-    HOST = "localhost"
-data = " ".join(sys.argv[2:])
-
-# Create a socket (SOCK_STREAM means a TCP socket)
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-try:
-    # Connect to server and send data
-    sock.connect((HOST, PORT))
+if __name__ == '__main__':
+    cn = ClientNetworker(np.SPY_TYPE)
+    cn.connect("localhost", 9999)
+    x, y = 0, 0
     while True:
-        sock.sendall(data + "\n")
-        # Receive data from the server and shut down
-        received = sock.recv(1024)
-        print "Sent: {}".format(data)
-        print "Rcv: {}".format(received)
-finally:
-    sock.close()
+        sleep(1)
+        x += 1
+        y += 2
+        cn.pos(x, y)
+        cn.mouse_pos(0, 0)
+        cn.activate()
+        cn.send()
+        print "Data sent. Recving..."
+        print cn.recv()

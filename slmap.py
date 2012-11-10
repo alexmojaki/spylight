@@ -7,7 +7,7 @@ class SLMap:
     HEADER_PARSED = -1
 
     # Body directives
-    WALL_DIRECTIVE = range(0, 1)
+    WALL_DIRECTIVE, ITEM_DIRECTIVE = range(0, 2)
     NO_DIRECTIVE = -1
 
 
@@ -46,6 +46,7 @@ class SLMap:
                 # Map dimensions
                 self.width, self.height = [int(_) for _ in lineSplit]
                 self.wallType = [-1] * (self.width * self.height)
+                self.itemType = [-1] * (self.width * self.height)
                 headerStage = self.HEADER_PARSED # Now, we know the size of the map
                                                  # Header reading done
 
@@ -54,6 +55,10 @@ class SLMap:
                 # Wall directive beginning
                 currentDirective = self.WALL_DIRECTIVE
 
+            elif lineSplit[0] == "it:":
+                # Item directive beginning
+                currentDirective = self.ITEM_DIRECTIVE
+
             # Put other directives here!
 
             elif currentDirective == self.WALL_DIRECTIVE:
@@ -61,8 +66,16 @@ class SLMap:
                 x, y, t = [int(_) for _ in line.split(",")]
                 self.wallType[y * self.width + x] = t
 
+            elif currentDirective == self.ITEM_DIRECTIVE:
+                # Item directive
+                x, y, t = [int(_) for _ in line.split(",")]
+                self.itemType[y * self.width + x] = t
+
         mapfile.close()
 
 
     def getWallType(self, x, y):
         return self.wallType[y * self.width + x]
+
+    def getItem(self, x, y):
+        return self.itemType[y * self.width + x]
