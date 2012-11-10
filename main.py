@@ -73,7 +73,7 @@ class MapView(Widget):
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
-        self.groundTexture = self.getTexture(name='ground', size=(CELL_SIZE,CELL_SIZE))
+        self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
         # ground = self.getTexture(name='ground', size=(32,32))
         # wall = self.getTexture(name='wall', size=(32,32))
         
@@ -100,7 +100,7 @@ class MapView(Widget):
 
 
 
-class Spy(Widget):
+class Character(Widget):
     x1 = NumericProperty(0)
     y1 = NumericProperty(0)
     x2 = NumericProperty(0)
@@ -110,7 +110,7 @@ class Spy(Widget):
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
 
     def __init__(self, **kwargs):
-        super(Spy, self).__init__(**kwargs)
+        super(Character, self).__init__(**kwargs)
 
         self.zPressed = False
         self.qPressed = False
@@ -215,6 +215,34 @@ class Spy(Widget):
 
         return ret
 
+class Spy(Character):
+    def __init__(self, **kwargs):
+        logger.info('init spy')
+        self.sprite = 'art/spy.png'
+        super(Spy, self).__init__(**kwargs)
+
+    def update(self, useless, **kwargs):
+        super(Spy,self).update(useless, **kwargs)
+        logger.info('Spy is updating!')
+
+    def activate(self):
+        super(Spy,self).activate()
+        logger.info('Spy is activating!')
+
+class Mercenary(Character):
+    def __init__(self, **kwargs):
+        logger.info('init mercenary')
+        self.sprite = 'art/mercenary.png'
+        super(Mercenary, self).__init__(**kwargs)
+
+    def update(self, useless, **kwargs):
+        super(Mercenary,self).update(useless, **kwargs)
+        logger.info('Mercenary is updating!')
+
+    def activate(self):
+        super(Mercenary,self).activate()
+        logger.info('Mercenary is activating!')
+
 class Wall(Widget):
     pass
 
@@ -240,7 +268,7 @@ class SpylightApp(App):
 
         if character == 'merc':
             pass
-        #     char = Mercenary()
+            char = Mercenary()
         else:
             char = Spy()
 
@@ -253,8 +281,8 @@ class SpylightApp(App):
 if __name__ == '__main__':
     global character, server
     if len(sys.argv) >= 2:
-        character = sys.argv[0]
-        server = sys.argv[1]
+        character = sys.argv[1]
+        server = sys.argv[2]
 
     SpylightApp().run() 
 
