@@ -1,8 +1,5 @@
 from kivy.app import App
-from kivy.core.image import Image
 from kivy.core.window import Window
-# from kivy.core.image import Image
-from kivy.graphics import Color, Rectangle
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty
 from kivy.clock import Clock
@@ -20,7 +17,6 @@ class MyGrid(Widget):
         self.x1, self.y1 = Window.mouse_pos
         self.x2, self.y2 = self.x1 - 50, self.y1 + 100
         self.x3, self.y3 = self.x1 + 50, self.y1 + 100
-        print self.points
 
 #   def __init__(self):
 #      super(MyGrid,self).__init__()
@@ -34,21 +30,10 @@ class MyGrid(Widget):
 #   def addTorchStencil(x, y):
 #       pass
 
-class MyGrid(Widget):
-    def __init__(self):
-        super(MyGrid,self).__init__()
-        # texture = Image('art/wall2.png').texture
-        # texture.wrap = 'repeat'
-        # texture.uvsize = (32, 32)
-        with self.canvas:
-            Color(1, 1, 1)
-            # Rectangle(pos=(0, 0), size=(2000, 2000), texture=texture)
-            # Image(pos=(0,0), size=(40,40), source='alt/ground.png')
-
 class MyApp(App):
     def build(self):
         mg = MyGrid()
-        Clock.schedule_interval(mg.update, 0.5)
+        Clock.schedule_interval(mg.update, 1.0 / 60.0)
         return mg
 
 if __name__ == '__main__':
