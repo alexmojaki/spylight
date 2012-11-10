@@ -22,13 +22,15 @@ class GameServerEngine(object):
     MIN_BEEP_DIST = 4
     MIN_TRAP_DIST = int(1.2 * CELL_SIZE)
 
-    (OT_MINE, OT_MIRROR) = range(0, 2)
+    (OT_MINE, OT_MIRROR, OT_DETECTOR) = range(0, 3)
+    (TRAP_FREE, TRAP_MINED, TRAP_DETECTED) = range(0, 3)
 
     def __init__(self):
         super(GameServerEngine, self).__init__()
         self.spy = Player(np.SPY_TYPE)
         self.merc = Player(np.MERCENARY_TYPE)
         self.mines = []
+        self.detectors = []
 
     def shoot(self, player):
         if player == self.merc:
@@ -39,7 +41,9 @@ class GameServerEngine(object):
     def drop(self, player, objType):
         print "Drop objType=", objType, "Not yet implemented"# @TODO
         if objType == self.OT_MINE:
-            self.mines.append((player.x, player.y))
+            self.mines.append((player.pos.x, player.pos.y))
+        elif objType == self.OT_DETECTOR:
+            self.detectors.append((player.pos.x, player.pos.y))
 
     def activate(self, player):
         print "Activate() at pos=", player.pos, "Not yet implemented" # @TODO
@@ -62,12 +66,13 @@ class GameServerEngine(object):
             return dist
 
     def trapped(self, player):
-        for m in mines:
+        for m in self.mines:
             if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])) <= self.MIN_TRAP_DIST:
-                pass
+                return self.TRAP_MINED
+        for m in self.detectors:
+            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])) <= self.MIN_TRAP_DIST:
+                return self.TRAP_DETECTED
 
-        
-        
 
 class SLTCPServer(SocketServer.BaseRequestHandler):
     """
@@ -112,6 +117,8 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
 
             player.pos = (lines[1][0], lines[1][1])
             player.mousePos = (lines[2][0], lines[2][1])
+
+            trapped = self.gs.trapped()
 
             l = len(lines)
             i = 3
