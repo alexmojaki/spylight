@@ -4,10 +4,10 @@
 from os.path import join
 from kivy.app import App
 from kivy.core.image import Image
-from kivy.uix.image import Image as UIImage
 from kivy.graphics import Color, Rectangle
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
+from kivy.core.window import Window
 
 import logging
 
@@ -26,32 +26,24 @@ class MapView(Widget):
         texture.wrap = 'repeat'
         texture.uvsize = size
         self.logger.info(filename)
-        print texture
-        self.logger.info(texture)
         return texture
 
     def __init__(self, map):
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
-        tile_size = 32
+        tileSize = 32
         ground = self.getTexture(name='ground', size=(32,32))
         wall = self.getTexture(name='wall', size=(32,32))
 
-        # texture = Image('art/ground.png').texture
-        # texture.wrap = 'repeat'
-        # texture.uvsize = (32, 32)
         with self.canvas:
             Color(1, 1, 1)
-            Rectangle(pos=(0,0), size=(800,600), texture=ground)
+            Rectangle(pos=(0,0), size=Window.size, texture=ground)
 
             for x in xrange(map.width):
                 for y in xrange(map.height):
                     if map.getWallType(x, y) != -1:
-                        # Rectangle(pos=(x*tile_size, y*tile_size), size=(tile_size, tile_size), texture=wall)
-                        UIImage(pos=(x*tile_size, y*tile_size), source=wall)
-            # show our fbo on the widget in different size
-            # Rectangle(pos=(32, 0), size=(64, 64), texture=self.fbo.texture)
-            # Rectangle(pos=(96, 0), size=(128, 128), texture=self.fbo.texture)
+                        Rectangle(pos=(x*tileSize, y*tileSize), size=(tileSize, tileSize), texture=wall)
+                    
 
 class SpylightApp(App):
     def initLogger(self):
@@ -60,17 +52,6 @@ class SpylightApp(App):
         self.logger.setLevel(logging.INFO)
 
     def build(self):
-
-        # root = Widget()
-
-        # texture = Image('art/ground.png').texture
-        # texture.wrap = 'repeat'
-        # texture.uvsize = (32, 32)
-        # with root.canvas:
-        #     Rectangle(pos=(0,0), size=(200,200), texture=texture)
-
-        # root.add_widget(MapView())
-        # root.add_widget(SpylightGame())
         self.initLogger()
 
         map = SLMap("test.map")
