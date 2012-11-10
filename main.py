@@ -2,12 +2,12 @@ import kivy
 from kivy.app import App
 from kivy.uix.widget import Widget
 
-class PongGame(Widget):
+class SpylightGame(Widget):
     pass
 
-class PongApp(App):
+class SpylightApp(App):
     def build(self):
-        return PongGame()
+        return SpylightGame()
 
 if __name__ == '__main__':
-    PongApp().run()
+    SpylightApp().run()
