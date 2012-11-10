@@ -118,7 +118,10 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
             player.pos = (lines[1][0], lines[1][1])
             player.mousePos = (lines[2][0], lines[2][1])
 
-            trapped = self.gs.trapped()
+            trapped = self.gs.trapped(player)
+
+            if trapped != self.gs.TRAP_FREE:
+                pass # @TODO
 
             l = len(lines)
             i = 3
@@ -138,13 +141,16 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 i += 1
 
             try:
-                rep = str(ennemy.pos.x) + " " + str(ennemy.pos.y)
-                rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
-                rep += "\n" + np.NOISE_TXT
-
-                self.request.sendall(rep)
-            except:
+                rep = ""
+                if ennemy.pos is not None: # if we've already instantiated the ennemy position
+                    rep += str(ennemy.pos.x) + " " + str(ennemy.pos.y)
+                    rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
+                    rep += "\n" + np.NOISE_TXT + " " + str(self.gs.noise_level(player, ennemy))
+                self.request.sendall(rep + np.MSG_END)
+                print "Data sent: ", rep
+            except Exception as e:
                 print "Socket error 3"
+                print str(e)
                 break
             
 

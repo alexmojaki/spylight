@@ -68,4 +68,5 @@ if __name__ == '__main__':
         cn.mouse_pos(0, 0)
         cn.activate()
         cn.send()
+        print "Data sent. Recving..."
         print cn.recv()
