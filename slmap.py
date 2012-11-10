@@ -13,6 +13,8 @@ class SLMap:
         for line in mapfile:
             if line[0] == "#":
                 continue
+            elif line.strip() == "":
+                continue
             elif headerStage == 0:
                 self.title = line.strip()
                 headerStage += 1 # Now, we know the title of the map
