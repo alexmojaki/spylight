@@ -1,5 +1,7 @@
 Client/Server Network Protocol:
 
+
+========== Client --> Server ==========
 Data to be transferred:
 - player pos
 - player mouse position
@@ -27,9 +29,9 @@ Explained :
 s = I am the spy
 x y = I am currently at x,y
 x2 y2 = My mouse is at this position
-sh = I wanna shoot him up
-a  = I wanna activate something on the current cell
-d 1 = I want to drop an object of typeid=1
+sh = I wanna shoot him up (facultative)
+a  = I wanna activate something on the current cell (facultative)
+d 1 = I want to drop an object of typeid=1 (facultative)
 --blank line--
 --------
 
@@ -47,4 +49,24 @@ m = I am a mercernary
 x y = ...
 x2 y2 = My mouse is at this position
 d 2 = I want to drop an object of typeid=1
+--blank line--
+--------
+
+========== ========== ==========
+
+========== Server --> Client ==========
+--------
+x y
+n L
+b L2
+
+--------
+
+Explained: 
+
+--------
+x y # position of the ennemy
+n L # noise of the ennemy, of level L (facultative)
+b L2 # BIIIP (vicinity of detonators) of level L2 (facultative)
+--blank line--
 --------
