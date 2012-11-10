@@ -83,8 +83,17 @@ class Spy(Widget):
 
     def __init__(self, **kwargs):
         super(Spy, self).__init__(**kwargs)
+
+        self.zPressed = False
+        self.qPressed = False
+        self.sPressed = False
+        self.dPressed = False
+
+        self.velocity = Vector(0,0)
+
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
     def _keyboard_closed(self):
         print 'My keyboard have been closed!'
@@ -92,46 +101,82 @@ class Spy(Widget):
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        print 'The key', keycode, 'have been pressed'
-        print ' - text is %r' % text
-        print ' - modifiers are %r' % modifiers
-
         pos2 = self.pos
-
         # Keycode is composed of an integer + a string
-        # If we hit escape, release the keyboard
-        if keycode[1] == 'escape':
-            keyboard.release()
         if keycode[1] == 'z':
-            # self.velocity[1] = 1;
-            pos2 = Vector(0,2) + self.pos
+            self.zPressed = True
         if keycode[1] == 'q':
-            # self.velocity[0] = -1;
-            pos2 = Vector(-2,0) + self.pos
+            self.qPressed = True
         if keycode[1] == 's':
-            # self.velocity[1] = -1;
-            pos2 = Vector(0,-2) + self.pos
+            self.sPressed = True
         if keycode[1] == 'd':
-            # self.velocity[0] = 1;
-            pos2 = Vector(2,0) + self.pos
+            self.dPressed = True
 
-        if(self.canGo(pos2)):
-            self.pos = pos2
+        return True
+
+    def _on_keyboard_up(self, truc, keycode):
+
+        if keycode[1] == 'z':
+            self.zPressed = False
+        if keycode[1] == 'q':
+            self.qPressed = False
+        if keycode[1] == 's':
+            self.sPressed = False
+        if keycode[1] == 'd':
+            self.dPressed = False
+
         return True
 
     def update(self, truc, **kwargs):
+
+        maxVelocity = 4
+        deceleration = 1
+        # print 'update', self.velocity
+
+        if self.zPressed:
+            if self.sPressed:
+                self.velocity[1] = 0
+            else:
+                self.velocity[1] = maxVelocity
+        else:
+             if self.sPressed:
+                self.velocity[1] = -maxVelocity
+
+        if self.qPressed:
+            if self.dPressed:
+                self.velocity[0] = 0
+            else:
+                self.velocity[0] = -maxVelocity
+        else:
+            if self.dPressed:
+                self.velocity[0] = maxVelocity
+
+        # print 'velocity ' + str(self.velocity)
+
+        pos2 = self.velocity + self.pos
+        if(self.canGo(pos2)):
+            self.pos = pos2
+
+        # print 'pos ' + str(self.pos)
+
+        for i in xrange(0,2):
+            if self.velocity[i] < 0:
+                self.velocity[i] += deceleration
+            elif self.velocity[i] > 0:
+                self.velocity[i] -= deceleration
+
+
+
         self.x1, self.y1 = self.pos
         self.x2, self.y2 = self.x1 - 50, self.y1 + 100
         self.x3, self.y3 = self.x1 + 50, self.y1 + 100
-        # print self.pos, self.points
-        pass
 
     def canGo(self,pos2):
         ret = map.getWallType((pos2[0]+5)/32, (pos2[1]+5)/32) == -1
         ret = ret and map.getWallType((pos2[0]+27)/32, (pos2[1]+27)/32) == -1
         ret = ret and map.getWallType((pos2[0]+5)/32, (pos2[1]+27)/32) == -1
         ret = ret and map.getWallType((pos2[0]+27)/32, (pos2[1]+5)/32) == -1
-        print pos2, pos2[0]/32,pos2[1]/32
+        print pos2, (pos2[0]+5)/32,(pos2[1]+5)/32
 
         return ret
 
