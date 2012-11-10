@@ -25,6 +25,8 @@ from slmap import SLMap
 map = None
 character = None
 server = None
+logger = None
+CELL_SIZE = 32
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
@@ -69,11 +71,10 @@ class MapView(Widget):
     def __init__(self, map, spy):
         self.spy = spy
         super(MapView, self).__init__()
-        tileSize = 32
         self.logger = logging.getLogger("SpylightApp")
-        self.width = map.width*tileSize
-        self.height = map.height*tileSize
-        self.groundTexture = self.getTexture(name='ground', size=(32,32))
+        self.width = map.width*CELL_SIZE
+        self.height = map.height*CELL_SIZE
+        self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
         # ground = self.getTexture(name='ground', size=(32,32))
         # wall = self.getTexture(name='wall', size=(32,32))
 
@@ -93,16 +94,10 @@ class MapView(Widget):
             for y in xrange(map.height):
                 if map.getWallType(x, y) != -1:
                     wall = Wall()
-                    wall.pos = (x*tileSize, y*tileSize)
+                    wall.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(wall)
 
-class Wall(Widget):
-    pass
-
-
-
-
-class Spy(Widget):
+class Character(Widget):
     x1 = NumericProperty(0)
     y1 = NumericProperty(0)
     x2 = NumericProperty(0)
@@ -112,7 +107,7 @@ class Spy(Widget):
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
 
     def __init__(self, **kwargs):
-        super(Spy, self).__init__(**kwargs)
+        super(Character, self).__init__(**kwargs)
 
         self.zPressed = False
         self.qPressed = False
@@ -141,7 +136,8 @@ class Spy(Widget):
             self.sPressed = True
         if keycode[1] == 'd':
             self.dPressed = True
-        # if keycode[1] == 'e':
+        if keycode[1] == 'e':
+            self.activate()
 
         return True
 
@@ -157,6 +153,9 @@ class Spy(Widget):
             self.dPressed = False
 
         return True
+
+    def activate(self):
+        logger.info("L O L")
 
     def update(self, useless, **kwargs):
 
@@ -213,36 +212,68 @@ class Spy(Widget):
 
     def canGo(self,pos2):
         margin = 7
-        ret = map.getWallType((pos2[0]+margin)/32, (pos2[1]+margin)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+32-margin)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+margin)/32, (pos2[1]+32-margin)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+margin)/32) == -1
-        # print pos2, (pos2[0]+margin)/32,(pos2[1]+margin)/32
+        ret = map.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
+        ret = ret and map.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
+        ret = ret and map.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
+        ret = ret and map.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
+        logger.debug(pos2, (pos2[0]+margin)/CELL_SIZE,(pos2[1]+margin)/CELL_SIZE)
 
         return ret
 
+class Spy(Character):
+    def __init__(self, **kwargs):
+        logger.info('init spy')
+        self.sprite = 'art/spy.png'
+        super(Spy, self).__init__(**kwargs)
+
+    def update(self, useless, **kwargs):
+        super(Spy,self).update(useless, **kwargs)
+        logger.info('Spy is updating!')
+
+    def activate(self):
+        super(Spy,self).activate()
+        logger.info('Spy is activating!')
+
+class Mercenary(Character):
+    def __init__(self, **kwargs):
+        logger.info('init mercenary')
+        self.sprite = 'art/mercenary.png'
+        super(Mercenary, self).__init__(**kwargs)
+
+    def update(self, useless, **kwargs):
+        super(Mercenary,self).update(useless, **kwargs)
+        logger.info('Mercenary is updating!')
+
+    def activate(self):
+        super(Mercenary,self).activate()
+        logger.info('Mercenary is activating!')
+
+class Wall(Widget):
+    pass
 
 Factory.register("MapView", MapView)
 
 class SpylightApp(App):
+
     def initLogger(self):
-        self.logger = logging.getLogger("SpylightApp")
-        self.logger.addHandler(logging.FileHandler("spylight.log"))
-        self.logger.setLevel(logging.INFO)
+        logger = logging.getLogger("SpylightApp")
+        logger.addHandler(logging.FileHandler("spylight.log"))
+        logger.setLevel(logging.INFO)
+        return logger
 
     def build(self):
-        global map
-        self.initLogger()
+        global map, logger
+        logger = self.initLogger()
 
         map = SLMap("test.map")
-        self.logger.info("Map loaded: " + map.title)
-        self.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
+        logger.info("Map loaded: " + map.title)
+        logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
-        self.logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
+        logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
 
         if character == 'merc':
             pass
-        #     char = Mercenary()
+            char = Mercenary()
         else:
             char = Spy()
 
@@ -255,8 +286,7 @@ class SpylightApp(App):
 if __name__ == '__main__':
     global character, server
     if len(sys.argv) >= 2:
-        character = sys.argv[0]
-        server = sys.argv[1]
+        character = sys.argv[1]
+        server = sys.argv[2]
 
-    SpylightApp().run() 
-
+    SpylightApp().run()
