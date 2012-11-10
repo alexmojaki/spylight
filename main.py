@@ -8,10 +8,14 @@ from kivy.graphics import Color, Rectangle, StencilPush, StencilUse, StencilPop,
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
 from kivy.vector import Vector
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
 from kivy.factory import Factory
+# from client import ClientNetworker
+import sys
+
 
 import logging
 import math
@@ -19,11 +23,34 @@ import math
 from slmap import SLMap
 
 map = None
+character = None
+server = None
 
 class SpylightGame(Widget):
+    character = ObjectProperty(None)
 
-    def __init__(self, **kwargs):
+    def __init__(self, character, map, **kwargs):
         super(SpylightGame, self).__init__(**kwargs)
+
+        self.soundBeep = SoundLoader.load("music/beep.wav")
+        self.soundShot = SoundLoader.load("music/shot.wav")
+        self.soundReload = SoundLoader.load("music/reload.wav")
+
+        self.character = character
+        self.add_widget(MapView(map=map, spy=self.character))
+        self.add_widget(character)
+
+    def update(self, useless, **kwargs):
+        self.character.update(kwargs)
+
+    def playBeep(self):
+        self.soundBeep.play()
+
+    def playShot(self):
+        self.soundShot.play()
+
+    def playReload(self):
+        self.soundReaload.play()
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -114,6 +141,7 @@ class Spy(Widget):
             self.sPressed = True
         if keycode[1] == 'd':
             self.dPressed = True
+        # if keycode[1] == 'e':
 
         return True
 
@@ -211,15 +239,24 @@ class SpylightApp(App):
         self.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
         self.logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
-        spy = Spy()
 
-        game = SpylightGame()
-        game.add_widget(MapView(map=map, spy=spy))
-        game.add_widget(spy)
+        if character == 'merc':
+            pass
+        #     char = Mercenary()
+        else:
+            char = Spy()
 
-        Clock.schedule_interval(spy.update, 1.0 / 60.0)
+        game = SpylightGame(character=char, map=map)
+
+        Clock.schedule_interval(game.update, 1.0 / 60.0)
+
         return game
 
 if __name__ == '__main__':
-    SpylightApp().run()
+    global character, server
+    if len(sys.argv) >= 2:
+        character = sys.argv[0]
+        server = sys.argv[1]
+
+    SpylightApp().run() 
 
