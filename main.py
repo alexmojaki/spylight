@@ -28,6 +28,7 @@ class MapView(Widget):
     width = NumericProperty(0)
     height = NumericProperty(0)
     groundTexture = ObjectProperty(None)
+    spy = ObjectProperty(None)
 
     def getTexture(self,name, size):
         filename = join('art', name+'.png')
@@ -38,6 +39,7 @@ class MapView(Widget):
         return texture
 
     def __init__(self, map, spy):
+        self.spy = spy
         super(MapView, self).__init__()
         tileSize = 32
         self.logger = logging.getLogger("SpylightApp")
@@ -49,14 +51,14 @@ class MapView(Widget):
         
         print spy.points
 
-        with self.canvas:    
-            StencilPush()
-            Triangle(points=spy.points)
-            StencilUse()
-            Rectangle(pos=(0,0), size=(self.width, self.height), texture=self.groundTexture)
-            StencilUnUse()
-            Triangle(points=spy.points)
-            StencilPop()
+        # with self.canvas:    
+            # StencilPush()
+            # Triangle(points=spy.points)
+            # StencilUse()
+            # Rectangle(pos=(0,0), size=(self.width, self.height), texture=self.groundTexture)
+            # StencilUnUse()
+            # # Triangle(points=spy.points)
+            # StencilPop()
             
         # with self.canvas:
         for x in xrange(map.width):
@@ -114,7 +116,7 @@ class Spy(Widget):
 
         return True
 
-    def _on_keyboard_up(self, truc, keycode):
+    def _on_keyboard_up(self, useless, keycode):
 
         if keycode[1] == 'z':
             self.zPressed = False
@@ -127,9 +129,9 @@ class Spy(Widget):
 
         return True
 
-    def update(self, truc, **kwargs):
+    def update(self, useless, **kwargs):
 
-        maxVelocity = 4
+        maxVelocity = 3
         deceleration = 1
         # print 'update', self.velocity
 
@@ -157,7 +159,6 @@ class Spy(Widget):
         if(self.canGo(pos2)):
             self.pos = pos2
 
-        # print 'pos ' + str(self.pos)
 
         for i in xrange(0,2):
             if self.velocity[i] < 0:
@@ -167,16 +168,19 @@ class Spy(Widget):
 
 
 
-        self.x1, self.y1 = self.pos
+        self.x1, self.y1 = self.center_x, self.center_y
         self.x2, self.y2 = self.x1 - 50, self.y1 + 100
         self.x3, self.y3 = self.x1 + 50, self.y1 + 100
 
+        print 'Position',self.pos, 'Triangle', self.points
+
     def canGo(self,pos2):
-        ret = map.getWallType((pos2[0]+5)/32, (pos2[1]+5)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+27)/32, (pos2[1]+27)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+5)/32, (pos2[1]+27)/32) == -1
-        ret = ret and map.getWallType((pos2[0]+27)/32, (pos2[1]+5)/32) == -1
-        print pos2, (pos2[0]+5)/32,(pos2[1]+5)/32
+        margin = 7
+        ret = map.getWallType((pos2[0]+margin)/32, (pos2[1]+margin)/32) == -1
+        ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+32-margin)/32) == -1
+        ret = ret and map.getWallType((pos2[0]+margin)/32, (pos2[1]+32-margin)/32) == -1
+        ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+margin)/32) == -1
+        print pos2, (pos2[0]+margin)/32,(pos2[1]+margin)/32
 
         return ret
 

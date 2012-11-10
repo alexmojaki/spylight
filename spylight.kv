@@ -19,5 +19,17 @@
             size: self.size
             source: 'art/wall2.png'
 
-<SpylightGame>:
+<MapView>:
+    canvas:
+        StencilPush
+        Triangle:
+            points: self.spy.points
+        StencilUse
+        Rectangle:
+            pos:0,0
+            size:self.width, self.height
+            texture:self.groundTexture
+        StencilUnUse
+        StencilPop
 
+<SpylightGame>:
