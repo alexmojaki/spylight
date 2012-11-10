@@ -1,59 +1,46 @@
 #!/usr/bin/python
 import socket
 import sys
+import network_protocol as np
 
 class ClientNetworker(object):
     """docstring for ClientNetworker"""
-    OBJECT_TXT = "\nd "
-    SHOOT_TXT = "\nsh "
-    ACTIVATE_TXT = "\nd "
-    SPY_TXT = "s" # no new line there, first line of the msg
-    MERCERNARY_TXT = "m" # no new line there, first line of the msg
-    SPY_TYPE = 1
-    MERCENARY_TYPE = 2
-    MSG_END = "\n\n"
-    
+
     def __init__(self, playerType):
         super(ClientNetworker, self).__init__()
-        if playerType == SPY_TYPE:
-            self.data = self.SPY_TXT
-        elif playerType == MERCENARY_TYPE:
-            self.data = self.MERCERNARY_TXT
+        if playerType == np.SPY_TYPE:
+            self.__player_data = np.SPY_TXT
+        elif playerType == np.MERCENARY_TYPE:
+            self.__player_data = np.MERCERNARY_TXT
 
-    def object(self, id):
-        self.data += self.OBJECT_TXT + str(id)
+    def drop(self, id):
+        self.__drop_data = np.OBJECT_TXT + str(id)
 
     def shoot(self):
-        self.data += self.SHOOT_TXT
+        self.__shoot_data += np.SHOOT_TXT
 
     def activate(self):
-        self.data += self.ACTIVATE_TXT
+        self.__activate_data += np.ACTIVATE_TXT
+
+    def pos(self, x, y):
+        self.pos_data = str(x) + " " + str(y)
 
     def connect(self, host, port):
-        self.s = sock.connect((host, port))
+        self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__s = self.__sock.connect((host, port))
+
     def send(self):
-        self.s.sendall(data + self.MSG_END)
+        self.__s.sendall(self.__player_data + self.pos_data + self.__shoot_data + self.__drop_data + np.MSG_END)
+        # Clear the values of the data so that we don't resend them at next round
+        # We don't do it for pos_data as, at worst, the player will keep its mouse position
+        self.__shoot_data = ""
+        self.__activate_data = ""
+        self.__drop_data = ""
 
 
-if sys.argv[0] is not None:
-        PORT = int(sys.argv[0])
-    if PORT is None or PORT < 0:
-        PORT = 9999
-    
-    HOST = "localhost"
-data = " ".join(sys.argv[2:])
-
-# Create a socket (SOCK_STREAM means a TCP socket)
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-try:
-    # Connect to server and send data
-    sock.connect((HOST, PORT))
-    while True:
-        sock.sendall(data + "\n")
-        # Receive data from the server and shut down
-        received = sock.recv(1024)
-        print "Sent: {}".format(data)
-        print "Rcv: {}".format(received)
-finally:
-    sock.close()
+if __name__ == '__main__':
+    cn = ClientNetworker(np.SPY_TYPE)
+    cn.connect("localhost", 9999)
+    cn.pos(0, 0)
+    cn.activate()
+    cn.send()

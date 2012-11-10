@@ -15,7 +15,9 @@ spy tram example:
 --------
 s
 x y
+x2 y2
 sh
+a
 d 1
 
 --------
@@ -24,7 +26,9 @@ Explained :
 --------
 s = I am the spy
 x y = I am currently at x,y
+x2 y2 = My mouse is at this position
 sh = I wanna shoot him up
+a  = I wanna activate something on the current cell
 d 1 = I want to drop an object of typeid=1
 --blank line--
 --------
@@ -33,6 +37,7 @@ Mercenary:
 --------
 m
 x y
+x2 y2
 d 2
 --------
 
@@ -40,5 +45,6 @@ Explained:
 --------
 m = I am a mercernary
 x y = ...
+x2 y2 = My mouse is at this position
 d 2 = I want to drop an object of typeid=1
 --------
