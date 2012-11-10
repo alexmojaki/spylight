@@ -14,6 +14,7 @@ from kivy.clock import Clock
 from kivy.factory import Factory
 
 import logging
+import math
 
 from slmap import SLMap
 
@@ -48,10 +49,10 @@ class MapView(Widget):
         self.groundTexture = self.getTexture(name='ground', size=(32,32))
         # ground = self.getTexture(name='ground', size=(32,32))
         # wall = self.getTexture(name='wall', size=(32,32))
-        
-        print spy.points
 
-        # with self.canvas:    
+        # print spy.points
+
+        # with self.canvas:
             # StencilPush()
             # Triangle(points=spy.points)
             # StencilUse()
@@ -59,14 +60,14 @@ class MapView(Widget):
             # StencilUnUse()
             # # Triangle(points=spy.points)
             # StencilPop()
-            
+
         # with self.canvas:
         for x in xrange(map.width):
             for y in xrange(map.height):
                 if map.getWallType(x, y) != -1:
                     wall = Wall()
                     wall.pos = (x*tileSize, y*tileSize)
-                    self.add_widget(wall)            
+                    self.add_widget(wall)
 
 class Wall(Widget):
     pass
@@ -98,7 +99,7 @@ class Spy(Widget):
         self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
     def _keyboard_closed(self):
-        print 'My keyboard have been closed!'
+        # print 'My keyboard have been closed!'
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
 
@@ -166,13 +167,21 @@ class Spy(Widget):
             elif self.velocity[i] > 0:
                 self.velocity[i] -= deceleration
 
-
+        x, y = Window.mouse_pos
+        x -= self.center_x
+        y -= self.center_y
+        if x == 0.0:
+            heading = 0.0
+        elif x < 0.0:
+            heading = math.degrees(math.atan(float(y) / float(x))) + 90.0
+        else:
+            heading = math.degrees(math.atan(float(y) / float(x))) - 90.0
 
         self.x1, self.y1 = self.center_x, self.center_y
-        self.x2, self.y2 = self.x1 - 50, self.y1 + 100
-        self.x3, self.y3 = self.x1 + 50, self.y1 + 100
+        self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
+        self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
 
-        print 'Position',self.pos, 'Triangle', self.points
+        # print 'Position',self.pos, 'Triangle', self.points
 
     def canGo(self,pos2):
         margin = 7
@@ -180,7 +189,7 @@ class Spy(Widget):
         ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+32-margin)/32) == -1
         ret = ret and map.getWallType((pos2[0]+margin)/32, (pos2[1]+32-margin)/32) == -1
         ret = ret and map.getWallType((pos2[0]+32-margin)/32, (pos2[1]+margin)/32) == -1
-        print pos2, (pos2[0]+margin)/32,(pos2[1]+margin)/32
+        # print pos2, (pos2[0]+margin)/32,(pos2[1]+margin)/32
 
         return ret
 
