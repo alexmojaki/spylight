@@ -20,7 +20,9 @@ class SpylightApp(App):
 
     def build(self):
         self.initLogger()
-        self.logger.info(SLMap("test.map").title)
+        map = SLMap("test.map")
+        self.logger.info("Map loaded: " + map.title)
+        self.logger.info("Map size: (" + str(map.x) + ", " + str(map.y) + ")")
         return SpylightGame()
 
 if __name__ == '__main__':

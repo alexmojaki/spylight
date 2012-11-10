@@ -1,6 +1,15 @@
 SLMap 1
+
+# Map title
 Carte de test
-1 1
-12
-24
-1
+
+# Map size (width, height) in blocks (row, col)
+1 2
+
+# wa: wall directive
+# x, y, t: x=row, y=col, t=type
+# type can be:
+# 1=
+wa:
+12,3,0
+12,3,1
