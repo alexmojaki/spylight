@@ -2,25 +2,67 @@
 # -*- coding: utf-8 -*-
 
 class SLMap:
+    # Header parsing stage
+    MAP_TITLE, MAP_DIMENSIONS = range(0, 2)
+    HEADER_PARSED = -1
+
+    # Body directives
+    WALL_DIRECTIVE = range(0, 1)
+    NO_DIRECTIVE = -1
+
+
     def __init__(self, filename):
         self.load(filename)
 
+
     def load(self, filename):
         mapfile = open(filename, "r")
+
         if mapfile.readline() != "SLMap 1\n":
             return False
-        headerStage = 0 # No header line parsed yet.
+
+        headerStage = self.MAP_TITLE # No header line parsed yet.
+        currentDirective = self.NO_DIRECTIVE # No directive found yet.
+
         for line in mapfile:
-            if line[0] == "#":
+            line = line.strip()
+            lineSplit = line.split()
+
+            if line == "":
+                # Empty line
                 continue
-            elif line.strip() == "":
+
+            elif line[0] == "#":
+                # Comment
                 continue
-            elif headerStage == 0:
-                self.title = line.strip()
-                headerStage += 1 # Now, we know the title of the map
-            elif headerStage == 1:
-                self.x, self.y = [int(_) for _ in line.strip().split(" ")]
-                headerStage = -1 # Now, we know the size of the map
-                                 # Header reading done
-            else:
-                pass
+
+            # Header parsing
+            elif headerStage == self.MAP_TITLE:
+                # Map title
+                self.title = line
+                headerStage = self.MAP_DIMENSIONS # Now, we know the title of the map
+
+            elif headerStage == self.MAP_DIMENSIONS:
+                # Map dimensions
+                self.width, self.height = [int(_) for _ in lineSplit]
+                self.wallType = [-1] * (self.width * self.height)
+                headerStage = self.HEADER_PARSED # Now, we know the size of the map
+                                                 # Header reading done
+
+            # Body parsing
+            elif lineSplit[0] == "wa:":
+                # Wall directive beginning
+                currentDirective = self.WALL_DIRECTIVE
+
+            # Put other directives here!
+
+            elif currentDirective == self.WALL_DIRECTIVE:
+                # Wall directive
+                x, y, t = [int(_) for _ in line.split(",")]
+                self.wallType[y * self.width + x] = t
+
+        mapfile.close()
+
+
+    def getWallType(self, x, y):
+        return self.wallType[y * self.width + x]
