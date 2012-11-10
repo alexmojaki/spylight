@@ -14,9 +14,11 @@ from slmap import SLMap
 
 class SpylightGame(Widget):
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs, logger):
         super(SpylightGame, self).__init__(**kwargs)
-        self.add_widget(MapView())
+        self.logger = logger
+        print self.parent
+        self.add_widget(MapView(self.size))
 
 class MapView(Widget):
     def getTexture(self,name, size):
@@ -26,15 +28,16 @@ class MapView(Widget):
         texture.uvsize = size
         return texture
 
-    def __init__(self):
+    def __init__(self,size):
         super(MapView, self).__init__()
         ground = self.getTexture(name='ground', size=(32,32))
+        print str(size);
         # texture = Image('art/ground.png').texture
         # texture.wrap = 'repeat'
         # texture.uvsize = (32, 32)
         with self.canvas:
             Color(1, 1, 1)
-            Rectangle(pos=(0,0), size=(600,600), texture=ground)
+            Rectangle(pos=(0,0), size=size, texture=ground)
             # show our fbo on the widget in different size
             # Rectangle(pos=(32, 0), size=(64, 64), texture=self.fbo.texture)
             # Rectangle(pos=(96, 0), size=(128, 128), texture=self.fbo.texture)
@@ -62,7 +65,7 @@ class SpylightApp(App):
         map = SLMap("test.map")
         self.logger.info("Map loaded: " + map.title)
         self.logger.info("Map size: (" + str(map.x) + ", " + str(map.y) + ")")
-        return SpylightGame()
+        return SpylightGame(self.logger)
 
 if __name__ == '__main__':
     SpylightApp().run()
