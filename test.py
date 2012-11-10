@@ -1,5 +1,4 @@
 from kivy.app import App
-<<<<<<< HEAD
 from kivy.core.image import Image
 from kivy.core.window import Window
 # from kivy.core.image import Image
