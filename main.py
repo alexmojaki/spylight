@@ -401,7 +401,7 @@ class Timer(Widget):
         else:
             self.time += str(self.secs)
 
-        if self.secs == 5:
+        if self.mins == 3:
             game.end()
 
 Factory.register("MapView", MapView)
