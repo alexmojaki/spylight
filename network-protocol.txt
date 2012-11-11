@@ -59,6 +59,9 @@ d 2 = I want to drop an object of typeid=1
 x y
 n L
 b L2
+t T
+d
+l
 
 --------
 
@@ -67,6 +70,9 @@ Explained:
 --------
 x y # position of the ennemy
 n L # noise of the ennemy, of level L (facultative)
-b L2 # BIIIP (vicinity of detonators) of level L2 (facultative)
+b L2 # BEEEEEP (vicinity of detonators) of level L2 (facultative)
+t T # trapped of type T (facultative)
+d # you are dead / have just been killed
+l # you lost
 --blank line--
 --------

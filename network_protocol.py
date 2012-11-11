@@ -20,6 +20,9 @@ def recv_end(the_socket):
 
 OBJECT_TXT = "d"
 SHOOT_TXT = "sh"
+TRAPPED_TXT = "t"
+DEAD_TXT = "d"
+LOST_TXT = "l"
 ACTIVATE_TXT = "a"
 RUN_TXT = "r"
 BEEP_TXT = "b"
