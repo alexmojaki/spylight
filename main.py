@@ -232,15 +232,11 @@ class Character(Widget):
             if(self.canGo(pos2)):
                 self.pos = pos2
             else:
-                if self.velocity[0] > 0:
-                    self.pos.x -= 1
-                elif self.velocity[0] < 0:
-                    self.pos.x += 1
-
-                if self.velocity[1] > 0:
-                    self.pos.y -= 1
-                elif self.velocity[1] < 0:
-                    self.pos.y += 1
+                for i in xrange(0,2):
+                    if self.velocity[i] > 0:
+                        self.pos[i] -= 1
+                    elif self.velocity[i] < 0:
+                        self.pos[i] += 1
 
 
             for i in xrange(0,2):
