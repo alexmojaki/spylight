@@ -231,7 +231,7 @@ class Character(Widget):
             pos2 = self.velocity + self.pos
             if(self.canGo(pos2)):
                 self.pos = pos2
-            else
+            else:
                 if self.velocity[0] > 0:
                     self.pos.x -= 1
                 elif self.velocity[0] < 0:
