@@ -29,3 +29,5 @@ MERCERNARY_TXT = "m" # no new line there, first line of the msg
 SPY_TYPE = 1
 MERCENARY_TYPE = 2
 MSG_END = "\n\n"
+
+(OT_MINE, OT_MIRROR, OT_DETECTOR) = range(0, 3)
