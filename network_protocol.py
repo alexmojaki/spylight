@@ -1,3 +1,4 @@
+import socket
 
 def recv_end(the_socket):
     End = "\n\n"
@@ -17,7 +18,7 @@ def recv_end(the_socket):
                     total_data[-2]=last_pair[:last_pair.find(End)]
                     total_data.pop()
                     break
-        except Exception:
+        except socket.error, e:
             break
     return ''.join(total_data)
 
