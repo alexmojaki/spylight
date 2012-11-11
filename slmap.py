@@ -45,6 +45,7 @@ class SLMap:
             elif headerStage == self.MAP_DIMENSIONS:
                 # Map dimensions
                 self.width, self.height = [int(_) for _ in lineSplit]
+                self.walls = list()
                 self.wallType = [-1] * (self.width * self.height)
                 self.itemType = [-1] * (self.width * self.height)
                 headerStage = self.HEADER_PARSED # Now, we know the size of the map
@@ -64,6 +65,7 @@ class SLMap:
             elif currentDirective == self.WALL_DIRECTIVE:
                 # Wall directive
                 x, y, t = [int(_) for _ in line.split(",")]
+                self.walls.append([x, y, t])
                 self.wallType[y * self.width + x] = t
 
             elif currentDirective == self.ITEM_DIRECTIVE:
