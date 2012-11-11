@@ -21,6 +21,10 @@ import network_protocol as np
 from client import ClientNetworker
 from slmap import SLMap
 
+
+from kivy.config import Config
+
+
 map = None
 character = None
 server = None
@@ -45,7 +49,6 @@ class SpylightGame(Widget):
         self.soundPunch = SoundLoader.load("music/punch.wav")
         self.soundBoom = SoundLoader.load("music/boom.wav")
 
-        shadow = Shadow()
         self.character = character
         self.add_widget(MapView(map=map, character=self.character))
         self.add_widget(character)
@@ -103,13 +106,18 @@ class MapView(Widget):
         return texture
 
     def __init__(self, map, character):
+        global shadow
         self.character = character
+
+        shadow = Shadow()
+        self.add_widget(shadow)
 
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
+
 
         for x in xrange(map.width):
             for y in xrange(map.height):
@@ -267,9 +275,11 @@ class Character(Widget):
         global game
         ret = clientNetworker.recv()
 
-        shadow.pos = ret["ennemy"]
-
         logger.info(ret)
+
+        logger.info(shadow.pos)
+
+        shadow.pos = ret["ennemy"]
 
         if ret["beep"]:
             game.playBeep()
@@ -284,7 +294,8 @@ class Character(Widget):
 
         if ret["lost"]:
             sys.exit()
-    def spawn(self):
+
+    def spawn(self, dt):
         self.pos = self.spawnPoint
 
 
@@ -467,6 +478,10 @@ class SpylightApp(App):
 
 if __name__ == '__main__':
     global character, server
+
+    Config.set('graphics', 'width', '2000')
+    Config.set('graphics', 'height', '1000')
+
     if len(sys.argv) >= 2:
         character = sys.argv[1]
 
