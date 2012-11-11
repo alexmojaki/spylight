@@ -34,12 +34,13 @@ MAX_MIN_COUNTDOWN = 3
 clientNetworker = None
 game = None
 shadow = None
+capInfo = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
     def __init__(self, character, map, **kwargs):
-        global shadow
+        global shadow, capInfo
         super(SpylightGame, self).__init__(**kwargs)
 
         self.soundBeep = SoundLoader.load("music/beep.wav")
@@ -50,8 +51,10 @@ class SpylightGame(Widget):
         self.soundBoom = SoundLoader.load("music/boom.wav")
 
         self.character = character
-        self.add_widget(MapView(map=map, character=self.character))
+        self.add_widget(MapView(map=map, character=self.character, shadow=shadow))
         self.add_widget(character)
+        capInfo = CapInfo()
+        self.add_widget(capInfo)
         self.started = False
 
     def update(self, useless, **kwargs):
@@ -96,6 +99,7 @@ class MapView(Widget):
     height = NumericProperty(0)
     groundTexture = ObjectProperty(None)
     character = ObjectProperty(None)
+    shadow = ObjectProperty(None)
 
     def getTexture(self,name, size):
         filename = join('art', name+'.png')
@@ -105,19 +109,15 @@ class MapView(Widget):
         self.logger.info(filename)
         return texture
 
-    def __init__(self, map, character):
-        global shadow
+    def __init__(self, map, character, shadow):
         self.character = character
-
-        shadow = Shadow()
-        self.add_widget(shadow)
+        self.shadow = shadow
 
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
-
 
         for x in xrange(map.width):
             for y in xrange(map.height):
@@ -231,6 +231,12 @@ class Character(Widget):
             pos2 = self.velocity + self.pos
             if(self.canGo(pos2)):
                 self.pos = pos2
+            else:
+                for i in xrange(0,2):
+                    if self.velocity[i] > 0:
+                        self.pos[i] -= 1
+                    elif self.velocity[i] < 0:
+                        self.pos[i] += 1
 
 
             for i in xrange(0,2):
@@ -280,6 +286,8 @@ class Character(Widget):
         logger.info(shadow.pos)
 
         shadow.pos = ret["ennemy"]
+
+        # capInfo.update(ret["cap"])
 
         if ret["beep"]:
             game.playBeep()
@@ -396,13 +404,25 @@ class Terminal(Widget):
 
 
 class Shadow(Widget):
-    pass
+    def __init__(self, sprite, **kwargs):
+        self.sprite = sprite
+        super(Shadow, self).__init__(**kwargs)
 
 
 class Mine(Widget):
     def __init__(self, pos, **kwargs):
         self.pos = pos[0]-10, pos[1]-10;
         super(Mine, self).__init__(**kwargs)
+
+class CapInfo(Widget):
+    percentage = StringProperty("0%")
+
+    def __init__(self, **kwargs):
+        super(CapInfo, self).__init__(**kwargs)
+
+    def update(self, newValue):
+        self.percentage = str(newValue)+'%'
+
 
 
 class Timer(Widget):
@@ -435,6 +455,7 @@ class Timer(Widget):
             game.end()
 
 Factory.register("MapView", MapView)
+Factory.register("Shadow", Shadow)
 
 
 class SpylightApp(App):
@@ -446,7 +467,7 @@ class SpylightApp(App):
         return logger
 
     def build(self):
-        global map, logger, clientNetworker, game
+        global map, logger, clientNetworker, game, shadow
         logger = self.initLogger()
 
 
@@ -458,10 +479,12 @@ class SpylightApp(App):
 
         if character == 'merc':
             char = Mercenary()
+            shadow = Shadow('art/spy.png')
             if server:
                 clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
         else:
             char = Spy()
+            shadow = Shadow('art/mercenary.png')
             if server:
                 clientNetworker = ClientNetworker(np.SPY_TYPE)
 
@@ -478,9 +501,6 @@ class SpylightApp(App):
 
 if __name__ == '__main__':
     global character, server
-
-    Config.set('graphics', 'width', '2000')
-    Config.set('graphics', 'height', '1000')
 
     if len(sys.argv) >= 2:
         character = sys.argv[1]
