@@ -21,6 +21,10 @@ import network_protocol as np
 from client import ClientNetworker
 from slmap import SLMap
 
+
+from kivy.config import Config
+
+
 map = None
 character = None
 server = None
@@ -266,9 +270,11 @@ class Character(Widget):
         global game
         ret = clientNetworker.recv()
 
-        shadow.pos = ret["ennemy"]
-
         logger.info(ret)
+
+        logger.info(shadow.pos)
+
+        shadow.pos = ret["ennemy"]
 
         if ret["beep"]:
             game.playBeep()
@@ -283,6 +289,7 @@ class Character(Widget):
 
         if ret["lost"]:
             sys.exit()
+
     def spawn(self):
         self.pos = self.spawnPoint
 
@@ -303,7 +310,9 @@ class Spy(Character):
             game.stopModem()
             if server:
                 clientNetworker.desactivate()
+
         super(Spy,self).update(useless, **kwargs)
+
         if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
             self.sprite = 'art/spy0.png'
         elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
@@ -462,6 +471,10 @@ class SpylightApp(App):
 
 if __name__ == '__main__':
     global character, server
+
+    Config.set('graphics', 'width', '2000')
+    Config.set('graphics', 'height', '1000')
+
     if len(sys.argv) >= 2:
         character = sys.argv[1]
 
