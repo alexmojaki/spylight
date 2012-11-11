@@ -50,7 +50,7 @@ class SpylightGame(Widget):
         self.soundBoom = SoundLoader.load("music/boom.wav")
 
         self.character = character
-        self.add_widget(MapView(map=map, character=self.character))
+        self.add_widget(MapView(map=map, character=self.character, shadow=shadow))
         self.add_widget(character)
         self.started = False
 
@@ -96,6 +96,7 @@ class MapView(Widget):
     height = NumericProperty(0)
     groundTexture = ObjectProperty(None)
     character = ObjectProperty(None)
+    shadow = ObjectProperty(None)
 
     def getTexture(self,name, size):
         filename = join('art', name+'.png')
@@ -105,19 +106,15 @@ class MapView(Widget):
         self.logger.info(filename)
         return texture
 
-    def __init__(self, map, character):
-        global shadow
+    def __init__(self, map, character, shadow):
         self.character = character
-
-        shadow = Shadow()
-        self.add_widget(shadow)
+        self.shadow = shadow
 
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
-
 
         for x in xrange(map.width):
             for y in xrange(map.height):
@@ -396,7 +393,9 @@ class Terminal(Widget):
 
 
 class Shadow(Widget):
-    pass
+    def __init__(self, sprite, **kwargs):
+        self.sprite = sprite
+        super(Shadow, self).__init__(**kwargs)
 
 
 class Mine(Widget):
@@ -435,6 +434,7 @@ class Timer(Widget):
             game.end()
 
 Factory.register("MapView", MapView)
+Factory.register("Shadow", Shadow)
 
 
 class SpylightApp(App):
@@ -446,7 +446,7 @@ class SpylightApp(App):
         return logger
 
     def build(self):
-        global map, logger, clientNetworker, game
+        global map, logger, clientNetworker, game, shadow
         logger = self.initLogger()
 
 
@@ -458,10 +458,12 @@ class SpylightApp(App):
 
         if character == 'merc':
             char = Mercenary()
+            shadow = Shadow('art/spy.png')
             if server:
                 clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
         else:
             char = Spy()
+            shadow = Shadow('art/mercenary.png')
             if server:
                 clientNetworker = ClientNetworker(np.SPY_TYPE)
 
@@ -478,9 +480,6 @@ class SpylightApp(App):
 
 if __name__ == '__main__':
     global character, server
-
-    Config.set('graphics', 'width', '2000')
-    Config.set('graphics', 'height', '1000')
 
     if len(sys.argv) >= 2:
         character = sys.argv[1]
