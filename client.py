@@ -15,8 +15,8 @@ class ClientNetworker(object):
             self.__player_data = np.MERCERNARY_TXT
         self.__reset_data()
 
-    def drop(self, id):
-        self.__drop_data = "\n" + np.OBJECT_TXT + " " + str(id)
+    def drop(self, obj_id):
+        self.__drop_data = "\n" + np.OBJECT_TXT + " " + str(obj_id)
 
     def shoot(self):
         self.__shoot_data = "\n" + np.SHOOT_TXT
@@ -53,7 +53,33 @@ class ClientNetworker(object):
         self.__run_data = ""
 
     def recv(self):
-        return np.recv_end(self.__s)
+        lines = [_.split(" ") for _ in np.recv_end(self.__s).strip().split("\n")]
+        res = {}
+        res["ennemy"] = (lines[0][0], lines[0][1])
+        l = len(lines)
+        i = 1
+
+        res["noise"] = 0
+        res["beep"] = 0
+        res["trapped"] = -1
+        res["dead"] = False
+        res["lost"] = False
+
+        while l > i:
+            if lines[i][0] == np.NOISE_TXT:
+                res["noise"] = int(lines[i][1])
+            elif lines[i][0] == np.BEEP_TXT:
+                res["beep"] = int(lines[i][1])
+            elif lines[i][0] == np.TRAPPED_TXT:
+                res["trapped"] = int(lines[i][1])
+            elif lines[i][0] == np.DEAD_TXT:
+                res["dead"] = True
+            elif lines[i][0] == np.DEAD_TXT:
+                res["lost"] = True
+            i += 1
+        
+        return res
+
 
 
 if __name__ == '__main__':
