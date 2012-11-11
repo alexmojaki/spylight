@@ -21,6 +21,7 @@ class Player(object):
         self.score = None
         self.mousePos = None
         self.running = True
+        self.capping = False
 
 
 class GameServerEngine(object):
@@ -31,6 +32,8 @@ class GameServerEngine(object):
     MIN_TRAP_DIST = int(1.2 * CELL_SIZE)
     SPY_INITIAL_LIVES = 3
     MERC_INITIAL_LIVES = 1
+    CAP_TIME = 4 # seconds
+    TIME_FREQ = 60 # 60 ticks by second
 
     (TRAP_FREE, TRAP_MINED, TRAP_DETECTED) = range(0, 3)
 
@@ -53,7 +56,6 @@ class GameServerEngine(object):
 
     def shoot(self, player):
         if player == self.merc:
-            #@TODO
             self.spy.lives -= 1
         else:
             self.logger.info("A spy tried to shoot!")
@@ -69,6 +71,12 @@ class GameServerEngine(object):
 
     def activate(self, player):
         print "Activate() at pos=" + str(player.pos) + "Not yet implemented" # @TODO
+        x = player.pos[0] / self.CELL_SIZE
+        y = player.pos[1] / self.CELL_SIZE
+        if player.capping != True:
+            player.cap = 0
+        if self.slm.getItem(x, y) == 0:
+            player.cap += 1
 
     def run(self, player):
         self.logger.info("Run() for player of type" + str(player.playerType))
@@ -186,6 +194,8 @@ class SLTCPRequestHandler(object):
                     self.gs.activate(player)
                 elif lines[i][0] == np.RUN_TXT:
                     self.gs.run(player)
+                else:
+                    player.capping = False # the player is not doing any of the previous ones, so it is obviously not capping (even in the following lines). THIS CONDITION HAS TO BE KEPT INE THE "ELSE" /!\
                 i += 1
 
             try:
@@ -198,7 +208,9 @@ class SLTCPRequestHandler(object):
                 rep += TRAPPED
                 if DEAD:
                     rep += "\n" + np.DEAD_TXT
-                
+                if player.capping:
+                    rep += "\n" + np.CAPTURE_TXT + " " + int(player.cap * 100 / (self.gs.TIME_FREQ * self.gs.CAP_TIME))
+
                 self.request.sendall(rep + np.MSG_END)
                 self.logger.info("Data sent: " + str(rep))
             except Exception as e:
