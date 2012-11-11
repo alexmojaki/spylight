@@ -4,6 +4,7 @@ from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty
 from kivy.clock import Clock
 
+
 class MyGrid(Widget):
     x1 = NumericProperty(150)
     y1 = NumericProperty(100)
