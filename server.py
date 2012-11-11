@@ -34,6 +34,8 @@ class GameServerEngine(object):
     def __init__(self):
         global MAP
         self.logger = logging.getLogger("gs.log")
+        self.logger.addHandler(logging.FileHandler("gs.log"))
+        self.logger.setLevel(logging.INFO)
         super(GameServerEngine, self).__init__()
         self.spy = Player(np.SPY_TYPE)
         self.spy.lives = self.SPY_INITIAL_LIVES
@@ -121,7 +123,14 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
     logger = logging.getLogger("sltcps.log")
     gs = GameServerEngine()
 
+    def __init(self):
+        if not self.__initialized:
+            self.__initialized = True
+            self.logger.addHandler(logging.FileHandler("sltcps.log"))
+            self.logger.setLevel(logging.INFO)
+
     def handle(self):
+        self.__init()
         # self.request is the TCP socket connected to the client
         
         while True:

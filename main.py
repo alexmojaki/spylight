@@ -177,6 +177,8 @@ class Character(Widget):
         maxVelocity = 3
         if self.running:
             maxVelocity = maxVelocity+self.runningBonus
+
+        logger.log('vitesse: ' + str(maxVelocity))
         deceleration = 1
         # print 'update', self.velocity
 
@@ -246,6 +248,8 @@ class Character(Widget):
         ret = clientNetworker.recv()
 
         shadow.pos = ret["ennemy"]
+
+        logger.info(ret)
 
         if ret["beep"]:
             game.playBeep()
@@ -323,14 +327,20 @@ class Wall(Widget):
 class Terminal(Widget):
     pass
 
+
 class Shadow(Widget):
     pass
+
 
 class Mine(Widget):
     def __init__(self, pos, **kwargs):
         self.pos = pos[0]-10, pos[1]-10;
         super(Mine, self).__init__(**kwargs)
 
+
+class Timer(Widget):
+    def __init__(self, **kwargs):
+        Clock()        
 
 Factory.register("MapView", MapView)
 
