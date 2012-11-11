@@ -40,6 +40,8 @@ class SpylightGame(Widget):
         self.soundBeep = SoundLoader.load("music/beep.wav")
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
+        self.soundModem = SoundLoader.load("music/modem.wav")
+        self.soundPunch = SoundLoader.load("music/punch.wav")
 
         shadow = Shadow()
         self.character = character
@@ -57,6 +59,15 @@ class SpylightGame(Widget):
 
     def playReload(self):
         self.soundReaload.play()
+
+    def playModem(self):
+        self.soundModem.play()
+
+    def stopModem(self):
+        self.soundModem.stop()
+
+    def playPunch(self):
+        self.soundPunch.play()
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -95,6 +106,7 @@ class MapView(Widget):
 
 
 class Character(Widget):
+    RESPAWN_TIME = 2 # in seconds
     x1 = NumericProperty(0)
     y1 = NumericProperty(0)
     x2 = NumericProperty(0)
@@ -112,7 +124,7 @@ class Character(Widget):
         self.dPressed = False
         self.ePressed = False
         self.velocity = Vector(0,0)
-
+        self.running = False
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self._keyboard.bind(on_key_up=self._on_keyboard_up)
@@ -125,29 +137,34 @@ class Character(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         pos2 = self.pos
         # Keycode is composed of an integer + a string
-        if keycode[1] == 'z':
+        if keycode[1] == 'z'or keycode[1] == 'up':
             self.zPressed = True
-        if keycode[1] == 'q':
+        if keycode[1] == 'q'or keycode[1] == 'left':
             self.qPressed = True
-        if keycode[1] == 's':
+        if keycode[1] == 's'or keycode[1] == 'down':
             self.sPressed = True
-        if keycode[1] == 'd':
+        if keycode[1] == 'd'or keycode[1] == 'right':
             self.dPressed = True
+        # logging.info(keycode[1])
+
+        if 'shift' in modifiers:
+            self.running = True
 
         return True
 
     def _on_keyboard_up(self, useless, keycode):
 
-        if keycode[1] == 'z':
+        if keycode[1] == 'z' or keycode[1] == 'up':
             self.zPressed = False
-        if keycode[1] == 'q':
+        if keycode[1] == 'q' or keycode[1] == 'left':
             self.qPressed = False
-        if keycode[1] == 's':
+        if keycode[1] == 's' or keycode[1] == 'down':
             self.sPressed = False
-        if keycode[1] == 'd':
+        if keycode[1] == 'd' or keycode[1] == 'right':
             self.dPressed = False
         if keycode[1] == 'e':
             self.activate()
+
 
         return True
 
@@ -158,6 +175,10 @@ class Character(Widget):
     def update(self, useless, **kwargs):
 
         maxVelocity = 3
+        if self.running:
+            maxVelocity = maxVelocity+self.runningBonus
+
+        logger.log('vitesse: ' + str(maxVelocity))
         deceleration = 1
         # print 'update', self.velocity
 
@@ -200,6 +221,7 @@ class Character(Widget):
         if server:
             self.notifyServer()
 
+        self.running = False;
         # print 'Position',self.pos, 'Triangle', self.points
 
     def canGo(self,pos2):
@@ -216,58 +238,86 @@ class Character(Widget):
         clientNetworker.pos(*self.pos)
         clientNetworker.mouse_pos(*Window.mouse_pos)
         clientNetworker.send()
+        if self.running:
+            clientNetworker.run()
 
         self.displayReception()
-    
+
     def displayReception(self):
         global game
         ret = clientNetworker.recv()
 
-        shadow.pos = ret.pos
+        shadow.pos = ret["ennemy"]
 
-        if ret.beep:
+        logger.info(ret)
+
+        if ret["beep"]:
             game.playBeep()
 
-        if ret.gameOver:
-            pass
+        if ret["dead"]:
+            game.playShot()
+            self.pos = (-42, -42)
+            Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
+            
+            # self.deathLabel = Label("Boom!")
+            # addWidget(deathLabel)
 
-
+        if ret["lost"]:
+            sys.exit()
+    def spawn(self):
+        self.pos = self.spawnPoint
 
 
 class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
-        self.pos = (map.spawnPoints[map.SPY_SPAWN])
+        self.runningBonus = 2
+        self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
+        self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
+        self.capturing = False
 
     def update(self, useless, **kwargs):
+        if self.capturing and (self.zPressed or self.qPressed or self.sPressed or self.dPressed):
+            self.capturing = False
+            game.stopModem()
+            if server:
+                clientNetworker.desactivate()
         super(Spy,self).update(useless, **kwargs)
-        logger.info('Spy is updating!')
 
     def activate(self):
         super(Spy,self).activate()
-        clientNetworker.activate()
+        game.playModem()
+        self.capturing = True
         logger.info('Spy is activating!')
+        if server:
+            clientNetworker.activate()
 
 
 class Mercenary(Character):
     def __init__(self, **kwargs):
         global map
         logger.info('init mercenary')
+        self.runningBonus = 0
         self.sprite = 'art/mercenary.png'
-        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN])
+        self.spawnPoint = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
+        self.pos = self.spawnPoint
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
+        self.running = True
         super(Mercenary,self).update(useless, **kwargs)
-        logger.info('Mercenary is updating!')
 
     def activate(self):
         super(Mercenary,self).activate()
-        clientNetworker.drop(np.OT_MINE)
-        # Mine()
+        
         logger.info('Mercenary is activating!')
+        game.add_widget(Mine(self.center))
+
+        if server:
+            clientNetworker.drop(np.OT_MINE)
+            
 
 
 class Wall(Widget):
@@ -277,12 +327,20 @@ class Wall(Widget):
 class Terminal(Widget):
     pass
 
+
 class Shadow(Widget):
     pass
 
-class Mine(Widget):
-    pass
 
+class Mine(Widget):
+    def __init__(self, pos, **kwargs):
+        self.pos = pos[0]-10, pos[1]-10;
+        super(Mine, self).__init__(**kwargs)
+
+
+class Timer(Widget):
+    def __init__(self, **kwargs):
+        Clock()        
 
 Factory.register("MapView", MapView)
 
@@ -299,9 +357,6 @@ class SpylightApp(App):
         global map, logger, clientNetworker, game
         logger = self.initLogger()
 
-        if server:
-            clientNetworker = ClientNetworker(np.SPY_TYPE)
-            clientNetworker.connect(server, 9999)
 
         map = SLMap("test.map")
         logger.info("Map loaded: " + map.title)
@@ -310,12 +365,16 @@ class SpylightApp(App):
         logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
 
         if character == 'merc':
-            pass
             char = Mercenary()
+            if server:
+                clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
         else:
             char = Spy()
+            if server:
+                clientNetworker = ClientNetworker(np.SPY_TYPE)
 
-
+        if server:
+            clientNetworker.connect(server, 9999)
 
         game = SpylightGame(character=char, map=map)
 

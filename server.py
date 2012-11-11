@@ -1,8 +1,13 @@
 #!/usr/bin/python
 import SocketServer
 import sys
-import network_protocol as np
 from math import sqrt
+import logging
+
+import network_protocol as np
+from slmap import SLMap
+
+MAP = ""
 
 class Player(object):
     """docstring for Player"""
@@ -21,35 +26,45 @@ class GameServerEngine(object):
     MIN_NOISE_DIST = 4
     MIN_BEEP_DIST = 4
     MIN_TRAP_DIST = int(1.2 * CELL_SIZE)
+    SPY_INITIAL_LIVES = 3
+    MERC_INITIAL_LIVES = 1
 
-    (OT_MINE, OT_MIRROR, OT_DETECTOR) = range(0, 3)
     (TRAP_FREE, TRAP_MINED, TRAP_DETECTED) = range(0, 3)
 
     def __init__(self):
+        global MAP
+        self.logger = logging.getLogger("gs.log")
+        self.logger.addHandler(logging.FileHandler("gs.log"))
+        self.logger.setLevel(logging.INFO)
         super(GameServerEngine, self).__init__()
         self.spy = Player(np.SPY_TYPE)
+        self.spy.lives = self.SPY_INITIAL_LIVES
         self.merc = Player(np.MERCENARY_TYPE)
+        self.merc.lives = self.MERC_INITIAL_LIVES
         self.mines = []
         self.detectors = []
+        self.slm = SLMap(MAP)
+        self.walls = self.slm.walls
 
     def shoot(self, player):
         if player == self.merc:
-            print "Not yet implemented" # @TODO
+            #@TODO
+            self.spy.lives -= 1
         else:
-            print "A spy tried to shoot!"
+            self.logger.info("A spy tried to shoot!")
 
     def drop(self, player, objType):
         print "Drop objType=", objType, "Not yet implemented"# @TODO
-        if objType == self.OT_MINE:
+        if objType == np.OT_MINE:
             self.mines.append((player.pos.x, player.pos.y))
-        elif objType == self.OT_DETECTOR:
+        elif objType == np.OT_DETECTOR:
             self.detectors.append((player.pos.x, player.pos.y))
 
     def activate(self, player):
         print "Activate() at pos=", player.pos, "Not yet implemented" # @TODO
 
     def run(self, player):
-        print "Run() for player of type", player.playerType
+        self.logger.info("Run() for player of type", player.playerType)
         player.running = True
 
     def beep_level(self, p1):
@@ -66,12 +81,31 @@ class GameServerEngine(object):
             return dist
 
     def trapped(self, player):
-        for m in self.mines:
-            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])) <= self.MIN_TRAP_DIST:
-                return self.TRAP_MINED
-        for m in self.detectors:
-            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])) <= self.MIN_TRAP_DIST:
-                return self.TRAP_DETECTED
+        result = False
+        i = 0
+        l = len(self.mines)
+        while i < l:
+            m = self.mines[i]
+            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])**2) <= self.MIN_TRAP_DIST:
+                del self.mines[i] # This mine just exploded to spy's face, delete it (it multiple mines should explode, they will all blow up)
+                result = self.TRAP_MINED
+            i += 1
+        if result != False:
+            player.lives -= 1
+            return self.TRAP_MINED
+        i = 0
+        l = len(self.detectors)
+        while i < l:
+            m = self.detectors[i]
+            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])**2) <= self.MIN_TRAP_DIST:
+                del self.detectors[i]
+            i += 1
+        
+        if result != False:
+            return self.TRAP_DETECTED
+        else:
+            return self.TRAP_FREE
+
 
 
 class SLTCPServer(SocketServer.BaseRequestHandler):
@@ -88,6 +122,9 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
     def __init(self):
         if not self.__initialized:
             self.__initialized = True
+            self.logger = logging.getLogger("sltcps.log")
+            self.logger.addHandler(logging.FileHandler("sltcps.log"))
+            self.logger.setLevel(logging.INFO)
             self.gs = GameServerEngine()
 
     def handle(self):
@@ -95,18 +132,19 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
         # self.request is the TCP socket connected to the client
         
         while True:
+            rep = ""
             try:
                 self.data = np.recv_end(self.request)
-                print "{} wrote:".format(self.client_address[0])
-                print self.data
+                self.logger.info("{} wrote:".format(self.client_address[0]))
+                self.logger.info( self.data)
             except Exception as e:
-                print "Socket error 2"
-                print e
+                self.logger.info( "Socket error 2")
+                self.logger.info(e)
                 break
 
             lines = [_.strip().split(" ") for _ in self.data.strip().split("\n")]
 
-            print "lines:", lines
+            self.logger.info( "lines:" + str(lines))
 
             if lines[0][0] == np.SPY_TXT:
                 player = self.gs.spy
@@ -118,17 +156,18 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
             player.pos = (lines[1][0], lines[1][1])
             player.mousePos = (lines[2][0], lines[2][1])
 
-            trapped = self.gs.trapped(player)
-
-            if trapped != self.gs.TRAP_FREE:
-                pass # @TODO
+            TRAPPED = ""
+            if player == self.gs.spy:
+                trapped = self.gs.trapped(player)
+                if trapped != self.gs.TRAP_FREE:
+                    TRAPPED = "\n" + np.TRAPPED_TXT + " " + trapped
 
             l = len(lines)
             i = 3
             while l > i:
-                print lines[i][0]
-                print np.ACTIVATE_TXT
-                print lines[i][0] == np.ACTIVATE_TXT
+                self.logger.info(lines[i][0])
+                self.logger.info(np.ACTIVATE_TXT)
+                self.logger.info(lines[i][0] == np.ACTIVATE_TXT)
 
                 if lines[i][0] == np.SHOOT_TXT:
                     self.gs.shoot(player)
@@ -141,30 +180,44 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 i += 1
 
             try:
-                rep = ""
+                
                 if ennemy.pos is not None: # if we've already instantiated the ennemy position
                     rep += str(ennemy.pos.x) + " " + str(ennemy.pos.y)
                     rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
                     rep += "\n" + np.NOISE_TXT + " " + str(self.gs.noise_level(player, ennemy))
+                    rep += TRAPPED
+                else:
+                    rep += "-42 -42"
                 self.request.sendall(rep + np.MSG_END)
-                print "Data sent: ", rep
+                self.logger.info("Data sent: " + str(rep))
             except Exception as e:
-                print "Socket error 3"
-                print str(e)
+                self.logger.info("Socket error 3")
+                self.logger.info(str(e))
                 break
             
 
-if __name__ == "__main__":
+if __name__ == "__main__": # for debugging purposes
     if len(sys.argv) > 1:
-        print sys.argv[1]
-        PORT = int(sys.argv[1])
+        MAP = sys.argv[1]
+    else:
+        print "No map provided"
+        sys.exit()
+
+    if len(sys.argv) > 2:
+        HOST = sys.argv[2]
+    else:
+        HOST = "localhost"
+
+    if len(sys.argv) > 3:
+        print sys.argv[3]
+        PORT = int(sys.argv[3])
     else:
         PORT = None
     if PORT is None or PORT < 0:
         PORT = 9999
     
-    HOST = "localhost"
-
+    print "Connecting to", HOST, PORT
+    
     # Create the server, binding to localhost on port 9999
     server = SocketServer.TCPServer((HOST, PORT), SLTCPServer)
 

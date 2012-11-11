@@ -16,6 +16,14 @@
             size: self.size
             source: 'art/wall.png'
 
+<Mine>
+    size: 10,10
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'art/mine.png'
+
 <Terminal>:
     size: 32, 32
     canvas:
@@ -27,7 +35,8 @@
 <Shadow>:
     size: 10, 10
     canvas:
-        Color(0.5,0.5,0.5)
+        Color:
+            rgb: 1, 0, 0
         Ellipse:
             pos: self.pos
             size: self.size

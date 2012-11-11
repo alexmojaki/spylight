@@ -1,22 +1,27 @@
 #!/usr/bin/python
 import socket
 import sys
-import network_protocol as np
 from time import sleep
+import logging
+
+import network_protocol as np
 
 class ClientNetworker(object):
     """docstring for ClientNetworker"""
 
     def __init__(self, playerType):
         super(ClientNetworker, self).__init__()
+        self.logger = logging.getLogger("cn.log")
+        self.logger.addHandler(logging.FileHandler("cn.log"))
+        self.logger.setLevel(logging.INFO)
         if playerType == np.SPY_TYPE:
             self.__player_data = np.SPY_TXT
         elif playerType == np.MERCENARY_TYPE:
             self.__player_data = np.MERCERNARY_TXT
         self.__reset_data()
 
-    def drop(self, id):
-        self.__drop_data = "\n" + np.OBJECT_TXT + " " + str(id)
+    def drop(self, obj_id):
+        self.__drop_data = "\n" + np.OBJECT_TXT + " " + str(obj_id)
 
     def shoot(self):
         self.__shoot_data = "\n" + np.SHOOT_TXT
@@ -39,7 +44,9 @@ class ClientNetworker(object):
 
     def send(self):
         tosend = self.__player_data + self.__pos_data + self.__mouse_pos_data + self.__run_data + self.__shoot_data + self.__activate_data + self.__drop_data + np.MSG_END
-        print "Sending:", tosend
+        
+        self.logger.info("Sending:" + str(tosend))
+
         self.__s.sendall(tosend)
         # Clear the values of the data so that we don't resend them at next round
         # We don't do it for __pos_data as, at worst, the player will keep its mouse position
@@ -53,10 +60,40 @@ class ClientNetworker(object):
         self.__run_data = ""
 
     def recv(self):
-        return np.recv_end(self.__s)
+        res = {}
+        res["noise"] = 0
+        res["beep"] = 0
+        res["trapped"] = -1
+        res["dead"] = False
+        res["lost"] = False
+
+        data = np.recv_end(self.__s).strip()
+        if data == "":
+            return res
+        lines = [_.split(" ") for _ in data.split("\n")]
+
+        res["ennemy"] = (lines[0][0], lines[0][1])
+        l = len(lines)
+        i = 1
+
+        while l > i:
+            if lines[i][0] == np.NOISE_TXT:
+                res["noise"] = int(lines[i][1])
+            elif lines[i][0] == np.BEEP_TXT:
+                res["beep"] = int(lines[i][1])
+            elif lines[i][0] == np.TRAPPED_TXT:
+                res["trapped"] = int(lines[i][1])
+            elif lines[i][0] == np.DEAD_TXT:
+                res["dead"] = True
+            elif lines[i][0] == np.DEAD_TXT:
+                res["lost"] = True
+            i += 1
+
+        return res
 
 
-if __name__ == '__main__':
+
+if __name__ == '__main__': # debugging purposes
     cn = ClientNetworker(np.SPY_TYPE)
     cn.connect("localhost", 9999)
     x, y = 0, 0
