@@ -42,6 +42,7 @@ class SpylightGame(Widget):
         self.soundReload = SoundLoader.load("music/reload.wav")
         self.soundModem = SoundLoader.load("music/modem.wav")
         self.soundPunch = SoundLoader.load("music/punch.wav")
+        self.soundBoom = SoundLoader.load("music/boom.wav")
 
         shadow = Shadow()
         self.character = character
@@ -69,10 +70,14 @@ class SpylightGame(Widget):
     def playPunch(self):
         self.soundPunch.play()
 
+    def playBoom(self):
+        self.soundBoom.play()
+
     def end(self):
         game.playShot()
         print "The mercenary won!"
         sys.exit()
+
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -217,10 +222,10 @@ class Character(Widget):
             elif self.velocity[i] > 0:
                 self.velocity[i] -= deceleration
 
-        heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
+        self.heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
         self.x1, self.y1 = self.center_x, self.center_y
-        self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
-        self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
+        self.x2, self.y2 = Vector(-50, 100).rotate(self.heading) + [self.center_x, self.center_y]
+        self.x3, self.y3 = Vector(50, 100).rotate(self.heading) + [self.center_x, self.center_y]
 
         if server:
             self.notifyServer()
@@ -262,7 +267,7 @@ class Character(Widget):
             game.playShot()
             self.pos = (-42, -42)
             Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
-            
+
             # self.deathLabel = Label("Boom!")
             # addWidget(deathLabel)
 
@@ -289,6 +294,22 @@ class Spy(Character):
             if server:
                 clientNetworker.desactivate()
         super(Spy,self).update(useless, **kwargs)
+        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
+            self.sprite = 'art/spy0.png'
+        elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
+            self.sprite = 'art/spy45.png'
+        elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
+            self.sprite = 'art/spy90.png'
+        elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
+            self.sprite = 'art/spy135.png'
+        elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
+            self.sprite = 'art/spy180.png'
+        elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
+            self.sprite = 'art/spy225.png'
+        elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
+            self.sprite = 'art/spy270.png'
+        else:
+            self.sprite = 'art/spy315.png'
 
     def activate(self):
         super(Spy,self).activate()
@@ -312,16 +333,32 @@ class Mercenary(Character):
     def update(self, useless, **kwargs):
         self.running = True
         super(Mercenary,self).update(useless, **kwargs)
+        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
+            self.sprite = 'art/mercenary0.png'
+        elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
+            self.sprite = 'art/mercenary45.png'
+        elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
+            self.sprite = 'art/mercenary90.png'
+        elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
+            self.sprite = 'art/mercenary135.png'
+        elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
+            self.sprite = 'art/mercenary180.png'
+        elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
+            self.sprite = 'art/mercenary225.png'
+        elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
+            self.sprite = 'art/mercenary270.png'
+        else:
+            self.sprite = 'art/mercenary315.png'
 
     def activate(self):
         super(Mercenary,self).activate()
-        
+
         logger.info('Mercenary is activating!')
         game.add_widget(Mine(self.center))
 
         if server:
             clientNetworker.drop(np.OT_MINE)
-            
+
 
 
 class Wall(Widget):
@@ -346,10 +383,8 @@ class Timer(Widget):
     time = StringProperty("00:00")
 
     def __init__(self, **kwargs):
-        # global game
         super(Timer, self).__init__(**kwargs)
         Clock.schedule_interval(self.updateTime, 1)
-        # self.clock = Clock.schedule_once(game.end, 1000.0 * 60.0)
         self.secs = 0
         self.mins = 0
 
@@ -368,7 +403,6 @@ class Timer(Widget):
 
         if self.secs == 5:
             game.end()
-
 
 Factory.register("MapView", MapView)
 
