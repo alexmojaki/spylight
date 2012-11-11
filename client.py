@@ -12,6 +12,8 @@ class ClientNetworker(object):
     def __init__(self, playerType):
         super(ClientNetworker, self).__init__()
         self.logger = logging.getLogger("cn.log")
+        self.logger.addHandler(logging.FileHandler("cn.log"))
+        self.logger.setLevel(logging.INFO)
         if playerType == np.SPY_TYPE:
             self.__player_data = np.SPY_TXT
         elif playerType == np.MERCENARY_TYPE:
