@@ -192,16 +192,7 @@ class Character(Widget):
             elif self.velocity[i] > 0:
                 self.velocity[i] -= deceleration
 
-        x, y = Window.mouse_pos
-        x -= self.center_x
-        y -= self.center_y
-        if x == 0.0:
-            heading = 0.0
-        elif x < 0.0:
-            heading = math.degrees(math.atan(float(y) / float(x))) + 90.0
-        else:
-            heading = math.degrees(math.atan(float(y) / float(x))) - 90.0
-
+        heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
         self.x1, self.y1 = self.center_x, self.center_y
         self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
         self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]

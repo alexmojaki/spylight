@@ -3,7 +3,9 @@
         StencilPush
         # create a rectangle mask, from pos 100, 100, with a 100, 100 size.
         Mesh:
-            points: self.points
+            vertices: self.vertices
+            indices: self.indices
+            mode: 'triangle_fan'
 
         StencilUse
         # we want to show a big green rectangle, however, the previous stencil
