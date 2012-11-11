@@ -41,6 +41,7 @@ class SpylightGame(Widget):
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
         self.soundModem = SoundLoader.load("music/modem.wav")
+        self.soundPunch = SOundLoader.load("music/punch.wav")
 
         shadow = Shadow()
         self.character = character
@@ -64,6 +65,9 @@ class SpylightGame(Widget):
 
     def stopModem(self):
         self.soundModem.stop()
+
+    def playPunch(self):
+        self.soundPunch.play()
 
 class MapView(Widget):
     width = NumericProperty(0)
