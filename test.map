@@ -6,6 +6,16 @@ Carte de test
 # Map size (width, height) in blocks (row, col)
 12 12
 
+# sp: spawn point directive
+# x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
+# type can be:
+# 0=Mercenary spawn point
+# 1=Spy spawn point
+
+sp:
+5,8,0
+10,1,1
+
 # wa: wall directive
 # x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
 # type can be:

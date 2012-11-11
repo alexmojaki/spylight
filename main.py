@@ -13,13 +13,12 @@ from kivy.vector import Vector
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
 from kivy.factory import Factory
-# from client import ClientNetworker
 import sys
-
-
 import logging
 import math
 
+import network_protocol as np
+from client import ClientNetworker
 from slmap import SLMap
 
 map = None
@@ -27,19 +26,24 @@ character = None
 server = None
 logger = None
 CELL_SIZE = 32
+clientNetworker = None
+game = None
+shadow = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
     def __init__(self, character, map, **kwargs):
+        global shadow
         super(SpylightGame, self).__init__(**kwargs)
 
         self.soundBeep = SoundLoader.load("music/beep.wav")
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
 
+        shadow = Shadow()
         self.character = character
-        self.add_widget(MapView(map=map, spy=self.character))
+        self.add_widget(MapView(map=map, character=self.character))
         self.add_widget(character)
 
     def update(self, useless, **kwargs):
@@ -58,7 +62,7 @@ class MapView(Widget):
     width = NumericProperty(0)
     height = NumericProperty(0)
     groundTexture = ObjectProperty(None)
-    spy = ObjectProperty(None)
+    character = ObjectProperty(None)
 
     def getTexture(self,name, size):
         filename = join('art', name+'.png')
@@ -68,34 +72,27 @@ class MapView(Widget):
         self.logger.info(filename)
         return texture
 
-    def __init__(self, map, spy):
-        self.spy = spy
+    def __init__(self, map, character):
+        self.character = character
+
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
-        # ground = self.getTexture(name='ground', size=(32,32))
-        # wall = self.getTexture(name='wall', size=(32,32))
 
-        # print spy.points
-
-        # with self.canvas:
-            # StencilPush()
-            # Triangle(points=spy.points)
-            # StencilUse()
-            # Rectangle(pos=(0,0), size=(self.width, self.height), texture=self.groundTexture)
-            # StencilUnUse()
-            # # Triangle(points=spy.points)
-            # StencilPop()
-
-        # with self.canvas:
         for x in xrange(map.width):
             for y in xrange(map.height):
                 if map.getWallType(x, y) != -1:
                     wall = Wall()
                     wall.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(wall)
+                if map.getItem(x,y) == 0:
+                    term = Terminal()
+                    term.pos = (x*CELL_SIZE, y*CELL_SIZE)
+                    self.add_widget(term)
+
+
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -113,7 +110,7 @@ class Character(Widget):
         self.qPressed = False
         self.sPressed = False
         self.dPressed = False
-
+        self.ePressed = False
         self.velocity = Vector(0,0)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -136,8 +133,6 @@ class Character(Widget):
             self.sPressed = True
         if keycode[1] == 'd':
             self.dPressed = True
-        if keycode[1] == 'e':
-            self.activate()
 
         return True
 
@@ -151,11 +146,14 @@ class Character(Widget):
             self.sPressed = False
         if keycode[1] == 'd':
             self.dPressed = False
+        if keycode[1] == 'e':
+            self.activate()
 
         return True
 
     def activate(self):
-        logger.info("L O L")
+        pass
+
 
     def update(self, useless, **kwargs):
 
@@ -194,19 +192,13 @@ class Character(Widget):
             elif self.velocity[i] > 0:
                 self.velocity[i] -= deceleration
 
-        x, y = Window.mouse_pos
-        x -= self.center_x
-        y -= self.center_y
-        if x == 0.0:
-            heading = 0.0
-        elif x < 0.0:
-            heading = math.degrees(math.atan(float(y) / float(x))) + 90.0
-        else:
-            heading = math.degrees(math.atan(float(y) / float(x))) - 90.0
-
+        heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
         self.x1, self.y1 = self.center_x, self.center_y
         self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
         self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
+
+        if server:
+            self.notifyServer()
 
         # print 'Position',self.pos, 'Triangle', self.points
 
@@ -220,10 +212,33 @@ class Character(Widget):
 
         return ret
 
+    def notifyServer(self):
+        clientNetworker.pos(*self.pos)
+        clientNetworker.mouse_pos(*Window.mouse_pos)
+        clientNetworker.send()
+
+        self.displayReception()
+    
+    def displayReception(self):
+        global game
+        ret = clientNetworker.recv()
+
+        shadow.pos = ret.pos
+
+        if ret.beep:
+            game.playBeep()
+
+        if ret.gameOver:
+            pass
+
+
+
+
 class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
+        self.pos = (map.spawnPoints[map.SPY_SPAWN])
         super(Spy, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
@@ -232,12 +247,16 @@ class Spy(Character):
 
     def activate(self):
         super(Spy,self).activate()
+        clientNetworker.activate()
         logger.info('Spy is activating!')
+
 
 class Mercenary(Character):
     def __init__(self, **kwargs):
+        global map
         logger.info('init mercenary')
         self.sprite = 'art/mercenary.png'
+        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN])
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
@@ -246,12 +265,27 @@ class Mercenary(Character):
 
     def activate(self):
         super(Mercenary,self).activate()
+        clientNetworker.drop(np.OT_MINE)
+        # Mine()
         logger.info('Mercenary is activating!')
+
 
 class Wall(Widget):
     pass
 
+
+class Terminal(Widget):
+    pass
+
+class Shadow(Widget):
+    pass
+
+class Mine(Widget):
+    pass
+
+
 Factory.register("MapView", MapView)
+
 
 class SpylightApp(App):
 
@@ -262,20 +296,26 @@ class SpylightApp(App):
         return logger
 
     def build(self):
-        global map, logger
+        global map, logger, clientNetworker, game
         logger = self.initLogger()
+
+        if server:
+            clientNetworker = ClientNetworker(np.SPY_TYPE)
+            clientNetworker.connect(server, 9999)
 
         map = SLMap("test.map")
         logger.info("Map loaded: " + map.title)
         logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
-        logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
+        logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
 
         if character == 'merc':
             pass
             char = Mercenary()
         else:
             char = Spy()
+
+
 
         game = SpylightGame(character=char, map=map)
 
@@ -287,6 +327,8 @@ if __name__ == '__main__':
     global character, server
     if len(sys.argv) >= 2:
         character = sys.argv[1]
+
+    if len(sys.argv) >= 3:
         server = sys.argv[2]
 
     SpylightApp().run()
