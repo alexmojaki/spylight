@@ -41,8 +41,15 @@
             pos: self.pos
             size: self.size
 
-<MapView>:
+<Timer>:
+    size: 100, 40
+    Label:
+        pos:0,0
+        size:root.size
+        text:root.time
 
+
+<MapView>:
     canvas:
         StencilPush
         Triangle:
