@@ -14,7 +14,7 @@ Carte de test 2
 
 sp:
 5,8,0
-10,1,1
+28,18,1
 
 # wa: wall directive
 # x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
@@ -184,7 +184,37 @@ wa:
 9,16,12
 5,17,15
 
-3,15,5
+9,12,0
+
+16,3,12
+15,3,5
+15,4,4
+14,4,5
+14,5,15
+
+15,8,12
+14,8,5
+14,9,2
+14,10,7
+14,11,15
+15,10,1
+16,10,12
+
+26,3,13
+26,4,2
+26,5,2
+26,6,2
+26,7,2
+26,8,2
+26,9,2
+26,10,11
+25,10,14
+27,10,12
+26,11,2
+26,12,2
+26,13,2
+26,14,3
+27,14,12
 
 # it: item directive
 # x, y, t: x=horizontal-pos, y=vertical-pos, t=type. (0, 0) is the bottom-right corner
@@ -194,3 +224,4 @@ wa:
 it:
 4,8,0
 4,17,0
+27,13,0
