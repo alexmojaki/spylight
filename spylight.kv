@@ -11,14 +11,22 @@
 
 <Wall>:
     size: 32, 32
-
     canvas:
         Rectangle:
             pos: self.pos
             size: self.size
             source: 'art/wall.png'
 
+<Terminal>:
+    size: 32, 32
+    canvas:
+        Rectangle:
+            pos: self.pos[0]+8, self.pos[1] + 8
+            size: 16,16
+            source: 'art/terminal.png'
+
 <MapView>:
+
     canvas:
         StencilPush
         Triangle:

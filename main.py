@@ -13,13 +13,12 @@ from kivy.vector import Vector
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
 from kivy.factory import Factory
-# from client import ClientNetworker
 import sys
-
-
 import logging
 import math
 
+import network_protocol as np
+from client import ClientNetworker
 from slmap import SLMap
 
 map = None
@@ -27,6 +26,7 @@ character = None
 server = None
 logger = None
 CELL_SIZE = 32
+clientNetworker = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
@@ -70,32 +70,23 @@ class MapView(Widget):
 
     def __init__(self, map, spy):
         self.spy = spy
+
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
-        # ground = self.getTexture(name='ground', size=(32,32))
-        # wall = self.getTexture(name='wall', size=(32,32))
 
-        # print spy.points
-
-        # with self.canvas:
-            # StencilPush()
-            # Triangle(points=spy.points)
-            # StencilUse()
-            # Rectangle(pos=(0,0), size=(self.width, self.height), texture=self.groundTexture)
-            # StencilUnUse()
-            # # Triangle(points=spy.points)
-            # StencilPop()
-
-        # with self.canvas:
         for x in xrange(map.width):
             for y in xrange(map.height):
                 if map.getWallType(x, y) != -1:
                     wall = Wall()
                     wall.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(wall)
+                if map.getItem(x,y) == 0:
+                    term = Terminal()
+                    term.pos = (x*CELL_SIZE, y*CELL_SIZE)
+                    self.add_widget(term)
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -113,7 +104,7 @@ class Character(Widget):
         self.qPressed = False
         self.sPressed = False
         self.dPressed = False
-
+        self.ePressed = False
         self.velocity = Vector(0,0)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -156,6 +147,8 @@ class Character(Widget):
 
     def activate(self):
         logger.info("L O L")
+        self.ePressed = True
+
 
     def update(self, useless, **kwargs):
 
@@ -199,6 +192,9 @@ class Character(Widget):
         self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
         self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
 
+        if server:
+            self.notifyServer()
+
         # print 'Position',self.pos, 'Triangle', self.points
 
     def canGo(self,pos2):
@@ -210,6 +206,15 @@ class Character(Widget):
         logger.debug(pos2, (pos2[0]+margin)/CELL_SIZE,(pos2[1]+margin)/CELL_SIZE)
 
         return ret
+
+    def notifyServer(self):
+        clientNetworker.pos(*self.pos)
+        clientNetworker.mouse_pos(*Window.mouse_pos)
+        if self.ePressed: 
+            clientNetworker.activate()
+        clientNetworker.send()
+        clientNetworker.recv()
+
 
 class Spy(Character):
     def __init__(self, **kwargs):
@@ -225,6 +230,7 @@ class Spy(Character):
         super(Spy,self).activate()
         logger.info('Spy is activating!')
 
+
 class Mercenary(Character):
     def __init__(self, **kwargs):
         logger.info('init mercenary')
@@ -239,10 +245,17 @@ class Mercenary(Character):
         super(Mercenary,self).activate()
         logger.info('Mercenary is activating!')
 
+
 class Wall(Widget):
     pass
 
+
+class Terminal(Widget):
+    pass
+
+
 Factory.register("MapView", MapView)
+
 
 class SpylightApp(App):
 
@@ -253,14 +266,18 @@ class SpylightApp(App):
         return logger
 
     def build(self):
-        global map, logger
+        global map, logger, clientNetworker
         logger = self.initLogger()
+
+        if server:
+            clientNetworker = ClientNetworker(np.SPY_TYPE)
+            clientNetworker.connect(server, 9999)
 
         map = SLMap("test.map")
         logger.info("Map loaded: " + map.title)
         logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
-        logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
+        logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
 
         if character == 'merc':
             pass
@@ -278,6 +295,8 @@ if __name__ == '__main__':
     global character, server
     if len(sys.argv) >= 2:
         character = sys.argv[1]
+
+    if len(sys.argv) >= 3:
         server = sys.argv[2]
 
     SpylightApp().run()
