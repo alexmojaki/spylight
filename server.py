@@ -6,6 +6,8 @@ from math import sqrt
 import network_protocol as np
 from slmap import SLMap
 
+MAP = ""
+
 class Player(object):
     """docstring for Player"""
     def __init__(self, playerType):
@@ -29,14 +31,15 @@ class GameServerEngine(object):
     (TRAP_FREE, TRAP_MINED, TRAP_DETECTED) = range(0, 3)
 
     def __init__(self):
+        global MAP
         super(GameServerEngine, self).__init__()
         self.spy = Player(np.SPY_TYPE)
         self.spy.lives = self.SPY_INITIAL_LIVES
-        self.merc.lives = self.MERC_INITIAL_LIVES
         self.merc = Player(np.MERCENARY_TYPE)
+        self.merc.lives = self.MERC_INITIAL_LIVES
         self.mines = []
         self.detectors = []
-        self.slm = SLMap()
+        self.slm = SLMap(MAP)
         self.walls = self.slm.walls
 
     def shoot(self, player):
@@ -146,10 +149,11 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
             player.pos = (lines[1][0], lines[1][1])
             player.mousePos = (lines[2][0], lines[2][1])
 
+            TRAPPED = ""
             if player == self.gs.spy:
                 trapped = self.gs.trapped(player)
                 if trapped != self.gs.TRAP_FREE:
-                    rep += "\n" + np.TRAPPED_TXT + " " + trapped
+                    TRAPPED = "\n" + np.TRAPPED_TXT + " " + trapped
 
             l = len(lines)
             i = 3
@@ -174,6 +178,9 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                     rep += str(ennemy.pos.x) + " " + str(ennemy.pos.y)
                     rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
                     rep += "\n" + np.NOISE_TXT + " " + str(self.gs.noise_level(player, ennemy))
+                    rep += TRAPPED
+                else:
+                    rep += "-42 -42"
                 self.request.sendall(rep + np.MSG_END)
                 print "Data sent: ", rep
             except Exception as e:
@@ -188,16 +195,22 @@ if __name__ == "__main__":
     else:
         print "No map provided"
         sys.exit()
+
     if len(sys.argv) > 2:
-        print sys.argv[2]
-        PORT = int(sys.argv[2])
+        HOST = sys.argv[2]
+    else:
+        HOST = "localhost"
+
+    if len(sys.argv) > 3:
+        print sys.argv[3]
+        PORT = int(sys.argv[3])
     else:
         PORT = None
     if PORT is None or PORT < 0:
         PORT = 9999
     
-    HOST = "localhost"
-
+    print "Connecting to", HOST, PORT
+    
     # Create the server, binding to localhost on port 9999
     server = SocketServer.TCPServer((HOST, PORT), SLTCPServer)
 
