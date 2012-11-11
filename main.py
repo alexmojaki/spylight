@@ -26,6 +26,7 @@ character = None
 server = None
 logger = None
 CELL_SIZE = 32
+MAX_MIN_COUNTDOWN = 3
 clientNetworker = None
 game = None
 shadow = None
@@ -77,6 +78,12 @@ class SpylightGame(Widget):
         game.playShot()
         print "The mercenary won!"
         sys.exit()
+
+    def start(self):
+        timer = Timer()
+        game.add_widget(timer)
+        Clock.schedule_interval(timer.updateTime, 1)
+
 
 
 class MapView(Widget):
@@ -246,9 +253,11 @@ class Character(Widget):
     def notifyServer(self):
         clientNetworker.pos(*self.pos)
         clientNetworker.mouse_pos(*Window.mouse_pos)
-        clientNetworker.send()
+        
         if self.running:
             clientNetworker.run()
+
+        clientNetworker.send()
 
         self.displayReception()
 
@@ -384,11 +393,10 @@ class Timer(Widget):
 
 
     def __init__(self, **kwargs):
-        self.mins = 3
+        self.mins = MAX_MIN_COUNTDOWN
         self.secs = 0
         self.timeToString()
         super(Timer, self).__init__(**kwargs)
-        Clock.schedule_interval(self.updateTime, 1)
 
     def timeToString(self):
         self.time = '0'+str(self.mins)+':'
@@ -444,9 +452,10 @@ class SpylightApp(App):
             clientNetworker.connect(server, 9999)
 
         game = SpylightGame(character=char, map=map)
-        game.add_widget(Timer())
 
         Clock.schedule_interval(game.update, 1.0 / 60.0)
+
+        game.start()
 
         return game
 
