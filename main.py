@@ -102,6 +102,7 @@ class MapView(Widget):
 
 
 class Character(Widget):
+    RESPAWN_TIME = 2 # in seconds
     x1 = NumericProperty(0)
     y1 = NumericProperty(0)
     x2 = NumericProperty(0)
@@ -237,12 +238,16 @@ class Character(Widget):
 
         if ret["dead"]:
             game.playShot()
-            self.pos = self.spawnPoint
+            self.pos = (-42, -42)
+            Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
+            
             # self.deathLabel = Label("Boom!")
             # addWidget(deathLabel)
 
         if ret["lost"]:
             sys.exit()
+    def spawn(self):
+        self.pos = self.spawnPoint
 
 
 class Spy(Character):
