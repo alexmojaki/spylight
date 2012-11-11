@@ -218,7 +218,7 @@ class Character(Widget):
         clientNetworker.send()
 
         self.displayReception()
-    
+
     def displayReception(self):
         global game
         ret = clientNetworker.recv()
@@ -228,10 +228,14 @@ class Character(Widget):
         if ret.beep:
             game.playBeep()
 
-        if ret.gameOver:
+        if ret.dead:
+            # Hide player
+            self.pos = [-42, -42]
+            self.deathLabel = Label("Boom!")
+            addWidget(deathLabel)
+
+        if ret.lost:
             pass
-
-
 
 
 class Spy(Character):
