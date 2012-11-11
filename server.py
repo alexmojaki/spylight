@@ -41,7 +41,9 @@ class GameServerEngine(object):
         self.merc.lives = self.MERC_INITIAL_LIVES
         self.mines = []
         self.detectors = []
-        self.slm = SLMap(MAP)
+
+    def setMap(self, m):
+        self.slm = SLMap(m)
         self.walls = self.slm.walls
 
     def shoot(self, player):
@@ -116,15 +118,10 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
     """
 
     __initialized = False
-
-    def __init(self):
-        if not self.__initialized:
-            self.__initialized = True
-            self.logger = logging.getLogger("sltcps.log")
-            self.gs = GameServerEngine()
+    logger = logging.getLogger("sltcps.log")
+    gs = GameServerEngine()
 
     def handle(self):
-        self.__init()
         # self.request is the TCP socket connected to the client
         
         while True:
@@ -176,7 +173,6 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 i += 1
 
             try:
-                
                 if ennemy.pos is not None: # if we've already instantiated the ennemy position
                     rep += str(ennemy.pos.x) + " " + str(ennemy.pos.y)
                     rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
@@ -213,6 +209,8 @@ if __name__ == "__main__": # for debugging purposes
         PORT = 9999
     
     print "Connecting to", HOST, PORT
+    
+    SLTCPServer.gs.setMap(MAP)
     
     # Create the server, binding to localhost on port 9999
     server = SocketServer.TCPServer((HOST, PORT), SLTCPServer)
