@@ -61,12 +61,14 @@ class ClientNetworker(object):
 
     def recv(self):
         res = {}
+        # default values
         res["noise"] = 0
         res["beep"] = 0
         res["trapped"] = -1
         res["dead"] = False
         res["lost"] = False
         res["cap"] = -1
+        res["ennemy"] = (-42, -42)
 
         data = np.recv_end(self.__s).strip()
         if data == "":
