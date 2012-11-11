@@ -94,11 +94,11 @@ class ClientNetworker(object):
 
 
 if __name__ == '__main__': # debugging purposes
-    cn = ClientNetworker(np.MERCENARY_TYPE)
+    cn = ClientNetworker(int(sys.argv[1]))
     cn.connect("localhost", 9999)
     x, y = 0, 0
     while True:
-        sleep(1)
+        sleep(0.1)
         x += 1
         y += 2
         cn.pos(x, y)

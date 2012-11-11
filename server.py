@@ -137,14 +137,13 @@ class SLTCPRequestHandler(object):
         # Init request:
         self.request = self.s1
         while True:
-            sleep(1) #@TODO remove that
+            # sleep(1) #@TODO remove that
             rep = ""
             try:
                 self.data = np.recv_end(self.request)
                 self.logger.info( self.data)
-            except Exception as e:
-                self.logger.info( "Socket error 2")
-                self.logger.info(e)
+            except socket.error, e:
+                self.logger.debug(str(e))
                 break
 
             lines = [_.strip().split(" ") for _ in self.data.strip().split("\n")]
@@ -201,6 +200,11 @@ class SLTCPRequestHandler(object):
 
             if self.request == self.s1:
                 self.request = self.s2
+            else:
+                self.request = self.s1
+        self.logger.info('Conection closed')
+        self.s1.close()
+        self.s2.close()
             
 
 if __name__ == "__main__": # for debugging purposes
