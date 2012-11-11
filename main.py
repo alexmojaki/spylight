@@ -383,26 +383,31 @@ class Mine(Widget):
 class Timer(Widget):
     time = StringProperty("00:00")
 
+
     def __init__(self, **kwargs):
+        self.mins = 3
+        self.secs = 0
+        self.timeToString()
         super(Timer, self).__init__(**kwargs)
         Clock.schedule_interval(self.updateTime, 1)
-        self.secs = 0
-        self.mins = 0
 
-    def updateTime(self, useless):
-        global game
-        self.secs += 1
-        if self.secs == 60:
-            self.mins += 1
-            self.secs = 0
-
+    def timeToString(self):
         self.time = '0'+str(self.mins)+':'
         if self.secs < 10:
             self.time += '0' + str(self.secs)
         else:
             self.time += str(self.secs)
 
-        if self.mins == 3:
+
+    def updateTime(self, useless):
+        global game
+        self.secs -= 1
+        if self.secs == -1:
+            self.mins -= 1
+            self.secs = 59
+
+        self.timeToString()
+        if self.mins == 0 and self.secs == 0:
             game.end()
 
 Factory.register("MapView", MapView)
