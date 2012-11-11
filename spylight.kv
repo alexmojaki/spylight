@@ -33,14 +33,8 @@
             source: 'art/terminal.png'
 
 <Shadow>:
-    size: 10, 10
+    size: -42, -42
     pos: 100, 100
-    canvas:
-        Color:
-            rgb: 1, 0, 0
-        Ellipse:
-            pos: self.pos
-            size: self.size
 
 <Timer>:
     size: 100, 40
@@ -48,6 +42,13 @@
         pos:0,0
         size:root.size
         text:root.time
+
+
+<CapInfo>:
+    size: 100, 40
+    Label:
+        pos:400,0
+        text:root.percentage
 
 
 <MapView>:
@@ -60,6 +61,10 @@
             pos:0,0
             size:self.width, self.height
             texture:self.groundTexture
+        Rectangle:
+            pos: self.shadow.pos
+            size: self.shadow.size
+            source: self.shadow.sprite
         StencilUnUse
         StencilPop
 

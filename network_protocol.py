@@ -1,10 +1,15 @@
 import socket
 
 def recv_end(the_socket):
+    Max = 10000
     End = "\n\n"
     total_data=[]
     data=''
+    i = 0
     while True:
+        i += 1
+        if i > Max:
+            break
         try:
             data = the_socket.recv(8192)
             if End in data:
@@ -31,6 +36,7 @@ ACTIVATE_TXT = "a"
 RUN_TXT = "r"
 BEEP_TXT = "b"
 NOISE_TXT = "n"
+CAPTURE_TXT = "c"
 SPY_TXT = "s" # no new line there, first line of the msg
 MERCERNARY_TXT = "m" # no new line there, first line of the msg
 SPY_TYPE = 1

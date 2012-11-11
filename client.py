@@ -66,6 +66,7 @@ class ClientNetworker(object):
         res["trapped"] = -1
         res["dead"] = False
         res["lost"] = False
+        res["cap"] = -1
 
         data = np.recv_end(self.__s).strip()
         if data == "":
@@ -87,6 +88,8 @@ class ClientNetworker(object):
                 res["dead"] = True
             elif lines[i][0] == np.DEAD_TXT:
                 res["lost"] = True
+            elif lines[i][0] == np.CAPTURE_TXT:
+                res["cap"] = int(lines[i][1])
             i += 1
 
         return res
