@@ -47,7 +47,7 @@ class SLMap:
             elif headerStage == self.MAP_DIMENSIONS:
                 # Map dimensions
                 self.width, self.height = [int(_) for _ in lineSplit]
-                self.spawnPoints = list()
+                self.spawnPoints = dict()
                 self.walls = list()
                 self.wallType = [-1] * (self.width * self.height)
                 self.itemType = [-1] * (self.width * self.height)
@@ -69,7 +69,7 @@ class SLMap:
 
             # Put other directives here!
 
-            elif currentDirective == self.WALL_DIRECTIVE:
+            elif currentDirective == self.SPAWN_DIRECTIVE:
                 # Spawn point directive
                 x, y, t = [int(_) for _ in line.split(",")]
                 self.spawnPoints[t] = (x, y)
