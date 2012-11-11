@@ -119,7 +119,7 @@ class Character(Widget):
         self.dPressed = False
         self.ePressed = False
         self.velocity = Vector(0,0)
-
+        self.running = False
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self._keyboard.bind(on_key_up=self._on_keyboard_up)
@@ -132,14 +132,18 @@ class Character(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         pos2 = self.pos
         # Keycode is composed of an integer + a string
-        if keycode[1] == 'z':
+        if keycode[1] == 'z'or keycode[1] == 'up':
             self.zPressed = True
-        if keycode[1] == 'q':
+        if keycode[1] == 'q'or keycode[1] == 'left':
             self.qPressed = True
-        if keycode[1] == 's':
+        if keycode[1] == 's'or keycode[1] == 'down':
             self.sPressed = True
-        if keycode[1] == 'd':
+        if keycode[1] == 'd'or keycode[1] == 'right':
             self.dPressed = True
+        # logging.info(keycode[1])
+
+        if 'shift' in modifiers:
+            self.running = True
 
         return True
 
@@ -156,6 +160,7 @@ class Character(Widget):
         if keycode[1] == 'e':
             self.activate()
 
+
         return True
 
     def activate(self):
@@ -165,6 +170,8 @@ class Character(Widget):
     def update(self, useless, **kwargs):
 
         maxVelocity = 3
+        if self.running:
+            maxVelocity = maxVelocity+self.runningBonus
         deceleration = 1
         # print 'update', self.velocity
 
@@ -207,6 +214,7 @@ class Character(Widget):
         if server:
             self.notifyServer()
 
+        self.running = False;
         # print 'Position',self.pos, 'Triangle', self.points
 
     def canGo(self,pos2):
@@ -223,6 +231,8 @@ class Character(Widget):
         clientNetworker.pos(*self.pos)
         clientNetworker.mouse_pos(*Window.mouse_pos)
         clientNetworker.send()
+        if self.running:
+            clientNetworker.run()
 
         self.displayReception()
 
@@ -249,7 +259,7 @@ class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
-        
+        self.runningBonus = 2
         self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
@@ -276,12 +286,14 @@ class Mercenary(Character):
     def __init__(self, **kwargs):
         global map
         logger.info('init mercenary')
+        self.runningBonus = 0
         self.sprite = 'art/mercenary.png'
         self.spawnPoint = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
+        self.running = True
         super(Mercenary,self).update(useless, **kwargs)
 
     def activate(self):
