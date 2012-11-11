@@ -62,7 +62,7 @@ class GameServerEngine(object):
         print "Activate() at pos=", player.pos, "Not yet implemented" # @TODO
 
     def run(self, player):
-        self.logger.info("Run() for player of type", player.playerType
+        self.logger.info("Run() for player of type", player.playerType)
         player.running = True
 
     def beep_level(self, p1):
@@ -120,6 +120,7 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
     def __init(self):
         if not self.__initialized:
             self.__initialized = True
+            self.logger = logging.getLogger("sltcps.log")
             self.gs = GameServerEngine()
 
     def handle(self):
