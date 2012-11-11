@@ -191,8 +191,6 @@ class Character(Widget):
             self.dPressed = False
         if keycode[1] == 'e':
             self.activate()
-
-
         return True
 
     def activate(self):
@@ -277,6 +275,7 @@ class Character(Widget):
         if self.running:
             clientNetworker.run()
 
+
         clientNetworker.send()
 
         self.displayReception()
@@ -291,7 +290,10 @@ class Character(Widget):
 
         shadow.pos = ret["ennemy"]
 
-        # capInfo.update(ret["cap"])
+        if ret["cap"] > -1:
+            capInfo.update(ret["cap"])
+            game.playModem()
+            
 
         if ret["beep"]:
             game.playBeep()
@@ -323,11 +325,16 @@ class Spy(Character):
 
     def update(self, useless, **kwargs):
         if game.started:
-            if self.capturing and (self.zPressed or self.qPressed or self.sPressed or self.dPressed):
-                self.capturing = False
-                game.stopModem()
-                if server:
-                    clientNetworker.desactivate()
+                
+            if self.capturing:
+                if self.zPressed or self.qPressed or self.sPressed or self.dPressed:
+                    self.capturing = False
+                    capInfo.update(0)
+                    game.stopModem()
+                elif server:
+                    clientNetworker.activate()
+                        
+
             super(Spy,self).update(useless, **kwargs)
             if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
                 self.sprite = 'art/spy0.png'
@@ -348,8 +355,6 @@ class Spy(Character):
 
     def activate(self):
         if game.started:
-            super(Spy,self).activate()
-            game.playModem()
             self.capturing = True
             logger.info('Spy is activating!')
             if server:
