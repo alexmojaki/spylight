@@ -389,9 +389,9 @@ class Mercenary(Character):
             super(Mercenary,self).activate()
 
             logger.info('Mercenary is activating!')
-            if not self.mines.has_key(self.center):
+            if not self.mines.has_key(str(self.center)):
                 mw = Mine(self.center)
-                self.mines[self.center] = mw
+                self.mines[str(self.center)] = mw
                 game.add_widget(mw)
 
             if server:
@@ -401,7 +401,7 @@ class Mercenary(Character):
         super(Mercenary, self).displayReception()
 
         if ret["boom"]:
-            game.remove_widget(self.mines.pop((0, 0)))
+            game.remove_widget(self.mines.pop(str([0, 0])))
 
 class Wall(Widget):
     pass
