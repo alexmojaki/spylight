@@ -72,7 +72,7 @@ class ClientNetworker(object):
             return res
         lines = [_.split(" ") for _ in data.split("\n")]
 
-        res["ennemy"] = (lines[0][0], lines[0][1])
+        res["ennemy"] = (int(lines[0][0]), int(lines[0][1]))
         l = len(lines)
         i = 1
 

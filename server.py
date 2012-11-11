@@ -1,8 +1,11 @@
 #!/usr/bin/python
+import socket
+import threading
 import SocketServer
 import sys
 from math import sqrt
 import logging
+from time import sleep
 
 import network_protocol as np
 from slmap import SLMap
@@ -23,8 +26,8 @@ class Player(object):
 class GameServerEngine(object):
     """docstring for GameServerEngine"""
     CELL_SIZE = 32
-    MIN_NOISE_DIST = 4
-    MIN_BEEP_DIST = 4
+    MIN_NOISE_DIST = 4 # in cells
+    MIN_BEEP_DIST = 4 # in cells
     MIN_TRAP_DIST = int(1.2 * CELL_SIZE)
     SPY_INITIAL_LIVES = 3
     MERC_INITIAL_LIVES = 1
@@ -58,29 +61,31 @@ class GameServerEngine(object):
     def drop(self, player, objType):
         print "Drop objType=", objType, "Not yet implemented"# @TODO
         if objType == np.OT_MINE:
-            self.mines.append((player.pos.x, player.pos.y))
+            self.mines.append((player.pos[0], player.pos[1]))
         elif objType == np.OT_DETECTOR:
-            self.detectors.append((player.pos.x, player.pos.y))
+            self.detectors.append((player.pos[0], player.pos[1]))
 
     def activate(self, player):
-        print "Activate() at pos=", player.pos, "Not yet implemented" # @TODO
+        print "Activate() at pos=" + str(player.pos) + "Not yet implemented" # @TODO
 
     def run(self, player):
-        self.logger.info("Run() for player of type", player.playerType)
+        self.logger.info("Run() for player of type" + str(player.playerType))
         player.running = True
 
     def beep_level(self, p1):
-        m = float('inf')
+        m = 0
         for mine in self.mines:
-            dist = int(abs(p1.pos.x - mine[0])/self.CELL_SIZE + abs(p1.pos.y - mine[1])/self.CELL_SIZE)
-            if dist <= self.MIN_BEEP_DIST and dist <= m:
-                m = dist
+            dist = int(abs(p1.pos[0] - mine[0])/self.CELL_SIZE + abs(p1.pos[1] - mine[1])/self.CELL_SIZE)
+            if dist <= self.MIN_BEEP_DIST:
+                level = int(self.MIN_BEEP_DIST - (dist/self.CELL_SIZE))
+                if level > m:
+                    m = level
         return m
 
     def noise_level(self, p1, p2):
-        dist = abs(p1.pos.x - p2.pos.x) + abs(p1.pos.y - p2.pos.y)
-        if dist < self.MIN_NOISE_DIST:
-            return dist
+        dist = abs(p1.pos[0] - p2.pos[0]) + abs(p1.pos[1] - p2.pos[1])
+        if dist <= self.MIN_NOISE_DIST:
+            return int(self.MIN_NOISE_DIST - (dist/self.CELL_SIZE))
 
     def trapped(self, player):
         result = False
@@ -88,7 +93,7 @@ class GameServerEngine(object):
         l = len(self.mines)
         while i < l:
             m = self.mines[i]
-            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])**2) <= self.MIN_TRAP_DIST:
+            if sqrt((player.pos[0] - m[0])**2 + (player.pos[1] - m[1])**2) <= self.MIN_TRAP_DIST:
                 del self.mines[i] # This mine just exploded to spy's face, delete it (it multiple mines should explode, they will all blow up)
                 result = self.TRAP_MINED
             i += 1
@@ -99,7 +104,7 @@ class GameServerEngine(object):
         l = len(self.detectors)
         while i < l:
             m = self.detectors[i]
-            if sqrt((player.pos.x - m[0])**2 + (player.pos.y - m[1])**2) <= self.MIN_TRAP_DIST:
+            if sqrt((player.pos[0] - m[0])**2 + (player.pos[1] - m[1])**2) <= self.MIN_TRAP_DIST:
                 del self.detectors[i]
             i += 1
         
@@ -109,35 +114,31 @@ class GameServerEngine(object):
             return self.TRAP_FREE
 
 
+class SLTCPRequestHandler(object):
+    
+    def __init__(self):
+        self.logger = logging.getLogger("sltcps.log")
+        self.logger.addHandler(logging.FileHandler("sltcps.log"))
+        self.logger.setLevel(logging.INFO)
+        self.gs = GameServerEngine()
 
-class SLTCPServer(SocketServer.BaseRequestHandler):
-    """
-    The RequestHandler class for our server.
-
-    It is instantiated once per connection to the server, and must
-    override the handle() method to implement communication to the
-    client.
-    """
-
-    __initialized = False
-    logger = logging.getLogger("sltcps.log")
-    gs = GameServerEngine()
-
-    def __init(self):
-        if not self.__initialized:
-            self.__initialized = True
-            self.logger.addHandler(logging.FileHandler("sltcps.log"))
-            self.logger.setLevel(logging.INFO)
-
-    def handle(self):
-        self.__init()
-        # self.request is the TCP socket connected to the client
+    def run(self, HOST, PORT):
+        # Socket init:
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.bind((HOST, PORT))
+        self.s.listen(2) # at max 2 connections
+        # Waiting for 2 connections to us:
+        self.s1, addr1 = self.s.accept()
+        self.s2, addr2 = self.s.accept()
         
+        # Init request:
+        self.request = self.s1
         while True:
+            sleep(1) #@TODO remove that
             rep = ""
             try:
                 self.data = np.recv_end(self.request)
-                self.logger.info("{} wrote:".format(self.client_address[0]))
                 self.logger.info( self.data)
             except Exception as e:
                 self.logger.info( "Socket error 2")
@@ -155,8 +156,8 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 player = self.gs.merc
                 ennemy = self.gs.spy
 
-            player.pos = (lines[1][0], lines[1][1])
-            player.mousePos = (lines[2][0], lines[2][1])
+            player.pos = (int(lines[1][0]), int(lines[1][1]))
+            player.mousePos = (int(lines[2][0]), int(lines[2][1]))
 
             TRAPPED = ""
             if player == self.gs.spy:
@@ -183,8 +184,8 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
 
             try:
                 if ennemy.pos is not None: # if we've already instantiated the ennemy position
-                    rep += str(ennemy.pos.x) + " " + str(ennemy.pos.y)
-                    rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player, ennemy))
+                    rep += str(ennemy.pos[0]) + " " + str(ennemy.pos[1])
+                    rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player))
                     rep += "\n" + np.NOISE_TXT + " " + str(self.gs.noise_level(player, ennemy))
                     rep += TRAPPED
                 else:
@@ -195,6 +196,9 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 self.logger.info("Socket error 3")
                 self.logger.info(str(e))
                 break
+
+            if self.request == self.s1:
+                self.request = self.s2
             
 
 if __name__ == "__main__": # for debugging purposes
@@ -217,13 +221,8 @@ if __name__ == "__main__": # for debugging purposes
     if PORT is None or PORT < 0:
         PORT = 9999
     
-    print "Connecting to", HOST, PORT
+    print "Accepting connections to", HOST, PORT
     
-    SLTCPServer.gs.setMap(MAP)
-    
-    # Create the server, binding to localhost on port 9999
-    server = SocketServer.TCPServer((HOST, PORT), SLTCPServer)
-
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    server.serve_forever()
+    server = SLTCPRequestHandler()
+    server.gs.setMap(MAP)
+    server.run(HOST, PORT)

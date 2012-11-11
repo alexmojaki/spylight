@@ -178,7 +178,6 @@ class Character(Widget):
         if self.running:
             maxVelocity = maxVelocity+self.runningBonus
 
-        logger.log('vitesse: ' + str(maxVelocity))
         deceleration = 1
         # print 'update', self.velocity
 
