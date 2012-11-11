@@ -33,7 +33,7 @@
             source: 'art/terminal.png'
 
 <Shadow>:
-    size: 32, 32
+    size: -42, -42
     pos: 100, 100
 
 <Timer>:
@@ -42,6 +42,13 @@
         pos:0,0
         size:root.size
         text:root.time
+
+
+<CapInfo>:
+    size: 100, 40
+    Label:
+        pos:400,0
+        text:root.percentage
 
 
 <MapView>:

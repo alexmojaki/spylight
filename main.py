@@ -34,12 +34,13 @@ MAX_MIN_COUNTDOWN = 3
 clientNetworker = None
 game = None
 shadow = None
+capInfo = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
     def __init__(self, character, map, **kwargs):
-        global shadow
+        global shadow, capInfo
         super(SpylightGame, self).__init__(**kwargs)
 
         self.soundBeep = SoundLoader.load("music/beep.wav")
@@ -52,6 +53,8 @@ class SpylightGame(Widget):
         self.character = character
         self.add_widget(MapView(map=map, character=self.character, shadow=shadow))
         self.add_widget(character)
+        capInfo = CapInfo()
+        self.add_widget(capInfo)
         self.started = False
 
     def update(self, useless, **kwargs):
@@ -278,6 +281,8 @@ class Character(Widget):
 
         shadow.pos = ret["ennemy"]
 
+        # capInfo.update(ret["cap"])
+
         if ret["beep"]:
             game.playBeep()
 
@@ -402,6 +407,16 @@ class Mine(Widget):
     def __init__(self, pos, **kwargs):
         self.pos = pos[0]-10, pos[1]-10;
         super(Mine, self).__init__(**kwargs)
+
+class CapInfo(Widget):
+    percentage = StringProperty("0%")
+
+    def __init__(self, **kwargs):
+        super(CapInfo, self).__init__(**kwargs)
+
+    def update(self, newValue):
+        self.percentage = str(newValue)+'%'
+
 
 
 class Timer(Widget):
