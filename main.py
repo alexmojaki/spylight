@@ -27,19 +27,23 @@ server = None
 logger = None
 CELL_SIZE = 32
 clientNetworker = None
+game = None
+shadow = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
     def __init__(self, character, map, **kwargs):
+        global shadow
         super(SpylightGame, self).__init__(**kwargs)
 
         self.soundBeep = SoundLoader.load("music/beep.wav")
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
 
+        shadow = Shadow()
         self.character = character
-        self.add_widget(MapView(map=map, spy=self.character))
+        self.add_widget(MapView(map=map, character=self.character))
         self.add_widget(character)
 
     def update(self, useless, **kwargs):
@@ -58,7 +62,7 @@ class MapView(Widget):
     width = NumericProperty(0)
     height = NumericProperty(0)
     groundTexture = ObjectProperty(None)
-    spy = ObjectProperty(None)
+    character = ObjectProperty(None)
 
     def getTexture(self,name, size):
         filename = join('art', name+'.png')
@@ -68,8 +72,8 @@ class MapView(Widget):
         self.logger.info(filename)
         return texture
 
-    def __init__(self, map, spy):
-        self.spy = spy
+    def __init__(self, map, character):
+        self.character = character
 
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
@@ -87,6 +91,8 @@ class MapView(Widget):
                     term = Terminal()
                     term.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(term)
+
+
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -127,8 +133,6 @@ class Character(Widget):
             self.sPressed = True
         if keycode[1] == 'd':
             self.dPressed = True
-        if keycode[1] == 'e':
-            self.activate()
 
         return True
 
@@ -142,12 +146,13 @@ class Character(Widget):
             self.sPressed = False
         if keycode[1] == 'd':
             self.dPressed = False
+        if keycode[1] == 'e':
+            self.activate()
 
         return True
 
     def activate(self):
-        logger.info("L O L")
-        self.ePressed = True
+        pass
 
 
     def update(self, useless, **kwargs):
@@ -210,16 +215,30 @@ class Character(Widget):
     def notifyServer(self):
         clientNetworker.pos(*self.pos)
         clientNetworker.mouse_pos(*Window.mouse_pos)
-        if self.ePressed: 
-            clientNetworker.activate()
         clientNetworker.send()
-        clientNetworker.recv()
+
+        self.displayReception()
+    
+    def displayReception(self):
+        global game
+        ret = clientNetworker.recv()
+
+        shadow.pos = ret.pos
+
+        if ret.beep:
+            game.playBeep()
+
+        if ret.gameOver:
+            pass
+
+
 
 
 class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
+        self.pos = (map.spawnPoints[map.SPY_SPAWN])
         super(Spy, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
@@ -228,13 +247,16 @@ class Spy(Character):
 
     def activate(self):
         super(Spy,self).activate()
+        clientNetworker.activate()
         logger.info('Spy is activating!')
 
 
 class Mercenary(Character):
     def __init__(self, **kwargs):
+        global map
         logger.info('init mercenary')
         self.sprite = 'art/mercenary.png'
+        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN])
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
@@ -243,6 +265,8 @@ class Mercenary(Character):
 
     def activate(self):
         super(Mercenary,self).activate()
+        clientNetworker.drop(np.OT_MINE)
+        # Mine()
         logger.info('Mercenary is activating!')
 
 
@@ -251,6 +275,12 @@ class Wall(Widget):
 
 
 class Terminal(Widget):
+    pass
+
+class Shadow(Widget):
+    pass
+
+class Mine(Widget):
     pass
 
 
@@ -266,7 +296,7 @@ class SpylightApp(App):
         return logger
 
     def build(self):
-        global map, logger, clientNetworker
+        global map, logger, clientNetworker, game
         logger = self.initLogger()
 
         if server:
@@ -284,6 +314,8 @@ class SpylightApp(App):
             char = Mercenary()
         else:
             char = Spy()
+
+
 
         game = SpylightGame(character=char, map=map)
 
