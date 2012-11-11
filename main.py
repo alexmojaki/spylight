@@ -295,7 +295,7 @@ class Spy(Character):
             if server:
                 clientNetworker.desactivate()
         super(Spy,self).update(useless, **kwargs)
-        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
+        if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
             self.sprite = 'art/spy0.png'
         elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
             self.sprite = 'art/spy45.png'
@@ -334,18 +334,18 @@ class Mercenary(Character):
     def update(self, useless, **kwargs):
         self.running = True
         super(Mercenary,self).update(useless, **kwargs)
-        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
-            self.sprite = 'art/mercenary180.png'
+        if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
+            self.sprite = 'art/mercenary0.png'
         elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-            self.sprite = 'art/mercenary225.png'
+            self.sprite = 'art/mercenary45.png'
         elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-            self.sprite = 'art/mercenary270.png'
+            self.sprite = 'art/mercenary90.png'
         elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
             self.sprite = 'art/mercenary135.png'
         elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
-            self.sprite = 'art/mercenary0.png'
+            self.sprite = 'art/mercenary180.png'
         elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-            self.sprite = 'art/mercenary45.png'
+            self.sprite = 'art/mercenary225.png'
         elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
             self.sprite = 'art/mercenary270.png'
         else:
