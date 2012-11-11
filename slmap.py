@@ -65,7 +65,7 @@ class SLMap:
             elif currentDirective == self.WALL_DIRECTIVE:
                 # Wall directive
                 x, y, t = [int(_) for _ in line.split(",")]
-                self.walls.append([x, y, t])
+                self.walls.append((x, y, t))
                 self.wallType[y * self.width + x] = t
 
             elif currentDirective == self.ITEM_DIRECTIVE:
