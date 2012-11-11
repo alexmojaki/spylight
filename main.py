@@ -69,6 +69,11 @@ class SpylightGame(Widget):
     def playPunch(self):
         self.soundPunch.play()
 
+    def end(self):
+        game.playShot()
+        print "The mercenary won!"
+        sys.exit()
+
 class MapView(Widget):
     width = NumericProperty(0)
     height = NumericProperty(0)
@@ -145,7 +150,6 @@ class Character(Widget):
             self.sPressed = True
         if keycode[1] == 'd'or keycode[1] == 'right':
             self.dPressed = True
-        # logging.info(keycode[1])
 
         if 'shift' in modifiers:
             self.running = True
@@ -178,7 +182,7 @@ class Character(Widget):
         if self.running:
             maxVelocity = maxVelocity+self.runningBonus
 
-        logger.log('vitesse: ' + str(maxVelocity))
+        logger.info('vitesse: ' + str(maxVelocity))
         deceleration = 1
         # print 'update', self.velocity
 
@@ -272,7 +276,7 @@ class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
-        self.runningBonus = 2
+        self.runningBonus = 12
         self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
@@ -339,8 +343,32 @@ class Mine(Widget):
 
 
 class Timer(Widget):
+    time = StringProperty("00:00")
+
     def __init__(self, **kwargs):
-        Clock()        
+        # global game
+        super(Timer, self).__init__(**kwargs)
+        Clock.schedule_interval(self.updateTime, 1)
+        # self.clock = Clock.schedule_once(game.end, 1000.0 * 60.0)
+        self.secs = 0
+        self.mins = 0
+
+    def updateTime(self, useless):
+        global game
+        self.secs += 1
+        if self.secs == 60:
+            self.mins += 1
+            self.secs = 0
+
+        self.time = '0'+str(self.mins)+':'
+        if self.secs < 10:
+            self.time += '0' + str(self.secs)
+        else:
+            self.time += str(self.secs)
+
+        if self.secs == 5:
+            game.end()
+
 
 Factory.register("MapView", MapView)
 
@@ -377,6 +405,7 @@ class SpylightApp(App):
             clientNetworker.connect(server, 9999)
 
         game = SpylightGame(character=char, map=map)
+        game.add_widget(Timer())
 
         Clock.schedule_interval(game.update, 1.0 / 60.0)
 
