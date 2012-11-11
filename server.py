@@ -86,6 +86,8 @@ class GameServerEngine(object):
         dist = abs(p1.pos[0] - p2.pos[0]) + abs(p1.pos[1] - p2.pos[1])
         if dist <= self.MIN_NOISE_DIST:
             return int(self.MIN_NOISE_DIST - (dist/self.CELL_SIZE))
+        else:
+            return 0
 
     def trapped(self, player):
         result = False
