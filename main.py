@@ -223,18 +223,18 @@ class Character(Widget):
         global game
         ret = clientNetworker.recv()
 
-        shadow.pos = ret.pos
+        shadow.pos = ret["ennemy"]
 
-        if ret.beep:
+        if ret["beep"]:
             game.playBeep()
 
-        if red.dead:
+        if ret["dead"]:
             game.playShot()
             self.pos = self.spawnPoint
             # self.deathLabel = Label("Boom!")
             # addWidget(deathLabel)
 
-        if ret.lost:
+        if ret["lost"]:
             sys.exit()
 
 
