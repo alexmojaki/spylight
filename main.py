@@ -238,7 +238,8 @@ class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
-        self.pos = (map.spawnPoints[map.SPY_SPAWN])
+        
+        self.pos = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
         super(Spy, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
@@ -256,7 +257,7 @@ class Mercenary(Character):
         global map
         logger.info('init mercenary')
         self.sprite = 'art/mercenary.png'
-        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN])
+        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
