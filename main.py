@@ -83,6 +83,10 @@ class MapView(Widget):
                     wall = Wall()
                     wall.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(wall)
+                if map.getItem(x,y) == 0:
+                    term = Terminal()
+                    term.pos = (x*CELL_SIZE, y*CELL_SIZE)
+                    self.add_widget(term)
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -197,7 +201,8 @@ class Character(Widget):
         self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
         self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
 
-        self.notifyServer()
+        if server:
+            self.notifyServer()
 
         # print 'Position',self.pos, 'Triangle', self.points
 
@@ -273,14 +278,15 @@ class SpylightApp(App):
         global map, logger, clientNetworker
         logger = self.initLogger()
 
-        clientNetworker = ClientNetworker(np.SPY_TYPE)
-        clientNetworker.connect(server, 9999)
+        if server:
+            clientNetworker = ClientNetworker(np.SPY_TYPE)
+            clientNetworker.connect(server, 9999)
 
         map = SLMap("test.map")
         logger.info("Map loaded: " + map.title)
         logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
 
-        logger.info("What in (1, 1): " + str(map.getWallType(1, 1)))
+        logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
 
         if character == 'merc':
             pass
@@ -298,6 +304,8 @@ if __name__ == '__main__':
     global character, server
     if len(sys.argv) >= 2:
         character = sys.argv[1]
+
+    if len(sys.argv) >= 3:
         server = sys.argv[2]
 
     SpylightApp().run()
