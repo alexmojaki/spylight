@@ -71,15 +71,6 @@ class MapView(Widget):
     def __init__(self, map, spy):
         self.spy = spy
 
-        with self.canvas:
-            for x in xrange(map.width):
-                for y in xrange(map.height):
-                    if map.getItem(x, y) == 0:
-                        term = Terminal()
-                        term.pos = (x*CELL_SIZE, y*CELL_SIZE)
-                        self.add_widget(term)
-
-
         super(MapView, self).__init__()
         self.logger = logging.getLogger("SpylightApp")
         self.width = map.width*CELL_SIZE
@@ -236,6 +227,7 @@ class Character(Widget):
         #Window.mouse_pos
         #pos
         # autre truc
+        pass
 
 
 class Spy(Character):
