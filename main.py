@@ -40,6 +40,7 @@ class SpylightGame(Widget):
         self.soundBeep = SoundLoader.load("music/beep.wav")
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
+        self.soundModem = SoundLoader.load("music/modem.wav")
 
         shadow = Shadow()
         self.character = character
@@ -57,6 +58,12 @@ class SpylightGame(Widget):
 
     def playReload(self):
         self.soundReaload.play()
+
+    def playModem(self):
+        self.soundModem.play()
+
+    def stopModem(self):
+        self.soundModem.stop()
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -246,14 +253,23 @@ class Spy(Character):
         self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
+        self.capturing = False
 
     def update(self, useless, **kwargs):
+        if self.capturing and (self.zPressed or self.qPressed or self.sPressed or self.dPressed):
+            self.capturing = False
+            game.stopModem()
+            if server:
+                clientNetworker.desactivate()
         super(Spy,self).update(useless, **kwargs)
 
     def activate(self):
         super(Spy,self).activate()
-        clientNetworker.activate()
+        game.playModem()
+        self.capturing = True
         logger.info('Spy is activating!')
+        if server:
+            clientNetworker.activate()
 
 
 class Mercenary(Character):
@@ -310,9 +326,6 @@ class SpylightApp(App):
         global map, logger, clientNetworker, game
         logger = self.initLogger()
 
-        if server:
-            clientNetworker = ClientNetworker(np.SPY_TYPE)
-            clientNetworker.connect(server, 9999)
 
         map = SLMap("test.map")
         logger.info("Map loaded: " + map.title)
@@ -321,12 +334,16 @@ class SpylightApp(App):
         logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
 
         if character == 'merc':
-            pass
             char = Mercenary()
+            if server:
+                clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
         else:
             char = Spy()
+            if server:
+                clientNetworker = ClientNetworker(np.SPY_TYPE)
 
-
+        if server:
+            clientNetworker.connect(server, 9999)
 
         game = SpylightGame(character=char, map=map)
 
