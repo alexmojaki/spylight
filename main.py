@@ -26,6 +26,7 @@ character = None
 server = None
 logger = None
 CELL_SIZE = 32
+MAX_MIN_COUNTDOWN = 3
 clientNetworker = None
 game = None
 shadow = None
@@ -42,11 +43,13 @@ class SpylightGame(Widget):
         self.soundReload = SoundLoader.load("music/reload.wav")
         self.soundModem = SoundLoader.load("music/modem.wav")
         self.soundPunch = SoundLoader.load("music/punch.wav")
+        self.soundBoom = SoundLoader.load("music/boom.wav")
 
         shadow = Shadow()
         self.character = character
         self.add_widget(MapView(map=map, character=self.character))
         self.add_widget(character)
+        self.started = False
 
     def update(self, useless, **kwargs):
         self.character.update(kwargs)
@@ -68,6 +71,22 @@ class SpylightGame(Widget):
 
     def playPunch(self):
         self.soundPunch.play()
+
+    def playBoom(self):
+        self.soundBoom.play()
+
+    def end(self):
+        game.playShot()
+        print "The mercenary won!"
+        sys.exit()
+
+    def start(self):
+        timer = Timer()
+        game.add_widget(timer)
+        Clock.schedule_interval(timer.updateTime, 1)
+        self.started = True
+
+
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -114,6 +133,7 @@ class Character(Widget):
     x3 = NumericProperty(100)
     y3 = NumericProperty(100)
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
+    sprite = StringProperty(None)
 
     def __init__(self, **kwargs):
         super(Character, self).__init__(**kwargs)
@@ -145,7 +165,6 @@ class Character(Widget):
             self.sPressed = True
         if keycode[1] == 'd'or keycode[1] == 'right':
             self.dPressed = True
-        # logging.info(keycode[1])
 
         if 'shift' in modifiers:
             self.running = True
@@ -173,49 +192,49 @@ class Character(Widget):
 
 
     def update(self, useless, **kwargs):
+        if game.started:
+            maxVelocity = 3
+            if self.running:
+                maxVelocity = maxVelocity+self.runningBonus
 
-        maxVelocity = 3
-        if self.running:
-            maxVelocity = maxVelocity+self.runningBonus
+            deceleration = 1
+            # print 'update', self.velocity
 
-        deceleration = 1
-        # print 'update', self.velocity
-
-        if self.zPressed:
-            if self.sPressed:
-                self.velocity[1] = 0
+            if self.zPressed:
+                if self.sPressed:
+                    self.velocity[1] = 0
+                else:
+                    self.velocity[1] = maxVelocity
             else:
-                self.velocity[1] = maxVelocity
-        else:
-             if self.sPressed:
-                self.velocity[1] = -maxVelocity
+                 if self.sPressed:
+                    self.velocity[1] = -maxVelocity
 
-        if self.qPressed:
-            if self.dPressed:
-                self.velocity[0] = 0
+            if self.qPressed:
+                if self.dPressed:
+                    self.velocity[0] = 0
+                else:
+                    self.velocity[0] = -maxVelocity
             else:
-                self.velocity[0] = -maxVelocity
-        else:
-            if self.dPressed:
-                self.velocity[0] = maxVelocity
+                if self.dPressed:
+                    self.velocity[0] = maxVelocity
 
-        # print 'velocity ' + str(self.velocity)
+            # print 'velocity ' + str(self.velocity)
 
-        pos2 = self.velocity + self.pos
-        if(self.canGo(pos2)):
-            self.pos = pos2
+            pos2 = self.velocity + self.pos
+            if(self.canGo(pos2)):
+                self.pos = pos2
 
 
-        for i in xrange(0,2):
-            if self.velocity[i] < 0:
-                self.velocity[i] += deceleration
-            elif self.velocity[i] > 0:
-                self.velocity[i] -= deceleration
+            for i in xrange(0,2):
+                if self.velocity[i] < 0:
+                    self.velocity[i] += deceleration
+                elif self.velocity[i] > 0:
+                    self.velocity[i] -= deceleration
 
-        heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
-        self.x1, self.y1 = self.center_x, self.center_y
-        self.x2, self.y2 = Vector(-50, 100).rotate(heading) + [self.center_x, self.center_y]
-        self.x3, self.y3 = Vector(50, 100).rotate(heading) + [self.center_x, self.center_y]
+            self.heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
+            self.x1, self.y1 = self.center_x, self.center_y
+            self.x2, self.y2 = Vector(-50, 100).rotate(self.heading) + [self.center_x, self.center_y]
+            self.x3, self.y3 = Vector(50, 100).rotate(self.heading) + [self.center_x, self.center_y]
 
         if server:
             self.notifyServer()
@@ -236,9 +255,11 @@ class Character(Widget):
     def notifyServer(self):
         clientNetworker.pos(*self.pos)
         clientNetworker.mouse_pos(*Window.mouse_pos)
-        clientNetworker.send()
+
         if self.running:
             clientNetworker.run()
+
+        clientNetworker.send()
 
         self.displayReception()
 
@@ -257,7 +278,7 @@ class Character(Widget):
             game.playShot()
             self.pos = (-42, -42)
             Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
-            
+
             # self.deathLabel = Label("Boom!")
             # addWidget(deathLabel)
 
@@ -271,27 +292,45 @@ class Spy(Character):
     def __init__(self, **kwargs):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
-        self.runningBonus = 2
+        self.runningBonus = 12
         self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
         self.capturing = False
 
     def update(self, useless, **kwargs):
-        if self.capturing and (self.zPressed or self.qPressed or self.sPressed or self.dPressed):
-            self.capturing = False
-            game.stopModem()
-            if server:
-                clientNetworker.desactivate()
-        super(Spy,self).update(useless, **kwargs)
+        if game.started:
+            if self.capturing and (self.zPressed or self.qPressed or self.sPressed or self.dPressed):
+                self.capturing = False
+                game.stopModem()
+                if server:
+                    clientNetworker.desactivate()
+            super(Spy,self).update(useless, **kwargs)
+            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
+                self.sprite = 'art/spy0.png'
+            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
+                self.sprite = 'art/spy315.png'
+            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
+                self.sprite = 'art/spy270.png'
+            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
+                self.sprite = 'art/spy225.png'
+            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
+                self.sprite = 'art/spy180.png'
+            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
+                self.sprite = 'art/spy135.png'
+            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
+                self.sprite = 'art/spy90.png'
+            else:
+                self.sprite = 'art/spy45.png'
 
     def activate(self):
-        super(Spy,self).activate()
-        game.playModem()
-        self.capturing = True
-        logger.info('Spy is activating!')
-        if server:
-            clientNetworker.activate()
+        if game.started:
+            super(Spy,self).activate()
+            game.playModem()
+            self.capturing = True
+            logger.info('Spy is activating!')
+            if server:
+                clientNetworker.activate()
 
 
 class Mercenary(Character):
@@ -305,18 +344,36 @@ class Mercenary(Character):
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
-        self.running = True
-        super(Mercenary,self).update(useless, **kwargs)
+        if game.started:
+            self.running = True
+            super(Mercenary,self).update(useless, **kwargs)
+            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
+                self.sprite = 'art/mercenary0.png'
+            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
+                self.sprite = 'art/mercenary315.png'
+            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
+                self.sprite = 'art/mercenary270.png'
+            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
+                self.sprite = 'art/mercenary225.png'
+            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
+                self.sprite = 'art/mercenary180.png'
+            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
+                self.sprite = 'art/mercenary135.png'
+            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
+                self.sprite = 'art/mercenary90.png'
+            else:
+                self.sprite = 'art/mercenary45.png'
 
     def activate(self):
-        super(Mercenary,self).activate()
-        
-        logger.info('Mercenary is activating!')
-        game.add_widget(Mine(self.center))
+        if game.started:
+            super(Mercenary,self).activate()
 
-        if server:
-            clientNetworker.drop(np.OT_MINE)
-            
+            logger.info('Mercenary is activating!')
+            game.add_widget(Mine(self.center))
+
+            if server:
+                clientNetworker.drop(np.OT_MINE)
+
 
 
 class Wall(Widget):
@@ -338,8 +395,33 @@ class Mine(Widget):
 
 
 class Timer(Widget):
+    time = StringProperty("00:00")
+
+
     def __init__(self, **kwargs):
-        Clock()        
+        self.mins = MAX_MIN_COUNTDOWN
+        self.secs = 0
+        self.timeToString()
+        super(Timer, self).__init__(**kwargs)
+
+    def timeToString(self):
+        self.time = '0'+str(self.mins)+':'
+        if self.secs < 10:
+            self.time += '0' + str(self.secs)
+        else:
+            self.time += str(self.secs)
+
+
+    def updateTime(self, useless):
+        global game
+        self.secs -= 1
+        if self.secs == -1:
+            self.mins -= 1
+            self.secs = 59
+
+        self.timeToString()
+        if self.mins == 0 and self.secs == 0:
+            game.end()
 
 Factory.register("MapView", MapView)
 
@@ -378,6 +460,8 @@ class SpylightApp(App):
         game = SpylightGame(character=char, map=map)
 
         Clock.schedule_interval(game.update, 1.0 / 60.0)
+
+        game.start()
 
         return game
 
