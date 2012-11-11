@@ -91,7 +91,7 @@ class ClientNetworker(object):
 
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # debugging purposes
     cn = ClientNetworker(np.SPY_TYPE)
     cn.connect("localhost", 9999)
     x, y = 0, 0

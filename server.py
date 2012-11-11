@@ -2,6 +2,7 @@
 import SocketServer
 import sys
 from math import sqrt
+import logging
 
 import network_protocol as np
 from slmap import SLMap
@@ -32,6 +33,7 @@ class GameServerEngine(object):
 
     def __init__(self):
         global MAP
+        self.logger = logging.getLogger("gs.log")
         super(GameServerEngine, self).__init__()
         self.spy = Player(np.SPY_TYPE)
         self.spy.lives = self.SPY_INITIAL_LIVES
@@ -47,7 +49,7 @@ class GameServerEngine(object):
             #@TODO
             self.spy.lives -= 1
         else:
-            print "A spy tried to shoot!"
+            self.logger.info("A spy tried to shoot!")
 
     def drop(self, player, objType):
         print "Drop objType=", objType, "Not yet implemented"# @TODO
@@ -60,7 +62,7 @@ class GameServerEngine(object):
         print "Activate() at pos=", player.pos, "Not yet implemented" # @TODO
 
     def run(self, player):
-        print "Run() for player of type", player.playerType
+        self.logger.info("Run() for player of type", player.playerType
         player.running = True
 
     def beep_level(self, p1):
@@ -128,16 +130,16 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
             rep = ""
             try:
                 self.data = np.recv_end(self.request)
-                print "{} wrote:".format(self.client_address[0])
-                print self.data
+                self.logger.info("{} wrote:".format(self.client_address[0]))
+                self.logger.info( self.data)
             except Exception as e:
-                print "Socket error 2"
-                print e
+                self.logger.info( "Socket error 2")
+                self.logger.info(e)
                 break
 
             lines = [_.strip().split(" ") for _ in self.data.strip().split("\n")]
 
-            print "lines:", lines
+            self.logger.info( "lines:" + str(lines))
 
             if lines[0][0] == np.SPY_TXT:
                 player = self.gs.spy
@@ -158,9 +160,9 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
             l = len(lines)
             i = 3
             while l > i:
-                print lines[i][0]
-                print np.ACTIVATE_TXT
-                print lines[i][0] == np.ACTIVATE_TXT
+                self.logger.info(lines[i][0])
+                self.logger.info(np.ACTIVATE_TXT)
+                self.logger.info(lines[i][0] == np.ACTIVATE_TXT)
 
                 if lines[i][0] == np.SHOOT_TXT:
                     self.gs.shoot(player)
@@ -182,14 +184,14 @@ class SLTCPServer(SocketServer.BaseRequestHandler):
                 else:
                     rep += "-42 -42"
                 self.request.sendall(rep + np.MSG_END)
-                print "Data sent: ", rep
+                self.logger.info("Data sent: " + str(rep))
             except Exception as e:
-                print "Socket error 3"
-                print str(e)
+                self.logger.info("Socket error 3")
+                self.logger.info(str(e))
                 break
             
 
-if __name__ == "__main__":
+if __name__ == "__main__": # for debugging purposes
     if len(sys.argv) > 1:
         MAP = sys.argv[1]
     else:
