@@ -59,11 +59,13 @@ class GameServerEngine(object):
             self.logger.info("A spy tried to shoot!")
 
     def drop(self, player, objType):
-        print "Drop objType=", objType, "Not yet implemented"# @TODO
+        print "Drop objType=", objType
         if objType == np.OT_MINE:
+            print "Obj is a mine"
             self.mines.append((player.pos[0], player.pos[1]))
         elif objType == np.OT_DETECTOR:
             self.detectors.append((player.pos[0], player.pos[1]))
+        self.logger.info(self.mines)
 
     def activate(self, player):
         print "Activate() at pos=" + str(player.pos) + "Not yet implemented" # @TODO
@@ -161,10 +163,13 @@ class SLTCPRequestHandler(object):
             player.mousePos = (int(lines[2][0]), int(lines[2][1]))
 
             TRAPPED = ""
+            DEAD = False
             if player == self.gs.spy:
                 trapped = self.gs.trapped(player)
                 if trapped != self.gs.TRAP_FREE:
-                    TRAPPED = "\n" + np.TRAPPED_TXT + " " + trapped
+                    TRAPPED = "\n" + np.TRAPPED_TXT + " " + str(trapped)
+                    if trapped == self.gs.TRAP_MINED:
+                        DEAD = True
 
             l = len(lines)
             i = 3
@@ -176,7 +181,7 @@ class SLTCPRequestHandler(object):
                 if lines[i][0] == np.SHOOT_TXT:
                     self.gs.shoot(player)
                 elif lines[i][0] == np.OBJECT_TXT:
-                    self.gs.drop(player, lines[i][1])
+                    self.gs.drop(player, int(lines[i][1]))
                 elif lines[i][0] == np.ACTIVATE_TXT:
                     self.gs.activate(player)
                 elif lines[i][0] == np.RUN_TXT:
@@ -188,9 +193,12 @@ class SLTCPRequestHandler(object):
                     rep += str(ennemy.pos[0]) + " " + str(ennemy.pos[1])
                     rep += "\n" + np.BEEP_TXT + " " + str(self.gs.beep_level(player))
                     rep += "\n" + np.NOISE_TXT + " " + str(self.gs.noise_level(player, ennemy))
-                    rep += TRAPPED
                 else:
                     rep += "-42 -42"
+                rep += TRAPPED
+                if DEAD:
+                    rep += "\n" + np.DEAD_TXT
+                
                 self.request.sendall(rep + np.MSG_END)
                 self.logger.info("Data sent: " + str(rep))
             except Exception as e:
