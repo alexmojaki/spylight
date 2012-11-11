@@ -131,6 +131,7 @@ class Character(Widget):
     x3 = NumericProperty(100)
     y3 = NumericProperty(100)
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
+    sprite = StringProperty(None)
 
     def __init__(self, **kwargs):
         super(Character, self).__init__(**kwargs)
@@ -303,22 +304,22 @@ class Spy(Character):
             if server:
                 clientNetworker.desactivate()
         super(Spy,self).update(useless, **kwargs)
-        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
+        if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
             self.sprite = 'art/spy0.png'
         elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-            self.sprite = 'art/spy45.png'
+            self.sprite = 'art/spy315.png'
         elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-            self.sprite = 'art/spy90.png'
+            self.sprite = 'art/spy270.png'
         elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-            self.sprite = 'art/spy135.png'
+            self.sprite = 'art/spy225.png'
         elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
             self.sprite = 'art/spy180.png'
         elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-            self.sprite = 'art/spy225.png'
+            self.sprite = 'art/spy135.png'
         elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-            self.sprite = 'art/spy270.png'
+            self.sprite = 'art/spy90.png'
         else:
-            self.sprite = 'art/spy315.png'
+            self.sprite = 'art/spy45.png'
 
     def activate(self):
         super(Spy,self).activate()
@@ -342,22 +343,22 @@ class Mercenary(Character):
     def update(self, useless, **kwargs):
         self.running = True
         super(Mercenary,self).update(useless, **kwargs)
-        if self.heading % 360 >= 337.5 and self.heading % 360 < 22.5:
+        if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
             self.sprite = 'art/mercenary0.png'
         elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-            self.sprite = 'art/mercenary45.png'
+            self.sprite = 'art/mercenary315.png'
         elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-            self.sprite = 'art/mercenary90.png'
+            self.sprite = 'art/mercenary270.png'
         elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-            self.sprite = 'art/mercenary135.png'
+            self.sprite = 'art/mercenary225.png'
         elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
             self.sprite = 'art/mercenary180.png'
         elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-            self.sprite = 'art/mercenary225.png'
+            self.sprite = 'art/mercenary135.png'
         elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-            self.sprite = 'art/mercenary270.png'
+            self.sprite = 'art/mercenary90.png'
         else:
-            self.sprite = 'art/mercenary315.png'
+            self.sprite = 'art/mercenary45.png'
 
     def activate(self):
         super(Mercenary,self).activate()
