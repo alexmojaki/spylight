@@ -138,13 +138,13 @@ class Character(Widget):
 
     def _on_keyboard_up(self, useless, keycode):
 
-        if keycode[1] == 'z':
+        if keycode[1] == 'z' or keycode[1] == 'up':
             self.zPressed = False
-        if keycode[1] == 'q':
+        if keycode[1] == 'q' or keycode[1] == 'left':
             self.qPressed = False
-        if keycode[1] == 's':
+        if keycode[1] == 's' or keycode[1] == 'down':
             self.sPressed = False
-        if keycode[1] == 'd':
+        if keycode[1] == 'd' or keycode[1] == 'right':
             self.dPressed = False
         if keycode[1] == 'e':
             self.activate()
@@ -229,7 +229,11 @@ class Character(Widget):
             game.playBeep()
 
         if ret.gameOver:
-            pass
+            sys.exit()
+
+        if red.dead:
+            game.playShot()
+            self.pos = self.spawnPoint
 
 
 
@@ -239,12 +243,12 @@ class Spy(Character):
         logger.info('init spy')
         self.sprite = 'art/spy.png'
         
-        self.pos = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
+        self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
+        self.pos = self.spawnPoint
         super(Spy, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
         super(Spy,self).update(useless, **kwargs)
-        logger.info('Spy is updating!')
 
     def activate(self):
         super(Spy,self).activate()
@@ -257,18 +261,22 @@ class Mercenary(Character):
         global map
         logger.info('init mercenary')
         self.sprite = 'art/mercenary.png'
-        self.pos = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
+        self.spawnPoint = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
+        self.pos = self.spawnPoint
         super(Mercenary, self).__init__(**kwargs)
 
     def update(self, useless, **kwargs):
         super(Mercenary,self).update(useless, **kwargs)
-        logger.info('Mercenary is updating!')
 
     def activate(self):
         super(Mercenary,self).activate()
-        clientNetworker.drop(np.OT_MINE)
-        # Mine()
+        
         logger.info('Mercenary is activating!')
+        game.add_widget(Mine(self.center))
+
+        if server:
+            clientNetworker.drop(np.OT_MINE)
+            
 
 
 class Wall(Widget):
@@ -282,7 +290,9 @@ class Shadow(Widget):
     pass
 
 class Mine(Widget):
-    pass
+    def __init__(self, pos, **kwargs):
+        self.pos = pos[0]-10, pos[1]-10;
+        super(Mine, self).__init__(**kwargs)
 
 
 Factory.register("MapView", MapView)
