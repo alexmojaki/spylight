@@ -41,7 +41,7 @@ class SpylightGame(Widget):
         self.soundShot = SoundLoader.load("music/shot.wav")
         self.soundReload = SoundLoader.load("music/reload.wav")
         self.soundModem = SoundLoader.load("music/modem.wav")
-        self.soundPunch = SOundLoader.load("music/punch.wav")
+        self.soundPunch = SoundLoader.load("music/punch.wav")
 
         shadow = Shadow()
         self.character = character
