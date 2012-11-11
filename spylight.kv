@@ -2,7 +2,6 @@
 
 <Character>:
     size: 32,32
-    pos:  32,32
     canvas:
         Rectangle:
             pos:self.pos
@@ -25,12 +24,20 @@
             size: 16,16
             source: 'art/terminal.png'
 
+<Shadow>:
+    size: 10, 10
+    canvas:
+        Color(0.5,0.5,0.5)
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
 <MapView>:
 
     canvas:
         StencilPush
         Triangle:
-            points: self.spy.points
+            points: self.character.points
         StencilUse
         Rectangle:
             pos:0,0
