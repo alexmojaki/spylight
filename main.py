@@ -362,6 +362,7 @@ class Mercenary(Character):
         self.spawnPoint = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
         self.pos = self.spawnPoint
         super(Mercenary, self).__init__(**kwargs)
+        self.mines = dict()
 
     def update(self, useless, **kwargs):
         if game.started:
@@ -389,12 +390,19 @@ class Mercenary(Character):
             super(Mercenary,self).activate()
 
             logger.info('Mercenary is activating!')
-            game.add_widget(Mine(self.center))
+            if not self.mines.has_key(str(self.center)):
+                mw = Mine(self.center)
+                self.mines[str(self.center)] = mw
+                game.add_widget(mw)
 
             if server:
                 clientNetworker.drop(np.OT_MINE)
 
+    def displayReception(self):
+        super(Mercenary, self).displayReception()
 
+        if ret["boom"]:
+            game.remove_widget(self.mines.pop(str([0, 0])))
 
 class Wall(Widget):
     pass
