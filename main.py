@@ -280,10 +280,6 @@ class Character(Widget):
         global game
         ret = clientNetworker.recv()
 
-        logger.info(ret)
-
-        logger.info(shadow.pos)
-
         shadow.pos = ret["ennemy"]
 
         if ret["cap"] > -1:
