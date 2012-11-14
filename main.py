@@ -14,13 +14,14 @@ from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProper
 from kivy.clock import Clock
 from kivy.factory import Factory
 import sys
-import logging
+# import logging
 import math
 
 import network_protocol as np
 from client import ClientNetworker
 from slmap import SLMap
-
+from character import Spy,Mercenary
+import custom_logger as c
 
 from kivy.config import Config
 
@@ -33,15 +34,27 @@ CELL_SIZE = 32
 MAX_MIN_COUNTDOWN = 3
 clientNetworker = None
 game = None
-shadow = None
 capInfo = None
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
 
-    def __init__(self, character, map, **kwargs):
-        global shadow, capInfo
+    def __init__(self, character, cellMap, **kwargs):
         super(SpylightGame, self).__init__(**kwargs)
+
+        if character == 'merc':
+            self.character = Mercenary(game=self, cellMap=cellMap, server=server)
+            shadow = Shadow('art/spy.png')
+            if server:
+                clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
+        else:
+            self.character = Spy(game=self, cellMap=cellMap, server=server)
+            shadow = Shadow('art/mercenary.png')
+            if server:
+                clientNetworker = ClientNetworker(np.SPY_TYPE)
+
+        if server:
+            clientNetworker.connect(server, 9999)
 
         self.soundBeep = SoundLoader.load("music/beep.wav")
         self.soundShot = SoundLoader.load("music/shot.wav")
@@ -50,15 +63,15 @@ class SpylightGame(Widget):
         self.soundPunch = SoundLoader.load("music/punch.wav")
         self.soundBoom = SoundLoader.load("music/boom.wav")
 
-        self.character = character
         self.add_widget(MapView(map=map, character=self.character, shadow=shadow))
-        self.add_widget(character)
-        capInfo = CapInfo()
-        self.add_widget(capInfo)
+        self.add_widget(self.character)
+        # self.capInfo = CapInfo()
+        # self.add_widget(capInfo)
         self.started = False
 
     def update(self, useless, **kwargs):
         self.character.update(kwargs)
+        # self.capInfo.update(kwargs)
 
     def playBeep(self):
         self.soundBeep.play()
@@ -114,7 +127,7 @@ class MapView(Widget):
         self.shadow = shadow
 
         super(MapView, self).__init__()
-        self.logger = logging.getLogger("SpylightApp")
+        self.logger = c.logger
         self.width = map.width*CELL_SIZE
         self.height = map.height*CELL_SIZE
         self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
@@ -130,279 +143,6 @@ class MapView(Widget):
                     term.pos = (x*CELL_SIZE, y*CELL_SIZE)
                     self.add_widget(term)
 
-
-
-class Character(Widget):
-    RESPAWN_TIME = 2 # in seconds
-    x1 = NumericProperty(0)
-    y1 = NumericProperty(0)
-    x2 = NumericProperty(0)
-    y2 = NumericProperty(100)
-    x3 = NumericProperty(100)
-    y3 = NumericProperty(100)
-    points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
-    sprite = StringProperty(None)
-
-    def __init__(self, **kwargs):
-        super(Character, self).__init__(**kwargs)
-
-        self.zPressed = False
-        self.qPressed = False
-        self.sPressed = False
-        self.dPressed = False
-        self.ePressed = False
-        self.velocity = Vector(0,0)
-        self.running = False
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self._keyboard.bind(on_key_up=self._on_keyboard_up)
-
-    def _keyboard_closed(self):
-        # print 'My keyboard have been closed!'
-        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
-        self._keyboard = None
-
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        pos2 = self.pos
-        # Keycode is composed of an integer + a string
-        if keycode[1] == 'z'or keycode[1] == 'up':
-            self.zPressed = True
-        if keycode[1] == 'q'or keycode[1] == 'left':
-            self.qPressed = True
-        if keycode[1] == 's'or keycode[1] == 'down':
-            self.sPressed = True
-        if keycode[1] == 'd'or keycode[1] == 'right':
-            self.dPressed = True
-
-        if 'shift' in modifiers:
-            self.running = True
-
-        return True
-
-    def _on_keyboard_up(self, useless, keycode):
-
-        if keycode[1] == 'z' or keycode[1] == 'up':
-            self.zPressed = False
-        if keycode[1] == 'q' or keycode[1] == 'left':
-            self.qPressed = False
-        if keycode[1] == 's' or keycode[1] == 'down':
-            self.sPressed = False
-        if keycode[1] == 'd' or keycode[1] == 'right':
-            self.dPressed = False
-        if keycode[1] == 'e':
-            self.activate()
-        return True
-
-    def activate(self):
-        pass
-
-
-    def update(self, useless, **kwargs):
-        if game.started:
-            maxVelocity = 3
-            if self.running:
-                maxVelocity = maxVelocity+self.runningBonus
-
-            deceleration = 1
-            # print 'update', self.velocity
-
-            if self.zPressed:
-                if self.sPressed:
-                    self.velocity[1] = 0
-                else:
-                    self.velocity[1] = maxVelocity
-            else:
-                 if self.sPressed:
-                    self.velocity[1] = -maxVelocity
-
-            if self.qPressed:
-                if self.dPressed:
-                    self.velocity[0] = 0
-                else:
-                    self.velocity[0] = -maxVelocity
-            else:
-                if self.dPressed:
-                    self.velocity[0] = maxVelocity
-
-            # print 'velocity ' + str(self.velocity)
-
-            pos2 = self.velocity + self.pos
-            if(self.canGo(pos2)):
-                self.pos = pos2
-            else:
-                for i in xrange(0,2):
-                    if self.velocity[i] > 0:
-                        self.pos[i] -= 1
-                    elif self.velocity[i] < 0:
-                        self.pos[i] += 1
-
-
-            for i in xrange(0,2):
-                if self.velocity[i] < 0:
-                    self.velocity[i] += deceleration
-                elif self.velocity[i] > 0:
-                    self.velocity[i] -= deceleration
-
-            self.heading = (Vector(*Window.mouse_pos) - Vector(self.center_x, self.center_y)).angle(Vector(0, 1))
-            self.x1, self.y1 = self.center_x, self.center_y
-            self.x2, self.y2 = Vector(-50, 100).rotate(self.heading) + [self.center_x, self.center_y]
-            self.x3, self.y3 = Vector(50, 100).rotate(self.heading) + [self.center_x, self.center_y]
-
-        if server:
-            self.notifyServer()
-
-        self.running = False;
-        # print 'Position',self.pos, 'Triangle', self.points
-
-    def canGo(self,pos2):
-        margin = 7
-        ret = map.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
-        ret = ret and map.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
-        ret = ret and map.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
-        ret = ret and map.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
-        logger.debug(pos2, (pos2[0]+margin)/CELL_SIZE,(pos2[1]+margin)/CELL_SIZE)
-
-        return ret
-
-    def notifyServer(self):
-        clientNetworker.pos(*self.pos)
-        clientNetworker.mouse_pos(*Window.mouse_pos)
-
-        if self.running:
-            clientNetworker.run()
-
-
-        clientNetworker.send()
-
-        self.displayReception()
-
-    def displayReception(self):
-        global game
-        ret = clientNetworker.recv()
-
-        shadow.pos = ret["ennemy"]
-
-        if ret["cap"] > -1:
-            capInfo.update(ret["cap"])
-            game.playModem()
-            
-
-        if ret["beep"]:
-            game.playBeep()
-
-        if ret["dead"]:
-            game.playShot()
-            self.pos = (-42, -42)
-            Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
-
-            # self.deathLabel = Label("Boom!")
-            # addWidget(deathLabel)
-
-        if ret["lost"]:
-            sys.exit()
-
-    def spawn(self, dt):
-        self.pos = self.spawnPoint
-
-
-class Spy(Character):
-    def __init__(self, **kwargs):
-        logger.info('init spy')
-        self.sprite = 'art/spy.png'
-        self.runningBonus = 12
-        self.spawnPoint = (map.spawnPoints[map.SPY_SPAWN][0]*CELL_SIZE, map.spawnPoints[map.SPY_SPAWN][1]*CELL_SIZE)
-        self.pos = self.spawnPoint
-        super(Spy, self).__init__(**kwargs)
-        self.capturing = False
-
-    def update(self, useless, **kwargs):
-        if game.started:
-                
-            if self.capturing:
-                if self.zPressed or self.qPressed or self.sPressed or self.dPressed:
-                    self.capturing = False
-                    capInfo.update(0)
-                    game.stopModem()
-                elif server:
-                    clientNetworker.activate()
-                        
-
-            super(Spy,self).update(useless, **kwargs)
-            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
-                self.sprite = 'art/spy0.png'
-            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-                self.sprite = 'art/spy315.png'
-            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-                self.sprite = 'art/spy270.png'
-            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-                self.sprite = 'art/spy225.png'
-            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
-                self.sprite = 'art/spy180.png'
-            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-                self.sprite = 'art/spy135.png'
-            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-                self.sprite = 'art/spy90.png'
-            else:
-                self.sprite = 'art/spy45.png'
-
-    def activate(self):
-        if game.started:
-            self.capturing = True
-            logger.info('Spy is activating!')
-            if server:
-                clientNetworker.activate()
-
-
-class Mercenary(Character):
-    def __init__(self, **kwargs):
-        global map
-        logger.info('init mercenary')
-        self.runningBonus = 0
-        self.sprite = 'art/mercenary.png'
-        self.spawnPoint = (map.spawnPoints[map.MERCENARY_SPAWN][0]*CELL_SIZE,map.spawnPoints[map.MERCENARY_SPAWN][1]*CELL_SIZE)
-        self.pos = self.spawnPoint
-        super(Mercenary, self).__init__(**kwargs)
-        self.mines = dict()
-
-    def update(self, useless, **kwargs):
-        if game.started:
-            self.running = True
-            super(Mercenary,self).update(useless, **kwargs)
-            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
-                self.sprite = 'art/mercenary0.png'
-            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-                self.sprite = 'art/mercenary315.png'
-            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-                self.sprite = 'art/mercenary270.png'
-            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-                self.sprite = 'art/mercenary225.png'
-            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
-                self.sprite = 'art/mercenary180.png'
-            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-                self.sprite = 'art/mercenary135.png'
-            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-                self.sprite = 'art/mercenary90.png'
-            else:
-                self.sprite = 'art/mercenary45.png'
-
-    def activate(self):
-        if game.started:
-            super(Mercenary,self).activate()
-
-            logger.info('Mercenary is activating!')
-            if not self.mines.has_key(str(self.center)):
-                mw = Mine(self.center)
-                self.mines[str(self.center)] = mw
-                game.add_widget(mw)
-
-            if server:
-                clientNetworker.drop(np.OT_MINE)
-
-    def displayReception(self):
-        super(Mercenary, self).displayReception()
-
-        if ret["boom"]:
-            game.remove_widget(self.mines.pop(str([0, 0])))
 
 class Wall(Widget):
     pass
@@ -423,14 +163,15 @@ class Mine(Widget):
         self.pos = pos[0]-10, pos[1]-10;
         super(Mine, self).__init__(**kwargs)
 
-class CapInfo(Widget):
-    percentage = StringProperty("0%")
+# class CapInfo(Widget):
+#     percentage = StringProperty("0%")
 
-    def __init__(self, **kwargs):
-        super(CapInfo, self).__init__(**kwargs)
+#     def __init__(self, **kwargs):
+#         c.logger.info("cap info created")
+#         super(CapInfo, self).__init__(**kwargs)
 
-    def update(self, newValue):
-        self.percentage = str(newValue)+'%'
+#     def update(self, newValue):
+#         self.percentage = str(newValue)+'%'
 
 
 
@@ -469,38 +210,15 @@ Factory.register("Shadow", Shadow)
 
 class SpylightApp(App):
 
-    def initLogger(self):
-        logger = logging.getLogger("SpylightApp")
-        logger.addHandler(logging.FileHandler("spylight.log"))
-        logger.setLevel(logging.INFO)
-        return logger
-
     def build(self):
-        global map, logger, clientNetworker, game, shadow
-        logger = self.initLogger()
+        global map, clientNetworker, game
 
 
         map = SLMap("test.map")
-        logger.info("Map loaded: " + map.title)
-        logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")
+        c.logger.info("Map loaded: " + map.title)
+        c.logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")        
 
-        logger.info("What in (4, 8): " + str(map.getItem(4, 8)))
-
-        if character == 'merc':
-            char = Mercenary()
-            shadow = Shadow('art/spy.png')
-            if server:
-                clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
-        else:
-            char = Spy()
-            shadow = Shadow('art/mercenary.png')
-            if server:
-                clientNetworker = ClientNetworker(np.SPY_TYPE)
-
-        if server:
-            clientNetworker.connect(server, 9999)
-
-        game = SpylightGame(character=char, map=map)
+        game = SpylightGame(self.character, map)
 
         Clock.schedule_interval(game.update, 1.0 / 60.0)
 
@@ -510,11 +228,15 @@ class SpylightApp(App):
 
 if __name__ == '__main__':
     global character, server
-
+    
     if len(sys.argv) >= 2:
         character = sys.argv[1]
 
     if len(sys.argv) >= 3:
         server = sys.argv[2]
 
-    SpylightApp().run()
+    app = SpylightApp()
+    app.character = character
+    app.server = server
+
+    app.run()
