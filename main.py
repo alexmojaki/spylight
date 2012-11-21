@@ -278,6 +278,15 @@ class Character(Widget):
                     ind2 = (i + 1) % l
                     v = Vector([coords[ind][0] - m[0], coords[ind][1] - m[1]]) * self.coeff
                     v2 = Vector([coords[ind2][0] - m[0], coords[ind2][1] - m[1]]) * self.coeff
+                    points = [
+                        coords[ind][0], coords[ind][1], # obstacle's edge's pt1 
+                        coords[ind][0] + v[0], coords[ind][1] + v[1], # obstacle's edge's pt1 + v
+                        coords[ind2][0] + v2[0], coords[ind2][1] + v2[1], # obstacle's edge's pt2 + v2
+                        coords[ind2][0], coords[ind2][1] # obstacle's edge's pt2
+                        ]
+                    with self.parent.canvas:
+                        Color(1,0,0)
+                        Line(points=points, width=1)
                     points2 = [
                             [ coords[ind][0], coords[ind][1] ], # pt1
                             [ coords[ind][0] + v[0], coords[ind][1] + v[1] ], # pt1 + v
