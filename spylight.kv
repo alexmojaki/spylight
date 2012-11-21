@@ -1,4 +1,4 @@
-#:kivy 1.4.1
+#:kivy 1.4.2
 
 <Character>:
     size: 32,32
@@ -56,7 +56,11 @@
         StencilPush
         Triangle:
             points: self.character.points
+        Ellipse:
+        	pos: (self.character.x2 + self.character.x3)/2-50, (self.character.y2 + self.character.y3)/2-50
+        	size: 100, 100
         StencilUse
+            func_op: 'lequal'
         Rectangle:
             pos:0,0
             size:self.width, self.height
