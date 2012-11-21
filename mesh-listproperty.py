@@ -12,6 +12,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.app import App
 from kivy.graphics import Color, Rectangle, Line, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle
 from kivy.graphics import Mesh, Quad
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, ObjectProperty, StringProperty
 # from functools import partial
 # from math import cos, sin, pi
 from kivy.core.window import Window
@@ -30,6 +31,8 @@ random.seed()
 Builder.load_string('''
 <MyWidget>:
     canvas:
+        Color:
+            rgb: 0,1,0
         Mesh:
             vertices: self.vertices
             indices: self.indices
@@ -38,15 +41,17 @@ Builder.load_string('''
 
 class MyWidget(Widget):
     """docstring for MyWidget"""
-    vertices = ListProperty([])
-    indices = ListProperty([])
+    vertices = ListProperty([100, 200, 300, 400])
+    indices = ListProperty([0,1])
     def __init__(self):
         super(MyWidget, self).__init__()
 
-    def update(self):
-        vertices.append(randint() % 300)
-        vertices.append(randint() % 300)
-        indices = range(0, len(indices) + 2)
+    def update(self, dt):
+        self.vertices.append(randint(0, 300))
+        self.vertices.append(randint(0, 300))
+        self.indices = range(0, len(self.indices) + 2)
+        print self.vertices
+        print self.indices
 
 class MeshTestApp(App):
     coeff = 0.8        
