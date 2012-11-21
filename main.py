@@ -4,7 +4,7 @@
 from os.path import join
 from kivy.app import App
 from kivy.core.image import Image
-from kivy.graphics import Color, Rectangle, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle
+from kivy.graphics import Color, Rectangle, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle, Line
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -148,7 +148,8 @@ class Character(Widget):
     sightPts = ListProperty([])
     sightIndices = ListProperty([])
     sprite = StringProperty(None)
-
+    MAX_SIGHT_DIST = 110
+    
     def __init__(self, **kwargs):
         super(Character, self).__init__(**kwargs)
 
@@ -262,12 +263,12 @@ class Character(Widget):
             # Occlusion computation
 
             
-            m = Window.mouse_pos
+            m = (self.x1, self.y1)
             for o in map.walls:
                 polygons = []
-                x, y = o[0], o[1]
+                x, y = o[0]*CELL_SIZE, o[1]*CELL_SIZE
                 # Is this wall potentially colliding with my sight? (is it in the sight range?)
-                if (abs(self.center_x - x)-CELL_SIZE) > 0 and (abs(self.center_y - y)-CELL_SIZE) > 0:
+                if (abs(self.center_x - x)-CELL_SIZE) > self.MAX_SIGHT_DIST or (abs(self.center_y - y)-CELL_SIZE) > self.MAX_SIGHT_DIST:
                     # Then, not in sight range, so skip it
                     continue
                 coords = [[x, y], [x+CELL_SIZE, y], [x+CELL_SIZE, y+CELL_SIZE], [x, y+CELL_SIZE]]
@@ -278,15 +279,15 @@ class Character(Widget):
                     ind2 = (i + 1) % l
                     v = Vector([coords[ind][0] - m[0], coords[ind][1] - m[1]]) * self.coeff
                     v2 = Vector([coords[ind2][0] - m[0], coords[ind2][1] - m[1]]) * self.coeff
-                    points = [
-                        coords[ind][0], coords[ind][1], # obstacle's edge's pt1 
-                        coords[ind][0] + v[0], coords[ind][1] + v[1], # obstacle's edge's pt1 + v
-                        coords[ind2][0] + v2[0], coords[ind2][1] + v2[1], # obstacle's edge's pt2 + v2
-                        coords[ind2][0], coords[ind2][1] # obstacle's edge's pt2
-                        ]
-                    with self.parent.canvas:
-                        Color(1,0,0)
-                        Line(points=points, width=1)
+                    # points = [
+                    #     coords[ind][0], coords[ind][1], # obstacle's edge's pt1 
+                    #     coords[ind][0] + v[0], coords[ind][1] + v[1], # obstacle's edge's pt1 + v
+                    #     coords[ind2][0] + v2[0], coords[ind2][1] + v2[1], # obstacle's edge's pt2 + v2
+                    #     coords[ind2][0], coords[ind2][1] # obstacle's edge's pt2
+                    #     ]
+                    # with self.parent.canvas:
+                    #     Color(1,0,0)
+                    #     Line(points=points, width=1)
                     points2 = [
                             [ coords[ind][0], coords[ind][1] ], # pt1
                             [ coords[ind][0] + v[0], coords[ind][1] + v[1] ], # pt1 + v
@@ -295,6 +296,7 @@ class Character(Widget):
                             ]
                     t = Polygon(points2)
                     if t.is_valid:
+                        # print "Appending"
                         polygons.append(t)
                     i += 1
                     x = None
@@ -313,9 +315,15 @@ class Character(Widget):
                     print "ValueError Exception when difference():", e
                     print "x=", x
             final_points = []
-            for (x, y) in sight.exterior.coords:
-                final_points.append(x)
-                final_points.append(y)
+            if type(sight) is shapely.geometry.MultiPolygon:
+                for s in sight:
+                    for (x, y) in s.exterior.coords:
+                        final_points.append(x)
+                        final_points.append(y)        
+            else:
+                for (x, y) in sight.exterior.coords:
+                    final_points.append(x)
+                    final_points.append(y)
             self.sightPts = final_points
             self.sightIndices = range(0, len(self.sightPts))
 
@@ -562,7 +570,7 @@ class SpylightApp(App):
 
         game = SpylightGame(character=char, map=map)
 
-        Clock.schedule_interval(game.update, 1.0 / 60.0)
+        Clock.schedule_interval(game.update, 1.0 / 20.0)
 
         game.start()
 
