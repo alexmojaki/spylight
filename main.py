@@ -145,7 +145,8 @@ class Character(Widget):
     x3 = NumericProperty(100)
     y3 = NumericProperty(100)
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
-    sightPtss = ListProperty([])
+    sightPts = ListProperty([])
+    sightIndices = ListProperty([])
     sprite = StringProperty(None)
 
     def __init__(self, **kwargs):
@@ -255,7 +256,7 @@ class Character(Widget):
             self.x1, self.y1 = self.center_x, self.center_y
             self.x2, self.y2 = Vector(-50, 100).rotate(self.heading) + [self.center_x, self.center_y]
             self.x3, self.y3 = Vector(50, 100).rotate(self.heading) + [self.center_x, self.center_y]
-            sight = Polygon([[x1, y1], [x2, y2], [x3, y3]])
+            sight = Polygon([[self.x1, self.y1], [self.x2, self.y2], [self.x3, self.y3]])
             actual_sight = None
 
             # Occlusion computation
@@ -266,7 +267,7 @@ class Character(Widget):
                 polygons = []
                 x, y = o[0], o[1]
                 # Is this wall potentially colliding with my sight? (is it in the sight range?)
-                if (abs(self.center_x - x)-CELL_SIZE) < 0 and (abs(self.center_y - y)-CELL_SIZE) < 0:
+                if (abs(self.center_x - x)-CELL_SIZE) > 0 and (abs(self.center_y - y)-CELL_SIZE) > 0:
                     # Then, not in sight range, so skip it
                     continue
                 coords = [[x, y], [x+CELL_SIZE, y], [x+CELL_SIZE, y+CELL_SIZE], [x, y+CELL_SIZE]]
@@ -303,6 +304,11 @@ class Character(Widget):
                     print "ValueError Exception when difference():", e
                     print "x=", x
             final_points = []
+            for (x, y) in sight.exterior.coords:
+                final_points.append(x)
+                final_points.append(y)
+            self.sightPts = final_points
+            self.sightIndices = range(0, len(self.sightPts))
 
         if server:
             self.notifyServer()

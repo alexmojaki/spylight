@@ -56,9 +56,10 @@
         StencilPush
         Triangle:
             points: self.character.points
-        Ellipse:
-        	pos: (self.character.x2 + self.character.x3)/2-50, (self.character.y2 + self.character.y3)/2-50
-        	size: 100, 100
+        Mesh:
+        	vertices: self.character.sightPts
+            indices: self.character.sightIndices
+            mode: 'triangle_fan'
         StencilUse
             func_op: 'lequal'
         Rectangle:
