@@ -47,9 +47,14 @@ class MyWidget(Widget):
         super(MyWidget, self).__init__()
 
     def update(self, dt):
-        self.vertices.append(randint(0, 300))
-        self.vertices.append(randint(0, 300))
+        # Note : works like that too:
+        # self.vertices.append(randint(0, 300))
+        # self.vertices.append(randint(0, 300))
         self.indices = range(0, len(self.indices) + 2)
+        l = []
+        for x in self.indices:
+            l.append(randint(0, 300))
+        self.vertices = l
         print self.vertices
         print self.indices
 
