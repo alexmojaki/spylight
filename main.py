@@ -10,12 +10,16 @@ from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
 from kivy.vector import Vector
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, ObjectProperty, StringProperty
 from kivy.clock import Clock
 from kivy.factory import Factory
 import sys
 import logging
 import math
+
+import shapely.geometry
+import shapely.ops
+from shapely.geometry import Polygon
 
 import network_protocol as np
 from client import ClientNetworker
@@ -141,6 +145,7 @@ class Character(Widget):
     x3 = NumericProperty(100)
     y3 = NumericProperty(100)
     points = ReferenceListProperty(x1, y1, x2, y2, x3, y3)
+    sightPtss = ListProperty([])
     sprite = StringProperty(None)
 
     def __init__(self, **kwargs):
@@ -199,6 +204,7 @@ class Character(Widget):
         pass
 
 
+    coeff = 0.8 # occlusion things
     def update(self, useless, **kwargs):
         if game.started:
             maxVelocity = 3
@@ -249,6 +255,54 @@ class Character(Widget):
             self.x1, self.y1 = self.center_x, self.center_y
             self.x2, self.y2 = Vector(-50, 100).rotate(self.heading) + [self.center_x, self.center_y]
             self.x3, self.y3 = Vector(50, 100).rotate(self.heading) + [self.center_x, self.center_y]
+            sight = Polygon([[x1, y1], [x2, y2], [x3, y3]])
+            actual_sight = None
+
+            # Occlusion computation
+
+            
+            m = Window.mouse_pos
+            for o in map.walls:
+                polygons = []
+                x, y = o[0], o[1]
+                # Is this wall potentially colliding with my sight? (is it in the sight range?)
+                if (abs(self.center_x - x)-CELL_SIZE) < 0 and (abs(self.center_y - y)-CELL_SIZE) < 0:
+                    # Then, not in sight range, so skip it
+                    continue
+                coords = [[x, y], [x+CELL_SIZE, y], [x+CELL_SIZE, y+CELL_SIZE], [x, y+CELL_SIZE]]
+                l = 4
+                i = 0
+                while i < l:
+                    ind = i
+                    ind2 = (i + 1) % l
+                    v = Vector([coords[ind][0] - m[0], coords[ind][1] - m[1]]) * self.coeff
+                    v2 = Vector([coords[ind2][0] - m[0], coords[ind2][1] - m[1]]) * self.coeff
+                    points2 = [
+                            [ coords[ind][0], coords[ind][1] ], # pt1
+                            [ coords[ind][0] + v[0], coords[ind][1] + v[1] ], # pt1 + v
+                            [ coords[ind2][0] + v2[0], coords[ind2][1] + v2[1] ], # pt2 + v2
+                            [ coords[ind2][0], coords[ind2][1] ] # pt2
+                            ]
+                    t = Polygon(points2)
+                    if t.is_valid:
+                        polygons.append(t)
+                    i += 1
+                    x = None
+                try:
+                    x = shapely.ops.cascaded_union(polygons)
+                except ValueError as e:
+                    print "ValueError Exception when cascaded_union():", e
+                    for p in polygons:
+                        print "------ polygon ------"
+                        for q in p.exterior.coords:
+                            print q
+                        print "------ polygon ------"
+                try:
+                    sight = sight.difference(x)
+                except ValueError as e:
+                    print "ValueError Exception when difference():", e
+                    print "x=", x
+            final_points = []
 
         if server:
             self.notifyServer()
