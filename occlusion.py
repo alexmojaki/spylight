@@ -12,26 +12,96 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.app import App
 from kivy.graphics import Color, Rectangle, Line, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle
 from kivy.graphics import Mesh, Quad
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, ObjectProperty, StringProperty, AliasProperty 
 # from functools import partial
 # from math import cos, sin, pi
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.vector import Vector
+from kivy.lang import Builder
 
 import shapely.geometry
 import shapely.ops
 from shapely.geometry import Polygon
 
+Builder.load_string('''
+<BlorgWidget>:
+    canvas:
+        StencilPush
+        Rectangle:
+            pos: 300, 300
+            size: 50, 50
+        
+        Mesh:
+            vertices: self.l
+            indices: self.l2
+            mode: 'triangle_fan'
+        StencilUse
+            func_op: 'lequal'
+
+        Color:
+            rgb: 0, 0, 1
+        Rectangle:
+            pos: 0, 0
+            size: 900, 900
+        Color:
+            rgb: 1, 0, 0
+        Rectangle:
+            pos: 300, 320
+            size: 20, 20
+        
+        Rectangle:
+            pos: 500, 530
+            size: 20, 20
+
+        Rectangle:
+            pos: 300, 270
+            size: 20, 20
+
+        StencilUnUse
+        Rectangle:
+            pos: 300, 300
+            size: 50, 50
+        Mesh:
+            vertices: self.l
+            indices: self.l2
+            mode: 'triangle_fan'
+        StencilPop
+''')
+
+class BlorgWidget(Widget):
+    """docstring for BlorgWidget"""
+    x1 = NumericProperty(300)
+    y1 = NumericProperty(300)
+
+    sight_points = []
+    l2 = ListProperty([])
+
+    def gettest(self):
+        print "gettest called"
+        print self.sight_points
+        return self.sight_points
+
+    def settest(self, val):
+        print "setter called"
+
+    l = AliasProperty(gettest, settest, bind=('x1', 'y1'))
+    
+    def __init__(self, **args):
+        super(BlorgWidget, self).__init__(**args)
+        
+
 class MeshTestApp(App):
     coeff = 20.0
     def draw_obs(self, dt):
-        self.wid.canvas.clear()
+        # self.wid.canvas.clear()
         self.mpos_x = int(Window.mouse_pos[0])
         self.mpos_y = int(Window.mouse_pos[1])
         
         w = 20
         h = 20
         self.obs_pos = [(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)]
+        self.dudes = [(500, 530), (300, 270), (300, 330)]
         # self.obs_pos = [(300, 250), (250, 250)]
         # print self.obs_pos
         self.obs = []
@@ -85,9 +155,10 @@ class MeshTestApp(App):
                     # Line(points=points, width=1)
                     # Quad(points=points)
                 i += 1
-                with self.wid.canvas:
-                    Color(1,0,0)
-                    Line(points=points, width=1)
+                # Uncomment the following line in order to view the boxes generated for each edge
+                # with self.wid.canvas:
+                #     Color(1,0,0)
+                #     Line(points=points, width=1)
 
             union = None
             try:
@@ -136,28 +207,32 @@ class MeshTestApp(App):
         red = (1, 0, 0)
         blue = (0, 0, 1)
         green = (0, 1, 0)
-        with self.wid.canvas:
-            StencilPush()
-            # Our sight
-            Rectangle(pos=(300, 130), size=(20, 20))
-            self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
+        self.wid.sight_points = blorg_points
+        self.wid.x1 = self.mpos_x
+        self.wid.y1 = self.mpos_y
+        self.wid.l2 = range(0, len(self.wid.sight_points)/4)
+        # with self.wid.canvas:
+        #     StencilPush()
+        #     # Our sight
+        #     Rectangle(pos=(300, 130), size=(20, 20))
+        #     self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
 
-            StencilUse(func_op='lequal')
-            # The true color of things, in the light...
-            Color(*blue)
-            Rectangle(size=(900, 900))
-            Color(rgba=(0, 0, 0, 255.0))
-            # And the people that is hiding in the dark!
-            Color(*red)
-            Rectangle(pos=(300, 230), size=(20, 20))
-            Rectangle(pos=(300, 270), size=(20, 20))
+        #     StencilUse(func_op='lequal')
+        #     # The true color of things, in the light...
+        #     Color(*blue)
+        #     Rectangle(size=(900, 900))
+        #     Color(rgba=(0, 0, 0, 255.0))
+        #     # And the people that is hiding in the dark!
+        #     Color(*red)
+        #     Rectangle(pos=(300, 230), size=(20, 20))
+        #     Rectangle(pos=(300, 270), size=(20, 20))
 
-            StencilUnUse()
-            # Same instruction as in StencilPush()
-            Rectangle(pos=(300, 130), size=(20, 20))
-            self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
+        #     StencilUnUse()
+        #     # Same instruction as in StencilPush()
+        #     Rectangle(pos=(300, 130), size=(20, 20))
+        #     self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
             
-            StencilPop()
+        #     StencilPop()
 
 
         # Note : We draw the obstacle themselves after the sight's shadow's polygons in order to get them visible and not under those polygons
@@ -166,9 +241,13 @@ class MeshTestApp(App):
                 Color(1,1,0)
                 # self.mesh = Mesh(vertices=coords, indices=list(range(0, 4)), mode = "triangle_fan")
                 Rectangle(pos=p, size=(w, h))
+        # for p in self.dudes:
+        #     with self.wid.canvas:
+        #         Color(*red)
+        #         Rectangle(pos=p, size=(w, h))
 
     def build(self):
-        self.wid = wid = Widget()
+        self.wid = wid = BlorgWidget()
         
         layout = BoxLayout(size_hint=(1, None), height=50)
         # for mode in ('points', 'line_strip', 'line_loop', 'lines',
