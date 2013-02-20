@@ -23,7 +23,7 @@ import shapely.ops
 from shapely.geometry import Polygon
 
 class MeshTestApp(App):
-    coeff = 0.8
+    coeff = 20.0
     def draw_obs(self, dt):
         self.wid.canvas.clear()
         self.mpos_x = int(Window.mouse_pos[0])
@@ -32,7 +32,7 @@ class MeshTestApp(App):
         w = 20
         h = 20
         # self.obs_pos = [(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)]
-        self.obs_pos = [(500, 500)]
+        self.obs_pos = [(300, 250), (250, 250)]
         # print self.obs_pos
         self.obs = []
 
@@ -50,7 +50,9 @@ class MeshTestApp(App):
         sight = scene
         poly_union = None
         polygons = []
+        color_index = -50
         for o in self.obs:
+            color_index += 50
             l = len(o.exterior.coords)
             i = 0
             while i < l:
@@ -87,9 +89,9 @@ class MeshTestApp(App):
                     Color(1,0,0)
                     Line(points=points, width=1)
 
-            x = None
+            union = None
             try:
-                x = shapely.ops.cascaded_union(polygons)
+                union = shapely.ops.cascaded_union(polygons)
             except ValueError as e:
                 print "ValueError Exception when cascaded_union():", e
                 for p in polygons:
@@ -97,32 +99,64 @@ class MeshTestApp(App):
                     for q in p.exterior.coords:
                         print q
                     print "------ polygon ------"
-            try:
-                sight = sight.difference(x)
-            except ValueError as e:
-                print "ValueError Exception when difference():", e
-                print x
-                print sight
-                sight = Polygon([[0,0], [1,1], [2,2]])
-            final_points = []
-            for (x, y) in sight.exterior.coords:
-                final_points.append(x)
-                final_points.append(y)
-            final_points2 = []
-            for u in sight.interiors:
-                for (x, y) in u.coords:
-                    final_points2.append(x)
-                    final_points2.append(y)
+            # Debugging purpose
+            # points = []
+            # print "##Union##", union
+            # for (x, y) in union.exterior.coords:
+            #     points.append(x)
+            #     points.append(y)
 
-            # print "Exterior:", final_points
-            # print "Interiors:", final_points2
-            # print "==========================", points, "======================="
-            with self.wid.canvas:
-                # Color(1,0,0)
-                # Line(points=points, width=1)
-                Color(0,1,0)
-                Line(points=final_points, width=3)
-                Line(points=final_points2, width=3)
+        try:
+            sight = sight.difference(union)
+        except ValueError as e:
+            print "ValueError Exception when difference():", e
+            print union
+            print sight
+            sight = Polygon([[0,0], [1,1], [2,2]])
+        blorg_points = []
+        final_points = []
+        max = 0
+        for (x, y) in sight.exterior.coords:
+            final_points.append(x)
+            final_points.append(y)
+            blorg_points.extend((x, y, 0.0, 0.0))
+            max += 1
+        final_points2 = []
+        # Don't know if this is useful or not, to be tested:
+        for u in sight.interiors:
+            for (x, y) in u.coords:
+                final_points2.append(x)
+                final_points2.append(y)
+
+        # print "Exterior:", final_points
+        # print "Interiors:", final_points2
+        # print "==========================", points, "======================="
+
+        print blorg_points
+        red = (1, 0, 0)
+        blue = (0, 0, 1)
+        green = (0, 1, 0)
+        with self.wid.canvas:
+            StencilPush()
+            # Our sight
+            Rectangle(pos=(300, 130), size=(20, 20))
+            self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
+
+            StencilUse()
+            # The true color of things, in the light...
+            Color(*blue)
+            Rectangle(size=(900, 900))
+            Color(rgba=(0, 0, 0, 255.0))
+            # And the people that is hiding in the dark!
+            Color(*red)
+            Rectangle(pos=(300, 230), size=(20, 20))
+            Rectangle(pos=(300, 270), size=(20, 20))
+
+            StencilUnUse()
+            # Same instruction as in StencilPush()
+            self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
+            
+            StencilPop()
 
 
         # Note : We draw the obstacle themselves after the sight's shadow's polygons in order to get them visible and not under those polygons
@@ -147,7 +181,7 @@ class MeshTestApp(App):
         root.add_widget(layout)
 
         
-        Clock.schedule_interval(self.draw_obs, 0.5)
+        Clock.schedule_interval(self.draw_obs, 0.1)
 
         return root
 
