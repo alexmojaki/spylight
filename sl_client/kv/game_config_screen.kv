@@ -1,0 +1,52 @@
+#:kivy 1.5.1
+<GameConfigScreen>:
+    serverIp: serverIp
+    cbMerc: cbMerc
+    cbSpy: cbSpy
+
+    BoxLayout:
+        orientation: 'vertical'
+        spacing: 50
+        padding: 50
+
+        Label:
+            size_hint: (1, 0.2)
+            text: 'Configuration de la partie'
+            halign: 'center'
+        
+        StackLayout:
+            orientation: 'lr-tb'
+            Label:
+                size_hint: (0.3, None)
+                text: 'IP Serveur'
+                height: 30
+            TextInput:
+                size_hint: (0.3, None)
+                height: 30
+                id: serverIp
+                multiline: False
+
+
+        GridLayout:
+            cols: 2
+            rows: 2
+            Label:
+                size: (100, 30)
+                text: 'Jouer en tant que mercenaire'
+            CheckBox:
+                group: 'rolecb'
+                id: cbMerc
+            Label:
+                size: (100, 30)
+                text: 'Jouer en tant qu\'espion'
+            CheckBox:
+                group: 'rolecb'
+                id: cbSpy
+
+
+        Button:
+            text: 'Prêt'
+            size_hint: (0.5, None)
+            height: 50
+            pos_hint: {'center_x': 0.5}
+            on_press: root.validateParameters()
