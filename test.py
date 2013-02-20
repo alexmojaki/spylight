@@ -1,60 +1,143 @@
-from kivy.app import App
-from kivy.core.window import Window
+#!/usr/bin/python
+
+# from kivy.app import App
+# from kivy.graphics import Color, Rectangle, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle, Line
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, ObjectProperty, StringProperty, AliasProperty 
+from kivy.graphics import Color, Rectangle, Line, StencilPush, StencilUse, StencilPop, StencilUnUse, Triangle, Ellipse
 from kivy.uix.widget import Widget
-from kivy.properties import NumericProperty, ReferenceListProperty
-from kivy.graphics import Mesh
+from kivy.core.window import Window
 from kivy.clock import Clock
-from kivy.factory import Factory
+
+# from kivy.uix.stencilview import StencilView
+from kivy.uix.widget import Widget
+from kivy.uix.scatter import Scatter
+from kivy.lang import Builder
+from kivy.app import App
+
+# Note : It is working using the .kv
+Builder.load_string('''
+<TestStencil>:
+    canvas:
+        StencilPush
+        Rectangle:
+            pos: 300, 300
+            size: 50, 50
+        
+        Mesh:
+            vertices: self.l
+            indices: self.l2
+            mode: 'triangle_fan'
+        StencilUse
+            func_op: 'lequal'
+        Color:
+            rgb: 1, 1, 1
+        Rectangle:
+            pos: 0, 0
+            size: 900, 900
+            source: 'data/logo/kivy-icon-512.png'
+        Color:
+            rgb: 1, 0, 0
+
+        StencilUnUse
+        Rectangle:
+            pos: 300, 300
+            size: 50, 50
+        Mesh:
+            vertices: self.l
+            indices: self.l2
+            mode: 'triangle_fan'
+        StencilPop
+''')
+
+class TestStencil(Scatter):
+    mposx = NumericProperty(0)
+    mposy = NumericProperty(0)
+    x1 = NumericProperty(300)
+    y1 = NumericProperty(300)
+    x2 = 200
+    y2 = 400
+    x3 = 400
+    y3 = 400
+    useless = 0.0 # NumericProperty(0.0)
+
+    # l = ReferenceListProperty(x1, y1, useless, useless, x2, y2, useless, useless, x3, y3, useless, useless)
+    l2 = ListProperty([0, 1, 2])
+    def __init__(self, **kwargs):
+        super(TestStencil, self).__init__(**kwargs)
+    
+    def gettest(self):
+        print "gettest called"
+        l = [
+        self.x1, 
+        self.y1, 
+        self.useless, 
+        self.useless, 
+        self.x2, 
+        self.y2, 
+        self.useless, 
+        self.useless, 
+        self.x3, 
+        self.y3, 
+        self.useless, 
+        self.useless]
+        print l
+        return l
+
+    def settest(self, val):
+        print "setter called"
+
+    l = AliasProperty(gettest, settest, bind=('x1', 'y1'))
+    
+    def update(self, useless, **kwargs):
+        # print Window.mouse_pos
+        h = 100
+        w = 100
+        mx = Window.mouse_pos[0]
+        my = Window.mouse_pos[1]
+        self.x2 = mx - w
+        self.x3 = mx + w
+        self.y2 = my + h
+        self.y3 = my + h
+        self.mposx = mx
+        self.mposy = my
+        self.x1 = mx
+        self.y1 = my
+
+        self.l2 = range(0, len(self.l))
+        # print self.l
+        # self.canvas.clear()
+        # with self.canvas:
+        #     # Color(0, 0, 1)
+        #     # Rectangle(pos=(0, 0), size=(900, 900))
+            
+        #     StencilPush()
+        #     Rectangle(pos=(300, 300), size=(50, 50))
+        #     Rectangle(pos=(self.mposx-20, self.mposy-20), size=(40, 40))
+            
+        #     StencilUse(func_op="lequal")
+        #     Color(1, 1, 1)
+        #     Rectangle(pos=(0, 0), size=(900, 900), source='data/logo/kivy-icon-512.png')
+            
+        #     StencilUnUse()
+        #     Rectangle(pos=(20, 20), size=(50, 50))
+        #     Rectangle(pos=(self.mposx-20, self.mposy-20), size=(40, 40))
+                        
+        #     StencilPop()
 
 
-class MyGrid(Widget):
-    x1 = NumericProperty(150)
-    y1 = NumericProperty(100)
-    u1 = NumericProperty(0)
-    v1 = NumericProperty(0)
-    i1 = NumericProperty(0)
-    x2 = NumericProperty(100)
-    y2 = NumericProperty(200)
-    u2 = NumericProperty(0)
-    v2 = NumericProperty(0)
-    i2 = NumericProperty(1)
-    x3 = NumericProperty(200)
-    y3 = NumericProperty(200)
-    u3 = NumericProperty(0)
-    v3 = NumericProperty(0)
-    i3 = NumericProperty(2)
-    x4 = NumericProperty(300)
-    y4 = NumericProperty(300)
-    u4 = NumericProperty(0)
-    v4 = NumericProperty(0)
-    i4 = NumericProperty(3)
-    vertices = ReferenceListProperty(x1, y1, u1, v1, x2, y2, u2, v2, x3, y3, u3, v3, x4, y4, u4, v4)
-    indices = ReferenceListProperty(i1, i2, i3, i4)
+class Wid(Widget):
+    pass
+        
 
-    def update(self, dt):
-        self.x1, self.y1 = Window.mouse_pos
-        self.x2, self.y2 = self.x1 - 50, self.y1 + 100
-        self.x3, self.y3 = self.x1 + 50, self.y1 + 100
 
-#   def __init__(self):
-#      super(MyGrid,self).__init__()
-#       texture = Image('art/wall2.png').texture
-#       texture.wrap = 'repeat'
-#       texture.uvsize = (32, 32)
-#       with self.canvas:
-#           Color(1, 1, 1)
-#           Rectangle(pos=(0, 0), size=(2000, 2000), texture=texture)
-
-#   def addTorchStencil(x, y):
-#       pass
-
-Factory.register("Mesh", Mesh)
-
-class MyApp(App):
+class TestStencilApp(App):
     def build(self):
-        mg = MyGrid()
-        Clock.schedule_interval(mg.update, 1.0 / 60.0)
-        return mg
+        # root = StencilView(size_hint=(None, None))
+        # root.add_widget(TestStencil())
+        self.root = Wid()
+        ts = TestStencil()
+        self.root.add_widget(ts)
+        Clock.schedule_interval(ts.update, 1.0 / 10.0)
+        return self.root
 
-if __name__ == '__main__':
-    MyApp().run()
+TestStencilApp().run()

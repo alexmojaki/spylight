@@ -31,8 +31,8 @@ class MeshTestApp(App):
         
         w = 20
         h = 20
-        # self.obs_pos = [(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)]
-        self.obs_pos = [(300, 250), (250, 250)]
+        self.obs_pos = [(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)]
+        # self.obs_pos = [(300, 250), (250, 250)]
         # print self.obs_pos
         self.obs = []
 
@@ -132,7 +132,7 @@ class MeshTestApp(App):
         # print "Interiors:", final_points2
         # print "==========================", points, "======================="
 
-        print blorg_points
+        # print blorg_points
         red = (1, 0, 0)
         blue = (0, 0, 1)
         green = (0, 1, 0)
@@ -142,7 +142,7 @@ class MeshTestApp(App):
             Rectangle(pos=(300, 130), size=(20, 20))
             self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
 
-            StencilUse()
+            StencilUse(func_op='lequal')
             # The true color of things, in the light...
             Color(*blue)
             Rectangle(size=(900, 900))
@@ -154,6 +154,7 @@ class MeshTestApp(App):
 
             StencilUnUse()
             # Same instruction as in StencilPush()
+            Rectangle(pos=(300, 130), size=(20, 20))
             self.mesh = Mesh(vertices=blorg_points, indices=list(range(0, max)), mode = "triangle_fan")
             
             StencilPop()
@@ -181,7 +182,7 @@ class MeshTestApp(App):
         root.add_widget(layout)
 
         
-        Clock.schedule_interval(self.draw_obs, 0.1)
+        Clock.schedule_interval(self.draw_obs, 0.05)
 
         return root
 
