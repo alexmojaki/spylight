@@ -1,4 +1,4 @@
-#:kivy 1.5.1
+#:kivy 1.4.1
 
 <Character>:
     size: 32,32
@@ -66,6 +66,8 @@
             size: self.shadow.size
             source: self.shadow.sprite
         StencilUnUse
+        Triangle:
+            points: self.character.points
         StencilPop
 
 <SpylightGame>:

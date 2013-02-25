@@ -23,15 +23,17 @@ class SpylightClientApp(App):
         self.sm = ScreenManager(transition=FadeTransition(duration=0.001)) 
         self.sm.add_widget(MenuScreen(app=self, name="Menu"))
         self.sm.add_widget(GameConfigScreen(app=self, name="GameConfig",
-                                            character=self.config.get('GameConfig', 'character'),
-                                            serverIp=self.config.get('GameConfig','serverIp')))
-        self.sm.add_widget(GameScreen(app=self, name="Game"))
+                        character=self.config.get('GameConfig', 'character'),
+                        serverIp=self.config.get('GameConfig','serverIp')))
         return self.sm
 
     def displayGameConfigScreen(self):
         self.sm.current = "GameConfig"
     
-    def displayGameScreen(self):
+    def displayGameScreen(self, character, mapname, serverIp):
+        game = GameScreen(app=self, character=character, 
+                          mapname=mapname, serverip=serverIp, name="Game")
+        self.sm.add_widget(game)
         self.sm.current = "Game"
     
     def displayMenuScreen(self):
