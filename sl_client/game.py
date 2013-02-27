@@ -1,105 +1,107 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+import sys
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
-
-# from kivy.app import App
-from kivy.core.image import Image
-from kivy.graphics import Triangle,Color, Rectangle, StencilPush, StencilUse, StencilPop, StencilUnUse
-# from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-# from kivy.core.window import Window
 from kivy.core.audio import SoundLoader
-# from kivy.vector import Vector
-from kivy.properties import NumericProperty, ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty
 from kivy.clock import Clock
-from kivy.factory import Factory
-from kivy.uix.stencilview import StencilView
-import sys
-# import logging
-# import math
+
+# Colored logs. the text before the first ':' will be used as log tag
+from kivy.logger import Logger
 
 import network_protocol as np
+import constants as c
+
 from client import ClientNetworker
 from slmap import SLMap
 from character import Spy,Mercenary
-from custom_logger import logger
+from hud import SpylightHUD
+from environment import Shadow, MapView
 
-# from kivy.config import Config
+
+# server = None
+
+# clientNetworker = None
 
 
-map = None
-character = None
-server = None
-CELL_SIZE = 32
-MAX_MIN_COUNTDOWN = 3
-clientNetworker = None
-game = None
-capInfo = None
-artDir = 'art'
-musicDir = '../music'
-texturePath = 'art/{0}.png'
-wavPath = 'art/{0}.wav'
 
 class GameScreen(Screen):
-    def __init__(self, app, character, serverip, mapname, **kwargs):
-        global map, clientNetworker, game
-
+    def __init__(self, character, mapname, serverip, gameduration, **kwargs):
         Builder.load_file('kv/game_screen.kv')
-        super(Screen, self).__init__(**kwargs)
+        super(GameScreen, self).__init__(**kwargs) # init with the name
 
-        self.app = app
-
-        map = SLMap(mapname)
-        logger.info("Map loaded: " + map.title)
-        logger.info("Map size: (" + str(map.width) + ", " + str(map.height) + ")")        
-        game = SpylightGame(character, map)
+        game = SpylightGame(character, mapname, serverip, gameduration)
         self.add_widget(game)
 
-        Clock.schedule_interval(game.update, 1.0 / 60.0)
         game.start()
-        # return game        
-
 
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
+    shadow = ObjectProperty(None)
 
-    def __init__(self, character, cellMap, **kwargs):
-        Builder.load_file('kv/spylight.kv')
-        super(SpylightGame, self).__init__(**kwargs)
+    def __init__(self, character, mapname, serverip, gameduration):
+        super(SpylightGame, self).__init__()
 
-        if character == 'merc':
-            self.character = Mercenary(game=self, cellMap=cellMap, server=server)
-            shadow = Shadow(texturePath.format('spy'))
-            if server:
+        cellMap = SLMap(mapname)
+        Logger.info("SL|SLGame: Map loaded: %s", cellMap.title)
+        Logger.info("SL|SLGame: Map size: (%d, %d)",
+                    cellMap.width, cellMap.height) 
+
+        srv = None # @TODO: connection stuff with serverip
+
+        if character == Mercenary.name:
+            self.character = Mercenary(game=self, cellMap=cellMap, server=srv)
+            self.shadow = Shadow(Spy.sprite)
+            if srv:
                 clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
         else:
-            self.character = Spy(game=self, cellMap=cellMap, server=server)
-            shadow = Shadow(texturePath.format('mercenary'))
-            if server:
+            self.character = Spy(game=self, cellMap=cellMap, server=srv)
+            self.shadow = Shadow(Mercenary.sprite)
+            if srv:
                 clientNetworker = ClientNetworker(np.SPY_TYPE)
 
-        if server:
-            clientNetworker.connect(server, 9999)
+        if srv:
+            clientNetworker.connect(srv, 9999)
 
-        self.soundBeep = SoundLoader.load(wavPath.format("beep"))
-        self.soundShot = SoundLoader.load(wavPath.format("shot"))
-        self.soundReload = SoundLoader.load(wavPath.format("reload"))
-        self.soundModem = SoundLoader.load(wavPath.format("modem"))
-        self.soundPunch = SoundLoader.load(wavPath.format("punch"))
-        self.soundBoom = SoundLoader.load(wavPath.format("boom"))
+        self.soundBeep = SoundLoader.load(c.wavPath.format("beep"))
+        self.soundShot = SoundLoader.load(c.wavPath.format("shot"))
+        self.soundReload = SoundLoader.load(c.wavPath.format("reload"))
+        self.soundModem = SoundLoader.load(c.wavPath.format("modem"))
+        self.soundPunch = SoundLoader.load(c.wavPath.format("punch"))
+        self.soundBoom = SoundLoader.load(c.wavPath.format("boom"))
 
-        self.add_widget(MapView(map=map, character=self.character, shadow=shadow))
+        self.add_widget(MapView(map=cellMap, character=self.character,
+                                shadow=self.shadow))
         self.add_widget(self.character)
-        # self.capInfo = CapInfo()
-        # self.add_widget(capInfo)
-        self.started = False
 
-    def update(self, useless, **kwargs):
-        self.character.update(kwargs)
-        # self.capInfo.update(kwargs)
+        self.started = False # What's the point of this flag?
+        
+        self.hud = SpylightHUD(self, gameduration)
+        self.add_widget(self.hud)
+
+
+    def update(self, timeDelta):
+        # Prints the internal fps and the number of frames rendered 
+        # (if no change, it won't be rendered)
+        Logger.debug('SL|SLGame: fps: %d, rfps: %d',
+                     Clock.get_fps(), Clock.get_rfps())
+
+        self.character.update()
+        self.hud.update()
+
+    def end(self):
+        self.playShot()
+        print "The defenders won!"
+        sys.exit()
+
+    def start(self):
+        self.started = True
+        Clock.schedule_interval(self.update, 1.0 / 60.0)
+        self.hud.start()
 
     def playBeep(self):
         self.soundBeep.play()
@@ -121,109 +123,3 @@ class SpylightGame(Widget):
 
     def playBoom(self):
         self.soundBoom.play()
-
-    def end(self):
-        game.playShot()
-        print "The mercenary won!"
-        sys.exit()
-
-    def start(self):
-        timer = Timer()
-        game.add_widget(timer)
-        Clock.schedule_interval(timer.updateTime, 1)
-        self.started = True
-
-
-
-class MapView(Widget):
-    width = NumericProperty(0)
-    height = NumericProperty(0)
-    groundTexture = ObjectProperty(None)
-    character = ObjectProperty(None)
-    shadow = ObjectProperty(None)
-
-    def getTexture(self,name, size):
-        filename = texturePath.format(name)
-        texture = Image(filename).texture
-        texture.wrap = 'repeat'
-        texture.uvsize = size
-        logger.info(filename)
-        return texture
-
-    def __init__(self, map, character, shadow):
-        self.character = character
-        self.shadow = shadow
-
-        super(MapView, self).__init__(size=(map.width*CELL_SIZE,map.height*CELL_SIZE))
-        self.groundTexture = self.getTexture(name='wall2', size=(CELL_SIZE,CELL_SIZE))
-
-        for x in xrange(map.width):
-            for y in xrange(map.height):
-                if map.getWallType(x, y) != -1:
-                    self.add_widget(Wall(pos=(x*CELL_SIZE, y*CELL_SIZE)))
-                if map.getItem(x,y) == 0:
-                    self.add_widget(Terminal(pos=(x*CELL_SIZE, y*CELL_SIZE)))
-
-
-class Wall(Widget):
-    pass
-
-
-class Terminal(Widget):
-    pass
-
-
-class Shadow(Widget):
-    def __init__(self, sprite, **kwargs):
-        self.sprite = sprite
-        super(Shadow, self).__init__(**kwargs)
-
-
-class Mine(Widget):
-    def __init__(self, pos, **kwargs):
-        self.pos = pos[0]-10, pos[1]-10;
-        super(Mine, self).__init__(**kwargs)
-
-# class CapInfo(Widget):
-#     percentage = StringProperty("0%")
-
-#     def __init__(self, **kwargs):
-#         logger.info("cap info created")
-#         super(CapInfo, self).__init__(**kwargs)
-
-#     def update(self, newValue):
-#         self.percentage = str(newValue)+'%'
-
-
-
-class Timer(Widget):
-    time = StringProperty("00:00")
-
-
-    def __init__(self, **kwargs):
-        self.mins = MAX_MIN_COUNTDOWN
-        self.secs = 0
-        self.timeToString()
-        super(Timer, self).__init__(**kwargs)
-
-    def timeToString(self):
-        self.time = '0'+str(self.mins)+':'
-        if self.secs < 10:
-            self.time += '0' + str(self.secs)
-        else:
-            self.time += str(self.secs)
-
-
-    def updateTime(self, useless):
-        global game
-        self.secs -= 1
-        if self.secs == -1:
-            self.mins -= 1
-            self.secs = 59
-
-        self.timeToString()
-        if self.mins == 0 and self.secs == 0:
-            game.end()
-
-# Factory.register("MapView", MapView)
-# Factory.register("Shadow", Shadow)

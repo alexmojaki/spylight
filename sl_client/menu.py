@@ -5,7 +5,7 @@ from kivy.uix.screenmanager import Screen
 class MenuScreen(Screen):
     def __init__(self, app=None, **kwargs):
         Builder.load_file('kv/menu_screen.kv')
-        super(Screen, self).__init__(**kwargs)
+        super(MenuScreen, self).__init__(**kwargs)
 
         self.app = app
     

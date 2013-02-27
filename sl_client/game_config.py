@@ -9,13 +9,16 @@ from kivy.uix.screenmanager import Screen
 class GameConfigScreen(Screen):
     def __init__(self, app=None, **kwargs):
         Builder.load_file('kv/game_config_screen.kv')
-        super(Screen, self).__init__(**kwargs)
+        super(GameConfigScreen, self).__init__(**kwargs)
 
         role = kwargs.get('character')
         self.cbSpy.active = (role == 'spy')
         self.cbMerc.active = (role == 'merc')
         self.map.text = "TODO système chargement map serveur"
         self.serverIp.text = kwargs.get('serverIp', '127.0.0.1')
+
+        self.gameduration = 3 # todo: gui field
+
         self.app = app
 
     def validateParameters(self):
@@ -28,4 +31,7 @@ class GameConfigScreen(Screen):
             role = 'spy'
         else:
             role = 'merc'
-        self.app.displayGameScreen(role, '../test.map', self.serverIp.text)
+        self.app.displayGameScreen(character=role, 
+                                   mapname='../test.map',
+                                   serverip=self.serverIp.text,
+                                   gameduration=self.gameduration)

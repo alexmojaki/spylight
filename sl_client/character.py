@@ -1,14 +1,34 @@
+import sys
+
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.properties import NumericProperty, ReferenceListProperty, StringProperty
 from kivy.vector import Vector
+from kivy.lang import Builder
+from kivy.logger import Logger
+from kivy.clock import Clock
 
 import network_protocol as np
 from client import ClientNetworker as clientNetworker
 # from slmap import SLMap
-from constants import CELL_SIZE
+import constants as c
 
-import custom_logger as c
+Builder.load_string('''
+<Character>:
+    size: 32,32
+    rotation: 0
+    Scatter:
+        do_translation: False, False
+        do_rotation: False
+        do_scale: False
+        size: root.size
+        center: root.center
+        rotation: root.rotation
+
+        Image:
+            source: root.sprite
+            size: root.size
+''')
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -21,7 +41,9 @@ class Character(Widget):
     sprite = StringProperty(None)
 
     def __init__(self, game, cellMap, **kwargs):
+        # Builder.load_file('kv/character.kv')
         super(Character, self).__init__(**kwargs)
+        Logger.info('SL|Character: size at creation: %s',self.size)
 
         # Only used to test w/o starting a server
         self.server = kwargs.get('self.server',None)
@@ -40,12 +62,12 @@ class Character(Widget):
         self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
     def _keyboard_closed(self):
-        # print 'My keyboard have been closed!'
+        Logger.warning('SL|Character: The keyboard is no longer accessible!')
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard.unbind(on_key_up=self._on_keyboard_up)
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        pos2 = self.pos
         # Keycode is composed of an integer + a string
         if keycode[1] == 'z'or keycode[1] == 'up':
             self.zPressed = True
@@ -79,7 +101,8 @@ class Character(Widget):
         pass
 
 
-    def update(self, useless, **kwargs):
+    def update(self):
+        Logger.debug('SL|Character: size: %s',self.size)
         maxVelocity = 3
         if self.running:
             maxVelocity = maxVelocity+self.runningBonus
@@ -132,14 +155,15 @@ class Character(Widget):
             self.notifyServer()
 
         self.running = False;
+        self.rotation = self.heading # Rotates the sprite
 
     def canGo(self,pos2):
         margin = 7
-        ret = self.cellMap.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
-        ret = ret and self.cellMap.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
-        ret = ret and self.cellMap.getWallType((pos2[0]+margin)/CELL_SIZE, (pos2[1]+CELL_SIZE-margin)/CELL_SIZE) == -1
-        ret = ret and self.cellMap.getWallType((pos2[0]+CELL_SIZE-margin)/CELL_SIZE, (pos2[1]+margin)/CELL_SIZE) == -1
-        c.logger.debug(pos2, (pos2[0]+margin)/CELL_SIZE,(pos2[1]+margin)/CELL_SIZE)
+        ret = self.cellMap.getWallType((pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE) == -1
+        ret = ret and self.cellMap.getWallType((pos2[0]+c.CELL_SIZE-margin)/c.CELL_SIZE, (pos2[1]+c.CELL_SIZE-margin)/c.CELL_SIZE) == -1
+        ret = ret and self.cellMap.getWallType((pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+c.CELL_SIZE-margin)/c.CELL_SIZE) == -1
+        ret = ret and self.cellMap.getWallType((pos2[0]+c.CELL_SIZE-margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE) == -1
+        Logger.debug('SL| canGo: %s, %d, %d', pos2, (pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE)
 
         return ret
 
@@ -161,7 +185,7 @@ class Character(Widget):
         shadow.pos = ret["ennemy"]
 
         if ret["cap"] > -1:
-            capInfo.update(ret["cap"])
+            # capInfo.update(ret["cap"])
             self.game.playModem()
             
 
@@ -171,7 +195,7 @@ class Character(Widget):
         if ret["dead"]:
             self.game.playShot()
             self.pos = (-42, -42)
-            Clock.schedule_once(self.spawn, self.RESPAWN_TIME)
+            Clock.schedule_once(self.spawn, c.RESPAWN_TIME)
 
             # self.deathLabel = Label("Boom!")
             # addWidget(deathLabel)
@@ -185,53 +209,38 @@ class Character(Widget):
 ### SPY #######################################################################
 
 class Spy(Character):
+    name = 'spy'
+    sprite = c.texturePath.format('spy')
 
     def __init__(self, game, cellMap, **kwargs):
-        self.sprite = 'art/spy.png'
         self.runningBonus = 12
         self.spawnPoint = (
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*CELL_SIZE,
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*CELL_SIZE
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*c.CELL_SIZE,
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE
             )
         self.pos = self.spawnPoint
         super(Spy, self).__init__(game, cellMap, **kwargs)
         self.capturing = False
 
 
-    def update(self, useless, **kwargs):
+    def update(self):
         if self.game.started:
                 
             if self.capturing:
                 if self.zPressed or self.qPressed or self.sPressed or self.dPressed:
                     self.capturing = False
-                    capInfo.update(0)
+                    # capInfo.update(0)
                     self.game.stopModem()
                 elif self.server:
                     clientNetworker.activate()                        
 
-            super(Spy,self).update(useless, **kwargs)
-            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
-                self.sprite = 'art/spy0.png'
-            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-                self.sprite = 'art/spy315.png'
-            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-                self.sprite = 'art/spy270.png'
-            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-                self.sprite = 'art/spy225.png'
-            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
-                self.sprite = 'art/spy180.png'
-            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-                self.sprite = 'art/spy135.png'
-            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-                self.sprite = 'art/spy90.png'
-            else:
-                self.sprite = 'art/spy45.png'
+            super(Spy,self).update()
 
 
     def activate(self):
         if self.game.started:
             self.capturing = True
-            c.logger.info('Spy is activating!')
+            Logger.info('SL|Spy: Activating!')
             if self.server:
                 clientNetworker.activate()
 
@@ -239,47 +248,33 @@ class Spy(Character):
 ### MERCENARY #################################################################
 
 class Mercenary(Character):
+    name = 'merc'
+    sprite = c.texturePath.format('mercenary')
 
     def __init__(self, game, cellMap, **kwargs):
-        c.logger.info('init mercenary')
+        Logger.info('SL|Mercenary: init')
         self.runningBonus = 0
         self.sprite = 'art/mercenary.png'
         self.spawnPoint = (
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*CELL_SIZE,
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*CELL_SIZE
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*c.CELL_SIZE,
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE
             )
         self.pos = self.spawnPoint
         super(Mercenary, self).__init__(game, cellMap, **kwargs)
         self.mines = dict()
 
 
-    def update(self, useless, **kwargs):
+    def update(self):
         if self.game.started:
             self.running = True
-            super(Mercenary,self).update(useless, **kwargs)
-            if self.heading % 360 >= 337.5 or self.heading % 360 < 22.5:
-                self.sprite = 'art/mercenary0.png'
-            elif self.heading % 360 >= 22.5 and self.heading % 360 < 67.5:
-                self.sprite = 'art/mercenary315.png'
-            elif self.heading % 360 >= 67.5 and self.heading % 360 < 112.5:
-                self.sprite = 'art/mercenary270.png'
-            elif self.heading % 360 >= 112.5 and self.heading % 360 < 157.5:
-                self.sprite = 'art/mercenary225.png'
-            elif self.heading % 360 >= 157.5 and self.heading % 360 < 202.5:
-                self.sprite = 'art/mercenary180.png'
-            elif self.heading % 360 >= 202.5 and self.heading % 360 < 247.5:
-                self.sprite = 'art/mercenary135.png'
-            elif self.heading % 360 >= 247.5 and self.heading % 360 < 292.5:
-                self.sprite = 'art/mercenary90.png'
-            else:
-                self.sprite = 'art/mercenary45.png'
+            super(Mercenary,self).update()
 
 
     def activate(self):
         if self.game.started:
             super(Mercenary,self).activate()
 
-            c.logger.info('Mercenary is activating!')
+            Logger.info('SL|Mercenary: Activating!')
             if not self.mines.has_key(str(self.center)):
                 mw = Mine(self.center)
                 self.mines[str(self.center)] = mw

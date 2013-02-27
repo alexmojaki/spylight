@@ -1,5 +1,16 @@
+#!/usr/bin/python
+
 import kivy
 kivy.require('1.5.1')
+
+# Changing kivy specific settings: must be done before loading other stuff.
+from kivy.config import Config #http://kivy.org/docs/api-kivy.config.html
+Config.set('kivy', 'window_icon', 'mercenary/spy.png') 
+Config.set('kivy', 'log_level', 'info')  # Change here to see debug messages
+# Config.set('kivy', 'log_enable', '0') 
+# Config.set('graphics', 'width', '400') 
+# Config.set('graphics', 'height', '400') 
+# Config.set('graphics', 'fullscreen', 'auto') # Warning: sucks
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, FadeTransition
@@ -30,9 +41,8 @@ class SpylightClientApp(App):
     def displayGameConfigScreen(self):
         self.sm.current = "GameConfig"
     
-    def displayGameScreen(self, character, mapname, serverIp):
-        game = GameScreen(app=self, character=character, 
-                          mapname=mapname, serverip=serverIp, name="Game")
+    def displayGameScreen(self, **kwargs):
+        game = GameScreen(app=self, name="Game", **kwargs)
         self.sm.add_widget(game)
         self.sm.current = "Game"
     
@@ -41,4 +51,5 @@ class SpylightClientApp(App):
 
 
 if __name__ == '__main__':
+    # Changing kivy specific settings
     SpylightClientApp().run()
