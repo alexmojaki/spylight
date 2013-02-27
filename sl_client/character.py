@@ -17,6 +17,8 @@ Builder.load_string('''
 <Character>:
     size: 32,32
     rotation: 0
+    # collisionBox: collisionBox
+    
     Scatter:
         do_translation: False, False
         do_rotation: False
@@ -28,6 +30,12 @@ Builder.load_string('''
         Image:
             source: root.sprite
             size: root.size
+    
+    # Widget:
+    #     id: collisionBox
+    #     size: 25,25
+    #     center: root.center
+
 ''')
 
 class Character(Widget):
@@ -130,6 +138,7 @@ class Character(Widget):
         # print 'velocity ' + str(self.velocity)
 
         pos2 = self.velocity + self.pos
+        # alt: collision vs char's collision box and viewMap's impassable list
         if(self.canGo(pos2)):
             self.pos = pos2
         else:
@@ -163,7 +172,6 @@ class Character(Widget):
         ret = ret and self.cellMap.getWallType((pos2[0]+c.CELL_SIZE-margin)/c.CELL_SIZE, (pos2[1]+c.CELL_SIZE-margin)/c.CELL_SIZE) == -1
         ret = ret and self.cellMap.getWallType((pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+c.CELL_SIZE-margin)/c.CELL_SIZE) == -1
         ret = ret and self.cellMap.getWallType((pos2[0]+c.CELL_SIZE-margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE) == -1
-        Logger.debug('SL| canGo: %s, %d, %d', pos2, (pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE)
 
         return ret
 

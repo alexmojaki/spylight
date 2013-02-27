@@ -10,6 +10,8 @@ class SpylightHUD(Widget):
 
         self.timer = Timer(self, gameduration)
         game.add_widget(self.timer)
+        self.capInfo = CapInfo()
+        game.add_widget(self.capInfo)
         self.game = game
 
     def start(self):
@@ -48,14 +50,16 @@ class Timer(Widget):
             self.hud.game.end()
 
 
-# class CapInfo(Widget):
-#     percentage = StringProperty("0%")
+class CapInfo(Widget):
+    capFormat = "capture: {0}%"
+    percentage = StringProperty('')
 
-#     def __init__(self, **kwargs):
-#         logger.info("cap info created")
-#         super(CapInfo, self).__init__(**kwargs)
+    def __init__(self):
+        super(CapInfo, self).__init__()
+        self.update(0)
 
-#     def update(self, newValue):
-#         self.percentage = str(newValue)+'%'
+    def update(self, newValue):
+        self.percentage = CapInfo.capFormat.format(newValue)
+
 
 

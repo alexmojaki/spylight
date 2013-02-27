@@ -1,10 +1,8 @@
 
 from kivy.properties import NumericProperty, ObjectProperty
+from kivy.properties import ListProperty
 from kivy.uix.widget import Widget
-from kivy.core.image import Image
 from kivy.lang import Builder
-
-from custom_logger import logger
 
 import constants as c
 
@@ -16,32 +14,30 @@ class MapView(Widget):
     groundTexture = ObjectProperty(None)
     character = ObjectProperty(None)
     shadow = ObjectProperty(None)
+    # impassableTerrain = ListProperty([])
 
-    def getTexture(self,name, size):
-        filename = c.texturePath.format(name)
-        texture = Image(filename).texture
-        texture.wrap = 'repeat'
-        texture.uvsize = size
-        logger.info(filename)
-        return texture
-
-    def __init__(self, map, character, shadow):
+    def __init__(self, cellMap, character, shadow):
         self.character = character
         self.shadow = shadow
+        self.groundTexture = c.getTexture('wall2')
+        super(MapView, self).__init__(size=(cellMap.width*c.CELL_SIZE,
+                                            cellMap.height*c.CELL_SIZE))
 
-        super(MapView, self).__init__(size=(map.width*c.CELL_SIZE,
-                                            map.height*c.CELL_SIZE))
-        self.groundTexture = self.getTexture(name='wall2',
-                                             size=(c.CELL_SIZE,c.CELL_SIZE))
+        self.cellMap = cellMap
 
-        for x in xrange(map.width):
-            for y in xrange(map.height):
-                if map.getWallType(x, y) != -1:
-                    self.add_widget(Wall(pos=(x*c.CELL_SIZE, y*c.CELL_SIZE)))
-                if map.getItem(x,y) == 0:
-                    self.add_widget(Terminal(pos=(x*c.CELL_SIZE,
-                                                  y*c.CELL_SIZE)))
-
+        for x in xrange(cellMap.width):
+            for y in xrange(cellMap.height):
+                wall = None
+                item = None
+                if cellMap.getWallType(x, y) != -1:
+                    wall = Wall(pos=(x*c.CELL_SIZE, y*c.CELL_SIZE))
+                    self.add_widget(wall)
+                    #self.impassableTerrain.append(wall)
+                if cellMap.getItem(x,y) == 0:
+                    item = Terminal(pos=(x*c.CELL_SIZE, y*c.CELL_SIZE))
+                    self.add_widget(item)
+                    #self.impassableTerrain.append(item)
+                    
 
 class Wall(Widget):
     pass

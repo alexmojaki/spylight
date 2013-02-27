@@ -74,7 +74,7 @@ class SpylightGame(Widget):
         self.soundPunch = SoundLoader.load(c.wavPath.format("punch"))
         self.soundBoom = SoundLoader.load(c.wavPath.format("boom"))
 
-        self.add_widget(MapView(map=cellMap, character=self.character,
+        self.add_widget(MapView(cellMap=cellMap, character=self.character,
                                 shadow=self.shadow))
         self.add_widget(self.character)
 
