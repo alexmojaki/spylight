@@ -7,8 +7,9 @@ from math import sqrt
 import logging
 from time import sleep
 
-import network_protocol as np
-from slmap import SLMap
+import common.network_protocol as np
+import common.game_constants as c
+from common.slmap import SLMap
 
 MAP = ""
 
@@ -26,10 +27,9 @@ class Player(object):
 
 class GameServerEngine(object):
     """docstring for GameServerEngine"""
-    CELL_SIZE = 32
     MIN_NOISE_DIST = 4 # in cells
     MIN_BEEP_DIST = 4 # in cells
-    MIN_TRAP_DIST = int(1.2 * CELL_SIZE)
+    MIN_TRAP_DIST = int(1.2 * c.CELL_SIZE)
     SPY_INITIAL_LIVES = 3
     MERC_INITIAL_LIVES = 1
     CAP_TIME = 4 # seconds
@@ -71,8 +71,8 @@ class GameServerEngine(object):
 
     def activate(self, player):
         print "Activate() at pos=" + str(player.pos) + "Not yet implemented" # @TODO
-        x = player.pos[0] / self.CELL_SIZE
-        y = player.pos[1] / self.CELL_SIZE
+        x = player.pos[0] / self.c.CELL_SIZE
+        y = player.pos[1] / self.c.CELL_SIZE
         if player.capping != True:
             player.cap = 0
         if self.slm.getItem(x, y) == 0:
@@ -85,9 +85,9 @@ class GameServerEngine(object):
     def beep_level(self, p1):
         m = 0
         for mine in self.mines:
-            dist = int(abs(p1.pos[0] - mine[0])/self.CELL_SIZE + abs(p1.pos[1] - mine[1])/self.CELL_SIZE)
+            dist = int(abs(p1.pos[0] - mine[0])/self.c.CELL_SIZE + abs(p1.pos[1] - mine[1])/self.c.CELL_SIZE)
             if dist <= self.MIN_BEEP_DIST:
-                level = int(self.MIN_BEEP_DIST - (dist/self.CELL_SIZE))
+                level = int(self.MIN_BEEP_DIST - (dist/self.c.CELL_SIZE))
                 if level > m:
                     m = level
         return m
@@ -95,7 +95,7 @@ class GameServerEngine(object):
     def noise_level(self, p1, p2):
         dist = abs(p1.pos[0] - p2.pos[0]) + abs(p1.pos[1] - p2.pos[1])
         if dist <= self.MIN_NOISE_DIST:
-            return int(self.MIN_NOISE_DIST - (dist/self.CELL_SIZE))
+            return int(self.MIN_NOISE_DIST - (dist/self.c.CELL_SIZE))
         else:
             return 0
 
@@ -227,7 +227,9 @@ class SLTCPRequestHandler(object):
         self.s2.close()
             
 
-if __name__ == "__main__": # for debugging purposes
+def runServer(): # Call it from the root folder
+    global MAP
+
     if len(sys.argv) > 1:
         MAP = sys.argv[1]
     else:
@@ -252,3 +254,7 @@ if __name__ == "__main__": # for debugging purposes
     server = SLTCPRequestHandler()
     server.gs.setMap(MAP)
     server.run(HOST, PORT)
+
+if __name__ == "__main__": # for debugging purposes
+    # Don't run it from here or enjoy messing with sys.path first
+    runServer() 

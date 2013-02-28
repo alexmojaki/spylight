@@ -7,7 +7,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'art/wall.png'
+            source: root.sprite
 
 <Mine>
     size: 10,10
@@ -15,7 +15,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'art/mine.png'
+            source: root.sprite
 
 <Terminal>:
     size: 32, 32
@@ -23,7 +23,7 @@
         Rectangle:
             pos: self.pos[0]+8, self.pos[1] + 8
             size: 16,16
-            source: 'art/terminal.png'
+            source: root.sprite
 
 <Shadow>:
     size: -42, -42

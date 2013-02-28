@@ -1,12 +1,12 @@
 
 from kivy.properties import NumericProperty, ObjectProperty
-from kivy.properties import ListProperty
 from kivy.uix.widget import Widget
 from kivy.lang import Builder
 
-import constants as c
+from client import utils
+import common.game_constants as c
 
-Builder.load_file('kv/environment.kv')
+Builder.load_file(utils.kvPath.format('environment'))
 
 class MapView(Widget):
     width = NumericProperty(0)
@@ -19,7 +19,7 @@ class MapView(Widget):
     def __init__(self, cellMap, character, shadow):
         self.character = character
         self.shadow = shadow
-        self.groundTexture = c.getTexture('wall2')
+        self.groundTexture = utils.getTexture('wall2')
         super(MapView, self).__init__(size=(cellMap.width*c.CELL_SIZE,
                                             cellMap.height*c.CELL_SIZE))
 
@@ -40,7 +40,7 @@ class MapView(Widget):
                     
 
 class Wall(Widget):
-    pass
+    sprite = utils.spritePath.format('wall')
 
 
 class Shadow(Widget):
@@ -51,11 +51,13 @@ class Shadow(Widget):
 
 
 class Terminal(Widget):
+    sprite = utils.spritePath.format('terminal')
     pass
 
 
 
 class Mine(Widget):
+    sprite = utils.spritePath.format('mine')
     def __init__(self, pos, **kwargs):
         self.pos = pos[0]-10, pos[1]-10;
         super(Mine, self).__init__(**kwargs)

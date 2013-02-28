@@ -1,14 +1,13 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 
-# from main import app
+from client import utils
 
 class GameConfigScreen(Screen):
     def __init__(self, app=None, **kwargs):
-        Builder.load_file('kv/game_config_screen.kv')
+        Builder.load_file(utils.kvPath.format('game_config_screen'))
         super(GameConfigScreen, self).__init__(**kwargs)
 
         role = kwargs.get('character')
@@ -32,6 +31,6 @@ class GameConfigScreen(Screen):
         else:
             role = 'merc'
         self.app.displayGameScreen(character=role, 
-                                   mapname='../test.map',
+                                   mapname='test.map',
                                    serverip=self.serverIp.text,
                                    gameduration=self.gameduration)

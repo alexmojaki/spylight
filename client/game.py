@@ -12,38 +12,41 @@ from kivy.clock import Clock
 # Colored logs. the text before the first ':' will be used as log tag
 from kivy.logger import Logger
 
-import network_protocol as np
-import constants as c
 
-from client import ClientNetworker
-from slmap import SLMap
-from character import Spy,Mercenary
-from hud import SpylightHUD
-from environment import Shadow, MapView
+import common.network_protocol as np
+# import common.game_constants as c
 
-
-# server = None
-
-# clientNetworker = None
-
-
+from client.network import ClientNetworker
+from common.slmap import SLMap
+from client.character import Spy,Mercenary
+from client.hud import SpylightHUD
+from client.environment import Shadow, MapView
+from client.keyboard import KeyboardManager
+from client import utils
 
 class GameScreen(Screen):
     def __init__(self, character, mapname, serverip, gameduration, **kwargs):
-        Builder.load_file('kv/game_screen.kv')
+        Builder.load_file(utils.kvPath.format('game_screen'))
         super(GameScreen, self).__init__(**kwargs) # init with the name
 
-        game = SpylightGame(character, mapname, serverip, gameduration)
+        self.km = KeyboardManager()
+        self.km.bind(quit=self.goToPauseScreen)
+
+        game = SpylightGame(character, mapname, serverip, gameduration, self.km)
         self.add_widget(game)
 
         game.start()
+
+    def goToPauseScreen(self, instance, value):
+        if not value: # False means key up event
+            Logger.info('SL|GameScreen: TODO: Pause Screen')
 
 
 class SpylightGame(Widget):
     character = ObjectProperty(None)
     shadow = ObjectProperty(None)
 
-    def __init__(self, character, mapname, serverip, gameduration):
+    def __init__(self, character, mapname, serverip, gameduration, keyboardMgr):
         super(SpylightGame, self).__init__()
 
         cellMap = SLMap(mapname)
@@ -67,12 +70,12 @@ class SpylightGame(Widget):
         if srv:
             clientNetworker.connect(srv, 9999)
 
-        self.soundBeep = SoundLoader.load(c.wavPath.format("beep"))
-        self.soundShot = SoundLoader.load(c.wavPath.format("shot"))
-        self.soundReload = SoundLoader.load(c.wavPath.format("reload"))
-        self.soundModem = SoundLoader.load(c.wavPath.format("modem"))
-        self.soundPunch = SoundLoader.load(c.wavPath.format("punch"))
-        self.soundBoom = SoundLoader.load(c.wavPath.format("boom"))
+        self.soundBeep = SoundLoader.load(utils.wavPath.format("beep"))
+        self.soundShot = SoundLoader.load(utils.wavPath.format("shot"))
+        self.soundReload = SoundLoader.load(utils.wavPath.format("reload"))
+        self.soundModem = SoundLoader.load(utils.wavPath.format("modem"))
+        self.soundPunch = SoundLoader.load(utils.wavPath.format("punch"))
+        self.soundBoom = SoundLoader.load(utils.wavPath.format("boom"))
 
         self.add_widget(MapView(cellMap=cellMap, character=self.character,
                                 shadow=self.shadow))
@@ -82,6 +85,13 @@ class SpylightGame(Widget):
         
         self.hud = SpylightHUD(self, gameduration)
         self.add_widget(self.hud)
+
+        keyboardMgr.bind(up=self.character.upEvt)
+        keyboardMgr.bind(left=self.character.leftEvt)
+        keyboardMgr.bind(down=self.character.downEvt)
+        keyboardMgr.bind(right=self.character.rightEvt)
+        keyboardMgr.bind(run=self.character.runEvt)
+        keyboardMgr.bind(action=self.character.actionEvt)
 
 
     def update(self, timeDelta):

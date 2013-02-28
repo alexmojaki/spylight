@@ -15,9 +15,9 @@ Config.set('kivy', 'log_level', 'info')  # Change here to see debug messages
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, FadeTransition
 
-from menu import MenuScreen
-from game import GameScreen
-from game_config import GameConfigScreen
+from client.menu import MenuScreen
+from client.game import GameScreen
+from client.game_config import GameConfigScreen
 
 
 ## Classes ####################################################################

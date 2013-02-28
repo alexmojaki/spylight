@@ -3,9 +3,11 @@ from kivy.properties import StringProperty
 from kivy.clock import Clock
 from kivy.lang import Builder
 
+from client import utils
+
 class SpylightHUD(Widget):
     def __init__(self, game, gameduration):
-        Builder.load_file('kv/hud.kv')
+        Builder.load_file(utils.kvPath.format('hud'))
         super(SpylightHUD, self).__init__()
 
         self.timer = Timer(self, gameduration)

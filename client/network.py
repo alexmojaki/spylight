@@ -4,7 +4,7 @@ import sys
 from time import sleep
 import logging
 
-import network_protocol as np
+import common.network_protocol as np
 
 class ClientNetworker(object):
     """docstring for ClientNetworker"""

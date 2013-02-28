@@ -8,10 +8,10 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.clock import Clock
 
-import network_protocol as np
-from client import ClientNetworker as clientNetworker
-# from slmap import SLMap
-import constants as c
+# from client.network import ClientNetworker
+from client import utils
+import common.network_protocol as np
+import common.game_constants as c
 
 Builder.load_string('''
 <Character>:
@@ -38,6 +38,8 @@ Builder.load_string('''
 
 ''')
 
+clientNetworker = None
+
 class Character(Widget):
     x1 = NumericProperty(0)
     y1 = NumericProperty(0)
@@ -58,52 +60,30 @@ class Character(Widget):
 
         self.game = game
         self.cellMap = cellMap
-        self.zPressed = False
-        self.qPressed = False
-        self.sPressed = False
-        self.dPressed = False
-        self.ePressed = False
+        self.upPressed = False
+        self.leftPressed = False
+        self.downPressed = False
+        self.rightPressed = False
+        self.actionPressed = False
         self.velocity = Vector(0,0)
         self.running = False
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
-    def _keyboard_closed(self):
-        Logger.warning('SL|Character: The keyboard is no longer accessible!')
-        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
-        self._keyboard.unbind(on_key_up=self._on_keyboard_up)
-        self._keyboard = None
-
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        # Keycode is composed of an integer + a string
-        if keycode[1] == 'z'or keycode[1] == 'up':
-            self.zPressed = True
-        if keycode[1] == 'q'or keycode[1] == 'left':
-            self.qPressed = True
-        if keycode[1] == 's'or keycode[1] == 'down':
-            self.sPressed = True
-        if keycode[1] == 'd'or keycode[1] == 'right':
-            self.dPressed = True
-
-        if 'shift' in modifiers:
-            self.running = True
-
-        return True
-
-    def _on_keyboard_up(self, useless, keycode):
-
-        if keycode[1] == 'z' or keycode[1] == 'up':
-            self.zPressed = False
-        if keycode[1] == 'q' or keycode[1] == 'left':
-            self.qPressed = False
-        if keycode[1] == 's' or keycode[1] == 'down':
-            self.sPressed = False
-        if keycode[1] == 'd' or keycode[1] == 'right':
-            self.dPressed = False
-        if keycode[1] == 'e':
+    # Keyboard events: set the related value to false on keyup, true on keydown
+    def upEvt(self, instance, value):
+        self.upPressed = value
+    def leftEvt(self, instance, value):
+        self.leftPressed = value
+    def downEvt(self, instance, value):
+        self.downPressed = value
+    def rightEvt(self, instance, value):
+        self.rightPressed = value
+    def actionEvt(self, instance, value):
+        self.actionPressed = value
+        if value: # keydown only
             self.activate()
-        return True
+    def runEvt(self, instance, value):
+        self.running = value
+
 
     def activate(self):
         pass
@@ -117,27 +97,26 @@ class Character(Widget):
 
         deceleration = 1
 
-        if self.zPressed:
-            if self.sPressed:
+        if self.upPressed:
+            if self.downPressed:
                 self.velocity[1] = 0
             else:
                 self.velocity[1] = maxVelocity
         else:
-             if self.sPressed:
+             if self.downPressed:
                 self.velocity[1] = -maxVelocity
 
-        if self.qPressed:
-            if self.dPressed:
+        if self.leftPressed:
+            if self.rightPressed:
                 self.velocity[0] = 0
             else:
                 self.velocity[0] = -maxVelocity
         else:
-            if self.dPressed:
+            if self.rightPressed:
                 self.velocity[0] = maxVelocity
 
-        # print 'velocity ' + str(self.velocity)
-
         pos2 = self.velocity + self.pos
+
         # alt: collision vs char's collision box and viewMap's impassable list
         if(self.canGo(pos2)):
             self.pos = pos2
@@ -218,7 +197,7 @@ class Character(Widget):
 
 class Spy(Character):
     name = 'spy'
-    sprite = c.texturePath.format('spy')
+    sprite = utils.spritePath.format('spy')
 
     def __init__(self, game, cellMap, **kwargs):
         self.runningBonus = 12
@@ -235,7 +214,7 @@ class Spy(Character):
         if self.game.started:
                 
             if self.capturing:
-                if self.zPressed or self.qPressed or self.sPressed or self.dPressed:
+                if self.upPressed or self.leftPressed or self.downPressed or self.rightPressed:
                     self.capturing = False
                     # capInfo.update(0)
                     self.game.stopModem()
@@ -246,9 +225,9 @@ class Spy(Character):
 
 
     def activate(self):
+        Logger.info('SL|Spy: Activating!')
         if self.game.started:
             self.capturing = True
-            Logger.info('SL|Spy: Activating!')
             if self.server:
                 clientNetworker.activate()
 
@@ -257,7 +236,7 @@ class Spy(Character):
 
 class Mercenary(Character):
     name = 'merc'
-    sprite = c.texturePath.format('mercenary')
+    sprite = utils.spritePath.format('mercenary')
 
     def __init__(self, game, cellMap, **kwargs):
         Logger.info('SL|Mercenary: init')
