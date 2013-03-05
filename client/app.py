@@ -21,8 +21,6 @@ from client.game import GameScreen
 from client.game_config import GameConfigScreen
 
 
-## Classes ####################################################################
-
 class SpylightClientApp(App):
     def build_config(self, config):
         config.setdefaults('GameConfig', {
