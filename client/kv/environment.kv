@@ -1,12 +1,5 @@
-#:kivy 1.4.1
+#:kivy 1.5.1
 
-<Character>:
-    size: 32,32
-    canvas:
-        Rectangle:
-            pos:self.pos
-            size:self.size
-            source: self.sprite
 
 <Wall>:
     size: 32, 32
@@ -14,7 +7,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'art/wall.png'
+            source: root.sprite
 
 <Mine>
     size: 10,10
@@ -22,7 +15,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'art/mine.png'
+            source: root.sprite
 
 <Terminal>:
     size: 32, 32
@@ -30,25 +23,11 @@
         Rectangle:
             pos: self.pos[0]+8, self.pos[1] + 8
             size: 16,16
-            source: 'art/terminal.png'
+            source: root.sprite
 
 <Shadow>:
     size: -42, -42
     pos: 100, 100
-
-<Timer>:
-    size: 100, 40
-    Label:
-        pos:0,0
-        size:root.size
-        text:root.time
-
-
-<CapInfo>:
-    size: 100, 40
-    Label:
-        pos:400,0
-        text:root.percentage
 
 
 <MapView>:
@@ -66,6 +45,6 @@
             size: self.shadow.size
             source: self.shadow.sprite
         StencilUnUse
+        Triangle:
+            points: self.character.points
         StencilPop
-
-<SpylightGame>:
