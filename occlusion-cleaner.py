@@ -24,6 +24,8 @@ import shapely.geometry
 import shapely.ops
 from shapely.geometry import Polygon
 
+DBG = False
+
 Builder.load_string('''
 <BlorgWidget>:
     canvas:
@@ -109,7 +111,12 @@ class PolygonSightView(SightView):
         self.mpos_y = y
 
     def getPoints(self):
-        return {vertices: self.l, indices: self.l2}
+        if DBG:
+            print "#c01"
+        result = {"vertices": self.vertices, "indices": self.indices}
+        if DBG:
+            print "#c02", result
+        return result
 
     def setObstacles(self, obs):
         self.obs_pos = obs
@@ -125,13 +132,27 @@ class PolygonSightView(SightView):
         self.dudes = ennemies
 
     def compute(self):
+        if DBG:
+            print "#b01"
         m = Vector([self.mpos_x, self.mpos_y])
+        if DBG:
+            print "#b02"
         sight = Polygon([[self.mpos_x, self.mpos_y], [self.mpos_x - 100, self.mpos_y + 200], [self.mpos_x + 100, self.mpos_y + 200]])
         # sight = scene
+        if DBG:
+            print "#b03"
         poly_union = None
         polygons = []
+        if DBG:
+            print "#b04"
         color_index = -50
+
+        if DBG:
+            print "#b05"
+
         for o in self.obs:
+            if DBG:
+                print "#b06", o
             color_index += 50
             l = len(o.exterior.coords)
             i = 0
@@ -155,6 +176,8 @@ class PolygonSightView(SightView):
                 t = Polygon(points2)
                 if t.is_valid:
                     polygons.append(t)
+                i += 1
+            # /while
             union = None
             try:
                 union = shapely.ops.cascaded_union(polygons)
@@ -165,6 +188,7 @@ class PolygonSightView(SightView):
                     for q in p.exterior.coords:
                         print q
                     print "------ polygon ------"
+        # /for o in self.obs
         try:
             sight = sight.difference(union)
         except ValueError as e:
@@ -180,7 +204,9 @@ class PolygonSightView(SightView):
             final_points.append(y)
             blorg_points.extend((x, y, 0.0, 0.0))
             max += 1
-        return blorg_points
+
+        self.vertices = blorg_points
+        self.indices = range(0, len(self.vertices)/4)
         # final_points2 = []
         # Don't know if this is useful or not, to be tested:
         # for u in sight.interiors:
@@ -201,28 +227,63 @@ class PolygonSightView(SightView):
 class MeshTestApp(App):
     coeff = 20.0
 
-    def draw_obs(self):
-        self.s.setMousePos(int(mouse_pos[0]), int(mouse_pos[1]))
+    def draw_obs(self, dt):
+        if DBG:
+            print "a"
+        mpos_x, mpos_y = int(Window.mouse_pos[0]), int(Window.mouse_pos[1])
+        self.s.setMousePos(mpos_x, mpos_y)
+        if DBG:
+            print "a1"
         self.s.compute()
+        if DBG:
+            print "a2"
         p = self.s.getPoints()
-        self.wid.sight_points = p
-        self.wid.x1 = self.mpos_x
-        self.wid.y1 = self.mpos_y
-        self.wid.l2 = range(0, len(self.wid.sight_points)/4)
+        if DBG:
+            print "a3"
+        self.wid.sight_points = p["vertices"]
+        if DBG:
+            print "a4"
+        self.wid.x1 = mpos_x
+        if DBG:
+            print "a5"
+        self.wid.y1 = mpos_y
+        if DBG:
+            print "a6"
+        if DBG:
+            print "a7"
+        self.wid.l2 = p["indices"]
+        if DBG:
+            print "a8"
         
 
     def build(self):
+        print "blorg"
+        if DBG:
+            print "a9"
         self.wid = wid = BlorgWidget()
+        if DBG:
+            print "a10"
+        
         self.s = PolygonSightView(None) # @todo
+        if DBG:
+            print "a11"
         self.s.setObstacles([(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)])
+        if DBG:
+            print "a12"
         self.s.setEnnemies([(500, 530), (300, 270), (300, 330)])
+        if DBG:
+            print "a13"
         
         layout = BoxLayout(size_hint=(1, None), height=50)
         root = BoxLayout(orientation='vertical')
         root.add_widget(wid)
         root.add_widget(layout)
+        if DBG:
+            print "a14"
 
-        Clock.schedule_interval(self.draw_obs, 0.05)
+        Clock.schedule_interval(self.draw_obs, 1.0/2.0)
+        if DBG:
+            print "a15"
 
         return root
 
