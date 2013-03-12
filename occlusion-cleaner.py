@@ -98,6 +98,8 @@ class SightView(object):
 class PolygonSightView(SightView):
     """SightView for a Polygonal view"""
     coeff = 20.0
+    w = 20
+    h = 20
     def __init__(self, polygon):
         super(PolygonSightView, self).__init__()
         self.polygon = polygon
@@ -111,6 +113,10 @@ class PolygonSightView(SightView):
 
     def setObstacles(self, obs):
         self.obs_pos = obs
+        self.obs = []
+        for p in self.obs_pos:
+            poly = Polygon([[p[0], p[1]], [p[0] + self.w, p[1]], [p[0] + self.w, p[1] + self.h], [p[0], p[1] + self.h] ])
+            self.obs.append(poly)
 
     def setAlliesSights(self, sightsList):
         self.allies = sightsList
@@ -119,19 +125,9 @@ class PolygonSightView(SightView):
         self.dudes = ennemies
 
     def compute(self):
-        w = 20
-        h = 20
-        self.obs_pos = [(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)]
-        self.dudes = [(500, 530), (300, 270), (300, 330)]
-        self.obs = []
-
-        for p in self.obs_pos:
-            poly = Polygon([[p[0], p[1]], [p[0] + w, p[1]], [p[0] + w, p[1] + h], [p[0], p[1] + h] ])
-            self.obs.append(poly)
-
         m = Vector([self.mpos_x, self.mpos_y])
-        scene = Polygon([[self.mpos_x, self.mpos_y], [self.mpos_x - 100, self.mpos_y + 200], [self.mpos_x + 100, self.mpos_y + 200]])
-        sight = scene
+        sight = Polygon([[self.mpos_x, self.mpos_y], [self.mpos_x - 100, self.mpos_y + 200], [self.mpos_x + 100, self.mpos_y + 200]])
+        # sight = scene
         poly_union = None
         polygons = []
         color_index = -50
@@ -184,32 +180,42 @@ class PolygonSightView(SightView):
             final_points.append(y)
             blorg_points.extend((x, y, 0.0, 0.0))
             max += 1
-        final_points2 = []
+        return blorg_points
+        # final_points2 = []
         # Don't know if this is useful or not, to be tested:
-        for u in sight.interiors:
-            for (x, y) in u.coords:
-                final_points2.append(x)
-                final_points2.append(y)
+        # for u in sight.interiors:
+        #     for (x, y) in u.coords:
+        #         final_points2.append(x)
+        #         final_points2.append(y)
 
-        red = (1, 0, 0)
-        blue = (0, 0, 1)
-        green = (0, 1, 0)
-        self.wid.sight_points = blorg_points
-        self.wid.x1 = self.mpos_x
-        self.wid.y1 = self.mpos_y
-        self.wid.l2 = range(0, len(self.wid.sight_points)/4)
+        # red = (1, 0, 0)
+        # blue = (0, 0, 1)
+        # green = (0, 1, 0)
 
         # Note : We draw the obstacle themselves after the sight's shadow's polygons in order to get them visible and not under those polygons
-        for p in self.obs_pos:
-            with self.wid.canvas:
-                Color(1,1,0)
-                Rectangle(pos=p, size=(w, h))
+        # for p in self.obs_pos:
+        #     with self.wid.canvas:
+        #         Color(1,1,0)
+        #         Rectangle(pos=p, size=(self.w, self.h))
 
 class MeshTestApp(App):
     coeff = 20.0
-    
+
+    def draw_obs(self):
+        self.s.setMousePos(int(mouse_pos[0]), int(mouse_pos[1]))
+        self.s.compute()
+        p = self.s.getPoints()
+        self.wid.sight_points = p
+        self.wid.x1 = self.mpos_x
+        self.wid.y1 = self.mpos_y
+        self.wid.l2 = range(0, len(self.wid.sight_points)/4)
+        
+
     def build(self):
         self.wid = wid = BlorgWidget()
+        self.s = PolygonSightView(None) # @todo
+        self.s.setObstacles([(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)])
+        self.s.setEnnemies([(500, 530), (300, 270), (300, 330)])
         
         layout = BoxLayout(size_hint=(1, None), height=50)
         root = BoxLayout(orientation='vertical')
