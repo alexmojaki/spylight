@@ -18,19 +18,20 @@ Builder.load_string('''
     size: 32,32
     rotation: 0
     # collisionBox: collisionBox
-    
+
     Scatter:
+        id:scatter
         do_translation: False, False
         do_rotation: False
         do_scale: False
-        size: root.size
+        # size: root.size  # Don't use size! use scale instead (cf Scatter's doc)
         center: root.center
         rotation: root.rotation
+        scale: 1.68  # 32/19
 
         Image:
             source: root.sprite
-            size: root.size
-    
+
     # Widget:
     #     id: collisionBox
     #     size: 25,25
@@ -39,6 +40,7 @@ Builder.load_string('''
 ''')
 
 clientNetworker = None
+
 
 class Character(Widget):
     x1 = NumericProperty(0)
@@ -53,10 +55,10 @@ class Character(Widget):
     def __init__(self, game, cellMap, **kwargs):
         # Builder.load_file('kv/character.kv')
         super(Character, self).__init__(**kwargs)
-        Logger.info('SL|Character: size at creation: %s',self.size)
+        Logger.info('SL|Character: size at creation: %s', self.size)
 
         # Only used to test w/o starting a server
-        self.server = kwargs.get('self.server',None)
+        self.server = kwargs.get('self.server', None)
 
         self.game = game
         self.cellMap = cellMap
@@ -65,32 +67,35 @@ class Character(Widget):
         self.downPressed = False
         self.rightPressed = False
         self.actionPressed = False
-        self.velocity = Vector(0,0)
+        self.velocity = Vector(0, 0)
         self.running = False
 
     # Keyboard events: set the related value to false on keyup, true on keydown
     def upEvt(self, instance, value):
         self.upPressed = value
+
     def leftEvt(self, instance, value):
         self.leftPressed = value
+
     def downEvt(self, instance, value):
         self.downPressed = value
+
     def rightEvt(self, instance, value):
         self.rightPressed = value
+
     def actionEvt(self, instance, value):
         self.actionPressed = value
-        if value: # keydown only
+        if value:  # keydown only
             self.activate()
+
     def runEvt(self, instance, value):
         self.running = value
-
 
     def activate(self):
         pass
 
-
     def update(self):
-        Logger.debug('SL|Character: size: %s',self.size)
+        Logger.debug('SL|Character: size: %s', self.size)
         maxVelocity = 3
         if self.running:
             maxVelocity = maxVelocity+self.runningBonus
@@ -103,7 +108,7 @@ class Character(Widget):
             else:
                 self.velocity[1] = maxVelocity
         else:
-             if self.downPressed:
+            if self.downPressed:
                 self.velocity[1] = -maxVelocity
 
         if self.leftPressed:
@@ -121,14 +126,13 @@ class Character(Widget):
         if(self.canGo(pos2)):
             self.pos = pos2
         else:
-            for i in xrange(0,2):
+            for i in xrange(0, 2):
                 if self.velocity[i] > 0:
                     self.pos[i] -= 1
                 elif self.velocity[i] < 0:
                     self.pos[i] += 1
 
-
-        for i in xrange(0,2):
+        for i in xrange(0, 2):
             if self.velocity[i] < 0:
                 self.velocity[i] += deceleration
             elif self.velocity[i] > 0:
@@ -142,10 +146,10 @@ class Character(Widget):
         if self.server:
             self.notifyServer()
 
-        self.running = False;
-        self.rotation = self.heading # Rotates the sprite
+        self.running = False
+        self.rotation = self.heading  # Rotates the sprite
 
-    def canGo(self,pos2):
+    def canGo(self, pos2):
         margin = 7
         ret = self.cellMap.getWallType((pos2[0]+margin)/c.CELL_SIZE, (pos2[1]+margin)/c.CELL_SIZE) == -1
         ret = ret and self.cellMap.getWallType((pos2[0]+c.CELL_SIZE-margin)/c.CELL_SIZE, (pos2[1]+c.CELL_SIZE-margin)/c.CELL_SIZE) == -1
@@ -161,7 +165,6 @@ class Character(Widget):
         if self.running:
             clientNetworker.run()
 
-
         clientNetworker.send()
 
         self.displayReception()
@@ -174,7 +177,6 @@ class Character(Widget):
         if ret["cap"] > -1:
             # capInfo.update(ret["cap"])
             self.game.playModem()
-            
 
         if ret["beep"]:
             self.game.playBeep()
@@ -193,8 +195,8 @@ class Character(Widget):
     def spawn(self, dt):
         self.pos = self.spawnPoint
 
-### SPY #######################################################################
 
+### SPY #######################################################################
 class Spy(Character):
     name = 'spy'
     sprite = utils.spritePath.format('spy')
@@ -203,26 +205,22 @@ class Spy(Character):
         self.runningBonus = 12
         self.spawnPoint = (
             cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*c.CELL_SIZE,
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE
-            )
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE)
         self.pos = self.spawnPoint
         super(Spy, self).__init__(game, cellMap, **kwargs)
         self.capturing = False
 
-
     def update(self):
         if self.game.started:
-                
             if self.capturing:
                 if self.upPressed or self.leftPressed or self.downPressed or self.rightPressed:
                     self.capturing = False
                     # capInfo.update(0)
                     self.game.stopModem()
                 elif self.server:
-                    clientNetworker.activate()                        
+                    clientNetworker.activate()
 
-            super(Spy,self).update()
-
+            super(Spy, self).update()
 
     def activate(self):
         Logger.info('SL|Spy: Activating!')
@@ -241,35 +239,30 @@ class Mercenary(Character):
     def __init__(self, game, cellMap, **kwargs):
         Logger.info('SL|Mercenary: init')
         self.runningBonus = 0
-        self.sprite = 'art/mercenary.png'
         self.spawnPoint = (
             cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][0]*c.CELL_SIZE,
-            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE
-            )
+            cellMap.spawnPoints[cellMap.MERCENARY_SPAWN][1]*c.CELL_SIZE)
         self.pos = self.spawnPoint
         super(Mercenary, self).__init__(game, cellMap, **kwargs)
         self.mines = dict()
 
-
     def update(self):
         if self.game.started:
             self.running = True
-            super(Mercenary,self).update()
-
+            super(Mercenary, self).update()
 
     def activate(self):
         if self.game.started:
-            super(Mercenary,self).activate()
+            super(Mercenary, self).activate()
 
             Logger.info('SL|Mercenary: Activating!')
-            if not self.mines.has_key(str(self.center)):
+            if not self.mines in str(self.center):
                 mw = Mine(self.center)
                 self.mines[str(self.center)] = mw
                 self.game.add_widget(mw)
 
             if self.server:
                 clientNetworker.drop(np.OT_MINE)
-
 
     def displayReception(self):
         super(Mercenary, self).displayReception()

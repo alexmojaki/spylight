@@ -18,27 +18,28 @@ import common.network_protocol as np
 
 from client.network import ClientNetworker
 from common.slmap import SLMap
-from client.character import Spy,Mercenary
+from client.character import Spy, Mercenary
 from client.hud import SpylightHUD
 from client.environment import Shadow, MapView
 from client.keyboard import KeyboardManager
 from client import utils
 
+
 class GameScreen(Screen):
-    def __init__(self, character, mapname, serverip, gameduration, **kwargs):
+    def __init__(self, character, mapname, serverip, serverport, gameduration, **kwargs):
         Builder.load_file(utils.kvPath.format('game_screen'))
-        super(GameScreen, self).__init__(**kwargs) # init with the name
+        super(GameScreen, self).__init__(**kwargs)  # init with the name
 
         self.km = KeyboardManager()
         self.km.bind(quit=self.goToPauseScreen)
 
-        game = SpylightGame(character, mapname, serverip, gameduration, self.km)
+        game = SpylightGame(character, mapname, serverip, serverport, gameduration, self.km)
         self.add_widget(game)
 
         game.start()
 
     def goToPauseScreen(self, instance, value):
-        if not value: # False means key up event
+        if not value:  # False means key up event
             Logger.info('SL|GameScreen: TODO: Pause Screen')
 
 
@@ -46,15 +47,17 @@ class SpylightGame(Widget):
     character = ObjectProperty(None)
     shadow = ObjectProperty(None)
 
-    def __init__(self, character, mapname, serverip, gameduration, keyboardMgr):
+    def __init__(self, character, mapname, serverip, serverport, gameduration, keyboardMgr):
         super(SpylightGame, self).__init__()
 
         cellMap = SLMap(mapname)
         Logger.info("SL|SLGame: Map loaded: %s", cellMap.title)
         Logger.info("SL|SLGame: Map size: (%d, %d)",
-                    cellMap.width, cellMap.height) 
+                    cellMap.width, cellMap.height)
 
-        srv = None # @TODO: connection stuff with serverip
+        srv = serverip
+        if serverip == "Debug":  # @TODO remove these 2 lines once the server is stable.
+            srv = None
 
         if character == Mercenary.name:
             self.character = Mercenary(game=self, cellMap=cellMap, server=srv)
@@ -68,7 +71,7 @@ class SpylightGame(Widget):
                 clientNetworker = ClientNetworker(np.SPY_TYPE)
 
         if srv:
-            clientNetworker.connect(srv, 9999)
+            clientNetworker.connect(srv, serverport)
 
         self.soundBeep = SoundLoader.load(utils.wavPath.format("beep"))
         self.soundShot = SoundLoader.load(utils.wavPath.format("shot"))
@@ -81,8 +84,8 @@ class SpylightGame(Widget):
                                 shadow=self.shadow))
         self.add_widget(self.character)
 
-        self.started = False # What's the point of this flag?
-        
+        self.started = False  # What's the point of this flag?
+
         self.hud = SpylightHUD(self, gameduration)
         self.add_widget(self.hud)
 
@@ -93,9 +96,8 @@ class SpylightGame(Widget):
         keyboardMgr.bind(run=self.character.runEvt)
         keyboardMgr.bind(action=self.character.actionEvt)
 
-
     def update(self, timeDelta):
-        # Prints the internal fps and the number of frames rendered 
+        # Prints the internal fps and the number of frames rendered
         # (if no change, it won't be rendered)
         Logger.debug('SL|SLGame: fps: %d, rfps: %d',
                      Clock.get_fps(), Clock.get_rfps())

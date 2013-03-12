@@ -5,6 +5,7 @@ from kivy.uix.screenmanager import Screen
 
 from client import utils
 
+
 class GameConfigScreen(Screen):
     def __init__(self, app=None, **kwargs):
         Builder.load_file(utils.kvPath.format('game_config_screen'))
@@ -16,7 +17,9 @@ class GameConfigScreen(Screen):
         self.map.text = "TODO système chargement map serveur"
         self.serverIp.text = kwargs.get('serverIp', '127.0.0.1')
 
-        self.gameduration = 3 # todo: gui field
+        # @TODO: GUI field
+        self.serverPort = 9999
+        self.gameduration = 3
 
         self.app = app
 
@@ -30,7 +33,8 @@ class GameConfigScreen(Screen):
             role = 'spy'
         else:
             role = 'merc'
-        self.app.displayGameScreen(character=role, 
+        self.app.displayGameScreen(character=role,
                                    mapname='test.map',
                                    serverip=self.serverIp.text,
+                                   serverport=self.serverPort,
                                    gameduration=self.gameduration)

@@ -44,7 +44,7 @@ class ClientNetworker(object):
 
     def send(self):
         tosend = self.__player_data + self.__pos_data + self.__mouse_pos_data + self.__run_data + self.__shoot_data + self.__activate_data + self.__drop_data + np.MSG_END
-        
+
         self.logger.info("Sending:" + str(tosend))
 
         self.__s.sendall(tosend)
