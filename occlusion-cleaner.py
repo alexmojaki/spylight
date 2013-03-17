@@ -30,10 +30,12 @@ Builder.load_string('''
 <BlorgWidget>:
     canvas:
         StencilPush
+        # This is a spotlight
         Rectangle:
             pos: 300, 300
             size: 50, 50
         
+        # sight view
         Mesh:
             vertices: self.l
             indices: self.l2
@@ -48,12 +50,13 @@ Builder.load_string('''
             size: 900, 900
         Color:
             rgb: 1, 0, 0
+        # Those are the ennemies
         Rectangle:
             pos: 300, 320
             size: 20, 20
         
         Rectangle:
-            pos: 500, 530
+            pos: self.moving_ennemy_x, 530
             size: 20, 20
 
         Rectangle:
@@ -61,9 +64,11 @@ Builder.load_string('''
             size: 20, 20
 
         StencilUnUse
+        # This is a spotlight
         Rectangle:
             pos: 300, 300
             size: 50, 50
+        # sight view
         Mesh:
             vertices: self.l
             indices: self.l2
@@ -75,9 +80,14 @@ class BlorgWidget(Widget):
     """docstring for BlorgWidget"""
     x1 = NumericProperty(300)
     y1 = NumericProperty(300)
+    moving_ennemy_x = NumericProperty(500)
 
     sight_points = []
     l2 = ListProperty([])
+
+    def __init__(self, **args):
+        super(BlorgWidget, self).__init__(**args)
+        self.moving_ennemy_x = 500
 
     def gettest(self):
         if DBG:
@@ -91,8 +101,7 @@ class BlorgWidget(Widget):
 
     l = AliasProperty(gettest, settest, bind=('x1', 'y1'))
     
-    def __init__(self, **args):
-        super(BlorgWidget, self).__init__(**args)
+
         
 class SightView(object):
     """docstring for SightView"""
@@ -201,6 +210,8 @@ class MeshTestApp(App):
     def draw_obs(self, dt):
         mpos_x, mpos_y = int(Window.mouse_pos[0]), int(Window.mouse_pos[1])
         self.s.setMousePos(mpos_x, mpos_y)
+        self.wid.moving_ennemy_x = (self.wid.moving_ennemy_x + 30) % 700
+        self.s.setEnnemies([(self.wid.moving_ennemy_x, 530), (300, 270), (300, 330)])
         self.s.compute()
         p = self.s.getPoints()
         self.wid.sight_points = p["vertices"]
@@ -212,7 +223,6 @@ class MeshTestApp(App):
         self.wid = wid = BlorgWidget()
         self.s = PolygonSightView(None) # @todo
         self.s.setObstacles([(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)])
-        self.s.setEnnemies([(500, 530), (300, 270), (300, 330)])
         
         layout = BoxLayout(size_hint=(1, None), height=50)
         root = BoxLayout(orientation='vertical')
