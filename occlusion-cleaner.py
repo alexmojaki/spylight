@@ -80,12 +80,14 @@ class BlorgWidget(Widget):
     l2 = ListProperty([])
 
     def gettest(self):
-        print "gettest called"
-        print self.sight_points
+        if DBG:
+            print "gettest called"
+            print self.sight_points
         return self.sight_points
 
     def settest(self, val):
-        print "setter called"
+        if DBG:
+            print "setter called"
 
     l = AliasProperty(gettest, settest, bind=('x1', 'y1'))
     
@@ -132,27 +134,13 @@ class PolygonSightView(SightView):
         self.dudes = ennemies
 
     def compute(self):
-        if DBG:
-            print "#b01"
         m = Vector([self.mpos_x, self.mpos_y])
-        if DBG:
-            print "#b02"
         sight = Polygon([[self.mpos_x, self.mpos_y], [self.mpos_x - 100, self.mpos_y + 200], [self.mpos_x + 100, self.mpos_y + 200]])
-        # sight = scene
-        if DBG:
-            print "#b03"
         poly_union = None
         polygons = []
-        if DBG:
-            print "#b04"
         color_index = -50
 
-        if DBG:
-            print "#b05"
-
         for o in self.obs:
-            if DBG:
-                print "#b06", o
             color_index += 50
             l = len(o.exterior.coords)
             i = 0
@@ -183,18 +171,16 @@ class PolygonSightView(SightView):
                 union = shapely.ops.cascaded_union(polygons)
             except ValueError as e:
                 print "ValueError Exception when cascaded_union():", e
-                for p in polygons:
-                    print "------ polygon ------"
-                    for q in p.exterior.coords:
-                        print q
-                    print "------ polygon ------"
+                # for p in polygons:
+                #     print "------ polygon ------"
+                #     for q in p.exterior.coords:
+                #         print q
+                #     print "------ polygon ------"
         # /for o in self.obs
         try:
             sight = sight.difference(union)
         except ValueError as e:
             print "ValueError Exception when difference():", e
-            print union
-            print sight
             sight = Polygon([[0,0], [1,1], [2,2]])
         blorg_points = []
         final_points = []
@@ -207,84 +193,34 @@ class PolygonSightView(SightView):
 
         self.vertices = blorg_points
         self.indices = range(0, len(self.vertices)/4)
-        # final_points2 = []
-        # Don't know if this is useful or not, to be tested:
-        # for u in sight.interiors:
-        #     for (x, y) in u.coords:
-        #         final_points2.append(x)
-        #         final_points2.append(y)
-
-        # red = (1, 0, 0)
-        # blue = (0, 0, 1)
-        # green = (0, 1, 0)
-
-        # Note : We draw the obstacle themselves after the sight's shadow's polygons in order to get them visible and not under those polygons
-        # for p in self.obs_pos:
-        #     with self.wid.canvas:
-        #         Color(1,1,0)
-        #         Rectangle(pos=p, size=(self.w, self.h))
-
+        
 class MeshTestApp(App):
     coeff = 20.0
+    FPS=2
 
     def draw_obs(self, dt):
-        if DBG:
-            print "a"
         mpos_x, mpos_y = int(Window.mouse_pos[0]), int(Window.mouse_pos[1])
         self.s.setMousePos(mpos_x, mpos_y)
-        if DBG:
-            print "a1"
         self.s.compute()
-        if DBG:
-            print "a2"
         p = self.s.getPoints()
-        if DBG:
-            print "a3"
         self.wid.sight_points = p["vertices"]
-        if DBG:
-            print "a4"
         self.wid.x1 = mpos_x
-        if DBG:
-            print "a5"
         self.wid.y1 = mpos_y
-        if DBG:
-            print "a6"
-        if DBG:
-            print "a7"
         self.wid.l2 = p["indices"]
-        if DBG:
-            print "a8"
         
-
     def build(self):
-        print "blorg"
-        if DBG:
-            print "a9"
         self.wid = wid = BlorgWidget()
-        if DBG:
-            print "a10"
-        
         self.s = PolygonSightView(None) # @todo
-        if DBG:
-            print "a11"
         self.s.setObstacles([(500, 500), (40, 40), (100, 100), (200, 200), (300, 300)])
-        if DBG:
-            print "a12"
         self.s.setEnnemies([(500, 530), (300, 270), (300, 330)])
-        if DBG:
-            print "a13"
         
         layout = BoxLayout(size_hint=(1, None), height=50)
         root = BoxLayout(orientation='vertical')
         root.add_widget(wid)
         root.add_widget(layout)
-        if DBG:
-            print "a14"
-
-        Clock.schedule_interval(self.draw_obs, 1.0/2.0)
-        if DBG:
-            print "a15"
-
+        
+        Clock.schedule_interval(self.draw_obs, 1.0/self.FPS)
+        
         return root
 
 if __name__ == '__main__':
