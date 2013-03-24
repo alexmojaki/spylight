@@ -3,6 +3,7 @@ from kivy.core.window import Window
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
 
+
 class KeyboardManager(Widget):
     """
     Dispatches keyboard events.
@@ -11,15 +12,16 @@ class KeyboardManager(Widget):
     and handler is a function taking 2 parameters (3 if there is self too):
         handler(instance, value) or handler(self, instance, value)
 
+
     """
     _keyBindings = {
         'up': ['up', 'z'],
         'left': ['left', 'q'],
         'down': ['down', 's'],
         'right': ['right', 'd'],
-        'run': ['shift'], # must be a modifier 
+        'run': ['shift'],  # must be a modifier
         'action': ['e'],
-        'quit' : ['escape']
+        'quit': ['escape']
     }
     up = BooleanProperty(False)
     left = BooleanProperty(False)
@@ -55,7 +57,7 @@ class KeyboardManager(Widget):
         if (keycode[1] in self._keyBindings['quit']):
             self.quit = True
 
-        if (keycode[1] in self._keyBindings['run'] or 
+        if (keycode[1] in self._keyBindings['run'] or
                 filter(lambda k: k in self._keyBindings['run'], modifiers)):
             self.run = True
 
@@ -76,5 +78,5 @@ class KeyboardManager(Widget):
             self.quit = False
         if (keycode[1] in self._keyBindings['run']):
             self.run = False
-        
+
         return True

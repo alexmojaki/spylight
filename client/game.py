@@ -6,6 +6,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 from kivy.core.audio import SoundLoader
+from kivy.core.window import Window
 from kivy.properties import ObjectProperty
 from kivy.clock import Clock
 
@@ -16,12 +17,13 @@ from kivy.logger import Logger
 import common.network_protocol as np
 # import common.game_constants as c
 
-from client.network import ClientNetworker
+from client.network import NetworkInterface
 from common.slmap import SLMap
 from client.character import Spy, Mercenary
 from client.hud import SpylightHUD
 from client.environment import Shadow, MapView
 from client.keyboard import KeyboardManager
+from client.action import ActionManager
 from client import utils
 
 
@@ -50,51 +52,49 @@ class SpylightGame(Widget):
     def __init__(self, character, mapname, serverip, serverport, gameduration, keyboardMgr):
         super(SpylightGame, self).__init__()
 
-        cellMap = SLMap(mapname)
-        Logger.info("SL|SLGame: Map loaded: %s", cellMap.title)
-        Logger.info("SL|SLGame: Map size: (%d, %d)",
-                    cellMap.width, cellMap.height)
+        # Register to the server
+        self._ni = NetworkInterface(serverip, serverport)
 
-        srv = serverip
-        if serverip == "Debug":  # @TODO remove these 2 lines once the server is stable.
-            srv = None
+        # Parse server init message
+        # initString = self._ni.recieve()
+        # gameduration = ?  # or remaining time
 
-        if character == Mercenary.name:
-            self.character = Mercenary(game=self, cellMap=cellMap, server=srv)
-            self.shadow = Shadow(Spy.sprite)
-            if srv:
-                clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
-        else:
-            self.character = Spy(game=self, cellMap=cellMap, server=srv)
-            self.shadow = Shadow(Mercenary.sprite)
-            if srv:
-                clientNetworker = ClientNetworker(np.SPY_TYPE)
+        # Init environment
+        # Get the map name from the server, init map
+        # self.map = SLMap(mapname)
+        # Logger.info("SL|SLGame: Map loaded: %s", cellMap.title)
+        # Logger.info("SL|SLGame: Map size: (%d, %d)",
+        #             cellMap.width, cellMap.height)
+        # self.soundBeep = SoundLoader.load(utils.wavPath.format("beep"))
+        # self.soundShot = SoundLoader.load(utils.wavPath.format("shot"))
+        # self.soundReload = SoundLoader.load(utils.wavPath.format("reload"))
+        # self.soundModem = SoundLoader.load(utils.wavPath.format("modem"))
+        # self.soundPunch = SoundLoader.load(utils.wavPath.format("punch"))
+        # self.soundBoom = SoundLoader.load(utils.wavPath.format("boom"))
+        # self.add_widget(MapView(cellMap=cellMap, character=self.character,
+        #                         shadow=self.shadow))
 
-        if srv:
-            clientNetworker.connect(srv, serverport)
+        # Init character
+        # if character == Mercenary.name:
+        #     self.character = Mercenary(game=self, cellMap=cellMap, server=srv)
+        #     self.shadow = Shadow(Spy.sprite)
+        #     if srv:
+        #         clientNetworker = ClientNetworker(np.MERCENARY_TYPE)
+        # else:
+        #     self.character = Spy(game=self, cellMap=cellMap, server=srv)
+        #     self.shadow = Shadow(Mercenary.sprite)
+        #     if srv:
+        #         clientNetworker = ClientNetworker(np.SPY_TYPE)
+        # self.add_widget(self.character)
 
-        self.soundBeep = SoundLoader.load(utils.wavPath.format("beep"))
-        self.soundShot = SoundLoader.load(utils.wavPath.format("shot"))
-        self.soundReload = SoundLoader.load(utils.wavPath.format("reload"))
-        self.soundModem = SoundLoader.load(utils.wavPath.format("modem"))
-        self.soundPunch = SoundLoader.load(utils.wavPath.format("punch"))
-        self.soundBoom = SoundLoader.load(utils.wavPath.format("boom"))
-
-        self.add_widget(MapView(cellMap=cellMap, character=self.character,
-                                shadow=self.shadow))
-        self.add_widget(self.character)
-
-        self.started = False  # What's the point of this flag?
-
-        self.hud = SpylightHUD(self, gameduration)
+        self.hud = SpylightHUD(self, 300)
         self.add_widget(self.hud)
 
-        keyboardMgr.bind(up=self.character.upEvt)
-        keyboardMgr.bind(left=self.character.leftEvt)
-        keyboardMgr.bind(down=self.character.downEvt)
-        keyboardMgr.bind(right=self.character.rightEvt)
-        keyboardMgr.bind(run=self.character.runEvt)
-        keyboardMgr.bind(action=self.character.actionEvt)
+        # Register input listeners
+        self._am = ActionManager(keyboardMgr, self._ni)
+
+        # Game client ready
+        self._ni.on_message_recieved = self.update
 
     def update(self, timeDelta):
         # Prints the internal fps and the number of frames rendered
@@ -104,34 +104,35 @@ class SpylightGame(Widget):
 
         self.character.update()
         self.hud.update()
+        self.map.update()
 
-    def end(self):
-        self.playShot()
-        print "The defenders won!"
-        sys.exit()
+    # def end(self):
+    #     self.playShot()
+    #     print "The defenders won!"
+    #     sys.exit()
 
-    def start(self):
-        self.started = True
-        Clock.schedule_interval(self.update, 1.0 / 60.0)
-        self.hud.start()
+    # def start(self):
+    #     self.started = True
+    #     Clock.schedule_interval(self.update, 1.0 / 60.0)
+    #     self.hud.start()
 
-    def playBeep(self):
-        self.soundBeep.play()
+    # def playBeep(self):
+    #     self.soundBeep.play()
 
-    def playShot(self):
-        self.soundShot.play()
+    # def playShot(self):
+    #     self.soundShot.play()
 
-    def playReload(self):
-        self.soundReaload.play()
+    # def playReload(self):
+    #     self.soundReaload.play()
 
-    def playModem(self):
-        self.soundModem.play()
+    # def playModem(self):
+    #     self.soundModem.play()
 
-    def stopModem(self):
-        self.soundModem.stop()
+    # def stopModem(self):
+    #     self.soundModem.stop()
 
-    def playPunch(self):
-        self.soundPunch.play()
+    # def playPunch(self):
+    #     self.soundPunch.play()
 
-    def playBoom(self):
-        self.soundBoom.play()
+    # def playBoom(self):
+    #     self.soundBoom.play()

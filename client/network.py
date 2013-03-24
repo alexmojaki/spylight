@@ -1,10 +1,44 @@
 #!/usr/bin/python
-import socket
 import sys
 from time import sleep
 import logging
 
+import socket
+import threading
+
 import common.network_protocol as np
+from kivy.logger import Logger
+
+
+class NetworkInterface(object):
+    """docstring for NetworkInterface"""
+
+    def __init__(self, hostname, port, on_message_recieved=None):
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_SocketTREAM)
+        self._socket.connect((hostname, port))
+
+        if on_message_recieved:
+            self.on_message_recieved = on_message_recieved
+
+        t = threading.Thread(target=self._recieve)
+        t.daemon = True  # helpful if you want it to die automatically
+        t.start()
+
+    def send(message):
+        Logger.info('SL|NetworkInterface: Message to send: %s', message)
+
+    def receive(self):
+        while 1:
+            # msg_len = struct.unpack('i', self._socket.recv(4))
+            # msg = self._socket.recv(int(msg_len))
+            # print msg
+            data = self._socket.recv(1024)
+            if data:
+                print 'Received:', data
+                if self.on_message_recieved:
+                    self.on_message_recieved(data)
+            return data
+
 
 class ClientNetworker(object):
     """docstring for ClientNetworker"""
@@ -44,7 +78,7 @@ class ClientNetworker(object):
 
     def send(self):
         tosend = self.__player_data + self.__pos_data + self.__mouse_pos_data + self.__run_data + self.__shoot_data + self.__activate_data + self.__drop_data + np.MSG_END
-        
+
         self.logger.info("Sending:" + str(tosend))
 
         self.__s.sendall(tosend)
