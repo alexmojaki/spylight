@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
 class GameEngine:
     def __init__(self, config_file, map_file):
         self.load_config(config_file)

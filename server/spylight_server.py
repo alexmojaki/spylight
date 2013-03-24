@@ -1,5 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from threaded_tcp_server import ThreadedTCPServer
 from game_engine import GameEngine
+
+from threaded_tcp_request_handler import ThreadedTCPRequestHandler
 
 
 class SpylightServer:
@@ -11,8 +16,8 @@ class SpylightServer:
         self._game_engine = GameEngine(config_file, map_file)
 
     def start_server(self, host, port, player_number):
-        print host
-        self._tcp_server = ThreadedTCPServer(host, port, player_number)
+        self._tcp_server = ThreadedTCPServer((host, port),
+                                             ThreadedTCPRequestHandler)
         self._tcp_server_thread = self._tcp_server.threaded_serve_forever()
 
 if __name__ == '__main__':
