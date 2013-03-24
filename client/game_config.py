@@ -34,7 +34,7 @@ class GameConfigScreen(Screen):
         else:
             role = 'merc'
         self.app.displayGameScreen(character=role,
-                                   mapname='test.map',
+                                   mapname='test2.map',
                                    serverip=self.serverIp.text,
                                    serverport=self.serverPort,
                                    gameduration=self.gameduration)
