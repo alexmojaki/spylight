@@ -1,43 +1,20 @@
-from kivy.core.Window import Window
+
 
 class ActionManager(object):
-    def __init__(self, keyboardMgr, networkInterface):
+    def __init__(self, networkInterface, keyboardMgr, touchMgr):
         self._ni = networkInterface
+        keyboardMgr.bind(movement=self.notify_movement_event)
+        keyboardMgr.bind(action=self.notify_action)
+        touchMgr.bind(click_state=self.notify_touch_event)
 
-        # Keyboard
-        keyboardMgr.bind(up=self.upEvt)
-        keyboardMgr.bind(left=self.leftEvt)
-        keyboardMgr.bind(down=self.downEvt)
-        keyboardMgr.bind(right=self.rightEvt)
-        keyboardMgr.bind(run=self.runEvt)
-        keyboardMgr.bind(action=self.actionEvt)
-
-        # Mouse/touch
-        Window.bind(on_touch_down=self.touch_up)
-        Window.bind(on_touch_up=self.touch_down)
-
-    def touch_up(self, event):
+    def notify_action(self, mgr, data):
         pass
 
-    def touch_down(self, event):
+    def notify_movement_event(self, mgr, data):
+        # Angle calculation
+
+        # Send angle, run state
         pass
 
-    def upEvt(self, instance, value):
+    def notify_touch_event(self, mgr, data):
         pass
-
-    def leftEvt(self, instance, value):
-        pass
-
-    def downEvt(self, instance, value):
-        pass
-
-    def rightEvt(self, instance, value):
-        pass
-
-    def actionEvt(self, instance, value):
-        if value:  # keydown only
-            pass
-
-    def runEvt(self, instance, value):
-        pass
-

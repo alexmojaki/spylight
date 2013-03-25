@@ -1,4 +1,4 @@
-from kivy.properties import BooleanProperty
+from kivy.properties import BooleanProperty, NumericProperty, ReferenceListProperty
 from kivy.core.window import Window
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
@@ -14,6 +14,7 @@ class KeyboardManager(Widget):
 
 
     """
+
     _keyBindings = {
         'up': ['up', 'z'],
         'left': ['left', 'q'],
@@ -23,6 +24,7 @@ class KeyboardManager(Widget):
         'action': ['e'],
         'quit': ['escape']
     }
+
     up = BooleanProperty(False)
     left = BooleanProperty(False)
     down = BooleanProperty(False)
@@ -30,6 +32,7 @@ class KeyboardManager(Widget):
     run = BooleanProperty(False)
     action = BooleanProperty(False)
     quit = BooleanProperty(False)
+    movement = ReferenceListProperty(up, left, down, right, run)
 
     def __init__(self):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -80,3 +83,26 @@ class KeyboardManager(Widget):
             self.run = False
 
         return True
+
+
+class TouchManager(Widget):
+    mouse_x = NumericProperty(0)
+    mouse_y = NumericProperty(0)
+    mouse_pos = ReferenceListProperty(mouse_x, mouse_y)
+    left_click = BooleanProperty(False)
+    click_state = ReferenceListProperty(mouse_pos, left_click)
+
+    def __init__(self):
+        Window.bind(on_touch_down=self._on_touch_down)
+        Window.bind(on_touch_up=self._on_touch_up)
+
+    def _on_touch_down(self, window, event):
+        # event.mouse_pos is not reliable, it sometimes is (0, 0)
+        self.mouse_pos = Window.mouse_pos
+        if event.button == 'left':
+            self.left_click = True
+
+    def _on_touch_up(self, window, event):
+        self.mouse_pos = Window.mouse_pos
+        if event.button == 'left':
+            self.left_click = False

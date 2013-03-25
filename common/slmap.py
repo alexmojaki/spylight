@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-class SLMap:
+
+class SLMap(object):
     # Header parsing stage
     MAP_TITLE, MAP_DIMENSIONS = range(0, 2)
     HEADER_PARSED = -1
@@ -86,6 +87,9 @@ class SLMap:
                 self.itemType[y * self.width + x] = t
 
         mapfile.close()
+
+        print self.wallType
+        print self.itemType
 
         return True
 
