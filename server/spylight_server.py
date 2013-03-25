@@ -1,24 +1,61 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from threaded_tcp_server import ThreadedTCPServer
+import sys
+
+from SocketServer import ThreadingTCPServer
+from threading import Thread
+from time import sleep
+
 from game_engine import GameEngine
+from request_handler import RequestHandler
 
-from threaded_tcp_request_handler import ThreadedTCPRequestHandler
 
-
-class SpylightServer:
+class SpylightServer(object):
     def __init__(self, host, port, map_file, config_file='config.ini'):
         self.init_game_engine(config_file, map_file)
-        self.start_server(host, port, self._game_engine.get_nb_players())
+        self.init_tcp_server(host, port)
 
     def init_game_engine(self, config_file, map_file):
-        self._game_engine = GameEngine(config_file, map_file)
+        GameEngine().init(config_file, map_file)
 
-    def start_server(self, host, port, player_number):
-        self._tcp_server = ThreadedTCPServer((host, port),
-                                             ThreadedTCPRequestHandler)
-        self._tcp_server_thread = self._tcp_server.threaded_serve_forever()
+    def init_tcp_server(self, host, port):
+        self._tcp_server = ThreadingTCPServer((host, port), RequestHandler)
+        self._tcp_server_thread = Thread(target=self._tcp_server.serve_forever)
+
+    def start(self):
+        print 'Starting server...'
+
+        GameEngine().start()
+        self._tcp_server_thread.start()
+
+        self.run()
+
+    def run(self):
+        force = False
+
+        while GameEngine().loop:
+            try:
+                # We should do something clever here.
+                sleep(10)
+            except KeyboardInterrupt:
+                force = True
+                break
+
+        self.shutdown(force)
+
+    def shutdown(self, force=False):
+        print 'Shutting down server{}...'.format(' (the hardcore way)' if
+                                                 force else '')
+
+        GameEngine().shutdown(force)
+        self._tcp_server.shutdown()
+        self._tcp_server_thread.join()
+
 
 if __name__ == '__main__':
-    SpylightServer('0.0.0.0', 12321, '')
+    if not len(sys.argv) == 3:
+        print 'usage: {} host port'.format(sys.argv[0])
+        sys.exit(1)
+
+    SpylightServer(sys.argv[1], int(sys.argv[2]), '').start()
