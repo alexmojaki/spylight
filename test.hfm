@@ -1,4 +1,4 @@
-#Human friendlier map
+#Human friendlier map, see map_parser.py for more details
 title: uber map
 players: 2 2
 size: 100 46
