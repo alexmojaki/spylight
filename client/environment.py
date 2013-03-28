@@ -57,15 +57,14 @@ class Shadow(Widget):
         super(Shadow, self).__init__(**kwargs)
 
 
-
 class Terminal(Widget):
     sprite = utils.spritePath.format('terminal')
     pass
 
 
-
 class Mine(Widget):
     sprite = utils.spritePath.format('mine')
+
     def __init__(self, pos, **kwargs):
-        self.pos = pos[0]-10, pos[1]-10;
+        self.pos = pos[0]-10, pos[1]-10
         super(Mine, self).__init__(**kwargs)

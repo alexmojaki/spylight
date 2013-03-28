@@ -19,7 +19,7 @@ from kivy.logger import Logger
 from client.network import NetworkInterface
 # from common.slmap import SLMap
 from common.map_parser import SpyLightMap
-# from client.character import Spy, Mercenary
+from client.character import Character
 from client.hud import SpylightHUD
 from client.environment import MapView
 from client.input import KeyboardManager, TouchManager
@@ -51,9 +51,6 @@ class SpylightGame(Widget):
     shadow = ObjectProperty(None)
 
     # Simulated character
-    charx = NumericProperty(Window.size[0]/2)
-    chary = NumericProperty(Window.size[1]/2)
-    charpos = ReferenceListProperty(charx, chary)
 
     def __init__(self, character, mapname, serverip, serverport, gameduration,
                  keyboardMgr, touchMgr):
@@ -77,6 +74,9 @@ class SpylightGame(Widget):
         self.add_widget(self.mv)
         # Init char replicas
 
+        self.char = Character(0, [100, 100], self.mv.update_pos)
+        self.add_widget(self.char)
+
         self.hud = SpylightHUD(self, 300)
         self.add_widget(self.hud)
 
@@ -85,23 +85,26 @@ class SpylightGame(Widget):
         keyboardMgr.bind(movement=self.move_char)  # @TODO tmp
 
         # Makes the map follow the character
-        self.bind(charpos=self.mv.update_pos)
+        # self.char.bind(offset=self.mv.update_pos)
+        # self.char.set_game_pos([100, 100])
 
         # Send a message to say it's ready?
 
         # Game client ready
         self._ni.on_message_recieved = self.update
 
-    def move_char(self, mgr, data):
+    def move_char(self, mgr, data):  # tmp
         if data[0]:
-            self.chary = self.chary - 10
+            self.char.gamepos[1] = self.char.gamepos[1] + 10
         if data[1]:
-            self.charx = self.charx + 10
+            self.char.gamepos[0] = self.char.gamepos[0] - 10
         if data[2]:
-            self.chary = self.chary + 10
+            self.char.gamepos[1] = self.char.gamepos[1] - 10
         if data[3]:
-            self.charx = self.charx - 10
-        print self.charpos
+            self.char.gamepos[0] = self.char.gamepos[0] + 10
+
+        self.char.update_offset()
+        print self.char.gamepos, self.char.offset
 
     def update(self, timeDelta):
         Logger.info('SL|SLGame: update parameter: %s', timeDelta)
