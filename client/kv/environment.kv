@@ -3,6 +3,8 @@
 
 <Wall>:
     size: 32, 32
+    size_hint: None, None
+    pos_hint: {"x":0, "y":0}
     canvas:
         Rectangle:
             pos: self.pos
@@ -31,20 +33,26 @@
 
 
 <MapView>:
+    size_hint: None, None
     canvas:
-        StencilPush
-        Triangle:
-            points: self.character.points
-        StencilUse
+        # StencilPush
+        # Triangle:
+        #     points: self.character.points
+        # StencilUse
+        # Color:
+        #     rgb: 255/163.,255/160.,255/161.
         Rectangle:
-            pos:0,0
-            size:self.width, self.height
+            pos: root.pos
+            size: root.size
             texture:self.groundTexture
-        Rectangle:
-            pos: self.shadow.pos
-            size: self.shadow.size
-            source: self.shadow.sprite
-        StencilUnUse
-        Triangle:
-            points: self.character.points
-        StencilPop
+        #Color:
+        #    rgb: 0,0,0
+        #    a: 0.5
+        # Rectangle:
+        #     pos: self.shadow.pos
+        #     size: self.shadow.size
+        #     source: self.shadow.sprite
+        # StencilUnUse
+        # Triangle:
+        #     points: self.character.points
+        # StencilPop
