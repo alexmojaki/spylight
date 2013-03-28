@@ -25,8 +25,16 @@ class NetworkInterface(object):
         t.daemon = True  # helpful if you want it to die automatically
         t.start()
 
-    def send(message):
-        Logger.info('SL|NetworkInterface: Message to send: %s', message)
+    def send(self, message):
+        msglen = len(message)
+        Logger.debug('SL|NetworkInterface: Sending message (%d): %s', msglen, message)
+        self._socket.send(struct.pack('!i', msglen))
+        totalsent = 0
+        while totalsent < msglen:
+            sent = self._socket.send(message[totalsent:])
+            if sent == 0:
+                raise RuntimeError("socket connection broken")
+            totalsent = totalsent + sent
 
     def _receive_forever(self):
         while 1:
@@ -36,7 +44,8 @@ class NetworkInterface(object):
         print 'fin'
 
     def receive(self):
-        msg_len = struct.unpack('i', self._socket.recv(4))[0]
+        msg_len = struct.unpack('!i', self._socket.recv(4))[0]
+        print msg_len
         data = self._socket.recv(int(msg_len))
         return data
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from ast import literal_eval
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
@@ -47,10 +48,6 @@ class GameScreen(Screen):
 
 
 class SpylightGame(Widget):
-    character = ObjectProperty(None)
-    shadow = ObjectProperty(None)
-
-    # Simulated character
 
     def __init__(self, character, mapname, serverip, serverport, gameduration,
                  keyboardMgr, touchMgr):
@@ -82,11 +79,7 @@ class SpylightGame(Widget):
 
         # Register input listeners
         self.am = ActionManager(self._ni, keyboardMgr, touchMgr)
-        keyboardMgr.bind(movement=self.move_char)  # @TODO tmp
-
-        # Makes the map follow the character
-        # self.char.bind(offset=self.mv.update_pos)
-        # self.char.set_game_pos([100, 100])
+        # keyboardMgr.bind(movement=self.move_char)  # @TODO tmp
 
         # Send a message to say it's ready?
 
@@ -106,16 +99,20 @@ class SpylightGame(Widget):
         self.char.update_offset()
         print self.char.gamepos, self.char.offset
 
-    def update(self, timeDelta):
-        Logger.info('SL|SLGame: update parameter: %s', timeDelta)
+    def update(self, data):
+        Logger.info('SL|SLGame: update parameter: %s', data)
         # Prints the internal fps and the number of frames rendered
         # (if no change, it won't be rendered)
         Logger.debug('SL|SLGame: fps: %d, rfps: %d',
                      Clock.get_fps(), Clock.get_rfps())
 
-        # self.character.update()
-        # self.hud.update()
-        # self.map.update()
+        data = literal_eval(data)
+        new_pos = data['p']
+        self.char.set_game_pos(new_pos)
+        # To update:
+        #   view cone
+        #   hud
+        #   map elements
 
     def end(self):
         self.playShot()

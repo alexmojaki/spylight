@@ -4,18 +4,20 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 
 from client import utils
+from client.config import config
 
 
 class GameConfigScreen(Screen):
     def __init__(self, app=None, **kwargs):
+        global config
         Builder.load_file(utils.kvPath.format('game_config_screen'))
         super(GameConfigScreen, self).__init__(**kwargs)
 
-        role = kwargs.get('character')
+        role = config.get('GameConfig', 'character')
         self.cbSpy.active = (role == 'spy')
         self.cbMerc.active = (role == 'merc')
         self.map.text = "TODO système chargement map serveur"
-        self.serverIp.text = kwargs.get('serverIp', '127.0.0.1')
+        self.serverIp.text = config.get('GameConfig', 'serverIp')
 
         # @TODO: GUI field
         self.serverPort = 9999
