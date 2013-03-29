@@ -51,4 +51,6 @@ class NetworkInterface(object):
     def receive(self):
         msg_len = struct.unpack('!i', self._socket.recv(4))[0]
         data = self._socket.recv(int(msg_len))
-        return msgpack.unpackb(data)
+        data = msgpack.unpackb(data)
+        Logger.debug('SL|NetworkInterface: Message recieved: %s', data)
+        return data

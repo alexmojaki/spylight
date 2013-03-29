@@ -88,6 +88,7 @@ class SpylightGame(Widget):
 
         # Game client ready
         self._ni.on_message_recieved = self.update
+        print "ready"
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)

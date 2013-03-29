@@ -16,9 +16,10 @@ class GameConfigScreen(Screen):
         super(GameConfigScreen, self).__init__(**kwargs)
 
         team = config.get('GameConfig', 'team')
-        self.cb0.active = (team == 0)
-        self.cb1.active = (team == 1)
+        self.cb0.active = (team == '0')
+        self.cb1.active = (team == '1')
         self.serverIp.text = config.get('GameConfig', 'serverIp')
+        self.nick.text = config.get('GameConfig', 'nick')
 
         # @TODO: GUI field
         self.serverPort = 9999

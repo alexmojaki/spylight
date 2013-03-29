@@ -4,6 +4,9 @@ import sys
 class SpyLightMap(object):
     """
     Used in server and client. Must stay as plain old python (no kivy here)
+
+    This class uses all coordinates in number of tiles.
+    It doesn't know anything about pixels.
     """
 
     HFM_TO_MAP = {
@@ -25,7 +28,7 @@ class SpyLightMap(object):
         self.size = (0, 0)
         self.height = 0
         self.witdh = 0
-        self.map_tiles = []
+        self.map_tiles = []  # self.map_tiles[y][x] (1st array is the v-axis)
         self.nb_players = (0, 0)
 
         if filename:
@@ -40,10 +43,12 @@ class SpyLightMap(object):
         for y in range(len(self.map_tiles)):
             for x in range(len(self.map_tiles[y])):
                 c = self.map_tiles[y][x]
-                if c in self.HFM_TO_MAP:
+                try:
                     mapc = self.HFM_TO_MAP[c]
                     output[mapc['section']].append(
                         ','.join([str(x), str(y), mapc['value']]))
+                except KeyError:
+                    pass
 
         return output
 
@@ -54,7 +59,8 @@ class SpyLightMap(object):
                     continue
                 elif line.find('size:') == 0:  # Line starts with size
                     strsize = line.split(':')[1].split()
-                    self.width, self.height = self.size = (int(strsize[0]), int(strsize[1]))
+                    self.size = (int(strsize[0]), int(strsize[1]))
+                    self.width, self.height = self.size
                 elif line.find('title:') == 0:  # Line starts with size
                     self.title = line.split(':')[1].replace('\n', '')
                 elif line.find('players:') == 0:  # Line starts with players
@@ -80,20 +86,36 @@ class SpyLightMap(object):
         # print nb_players
 
     def getWallType(self, x, y):
-        c = self.map_tiles[y][x]
-        if c in self.HFM_TO_MAP and self.HFM_TO_MAP[c]['section'] == 'wa':
-            return self.HFM_TO_MAP[c]['value']
-        else:
+        """
+        Warning: this class only uses tile numbers, so x and y are the
+        coordinates of the tile in the tile matrix.
+        """
+        try:
+            c = self.map_tiles[y][x]
+            ctype = self.HFM_TO_MAP[c]
+            if ctype['section'] == 'wa':
+                return ctype['value']
+            else:
+                return -1
+        except KeyError:
             return -1
 
     def getItem(self, x, y):
-        c = self.map_tiles[y][x]
-        if c in self.HFM_TO_MAP and self.HFM_TO_MAP[c]['section'] == 'it':
-            return self.HFM_TO_MAP[c]['value']
-        else:
+        """
+        Warning: this class only uses tile numbers, so x and y are the
+        coordinates of the tile in the tile matrix.
+        """
+        try:
+            c = self.map_tiles[y][x]
+            ctype = self.HFM_TO_MAP[c]
+            if ctype['section'] == 'it':
+                return ctype['value']
+            else:
+                return -1
+        except KeyError:
             return -1
 
-    def get_hash():
+    def get_hash(self):
         return 'bleh'
 
 if __name__ == '__main__':
