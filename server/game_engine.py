@@ -5,6 +5,10 @@ from threading import Event
 
 from config_handler import ConfigHandler
 from config_helper import default_config, option_types
+from common.map_parser import SpyLightMap
+
+import common.game_constants as const
+import common.utils as utils
 
 class Player(object):
     """Player class, mainly POCO object"""
@@ -46,14 +50,13 @@ class GameEngine(object):
         self.config = ConfigHandler(config_file, default_config, option_types)
 
     def load_map(self, map_file):
+        self.slmap = SpyLightMap()
+        self.slmap.load_map(map_file)
         self._player_number = 4  # TODO: Update with the true player number
                                  #       read from the map file.
         # Loading players
         self._players = [Player(i) for i in xrange(0, self._player_number)]
         # Do some things like settings the weapon for each player...
-
-    def load_map(self, map_file):
-        pass
 
     def get_nb_players(self):
         return self._player_number
@@ -89,8 +92,8 @@ class GameEngine(object):
             if not self._shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
                 self._harm_first_victim(victims, self._players[pid])
 
-    stepx = MAP_CELL_SIZE # @TODO
-    stepy = MAP_CELL_SIZE # @TODO
+    stepx = const.CELL_SIZE
+    stepy = const.CELL_SIZE
 
     # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
@@ -98,16 +101,17 @@ class GameEngine(object):
         pass
 
     def _shoot_collide_with_obstacle(self, vector, geometric_line): # @TODO
-        x = vector[0][0] # x origin
+        x = (vector[0][0] // const.CELL_SIZE) * cons.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         while x < vector[1][0]: # x end
-            y = vector[0][1] # y origin
+            y = (vector[0][1] // const.CELL_SIZE) * cons.CELL_SIZE # y origin, same process as for x
             while y < vector[1][1]: # y end
-                if geometric_line.intersects(obstacle):
-                    return True
+                if self.slmap.is_obstacle_from_cell_coords(x, y):
+                    obstacle = utils.create_square_from_top_left_coords(x, y) # Construct the obstacle
+                    if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
+                        return True # Yes!
                 y += self.stepy
             x += self.stepx
         return False
-            
 
     def shutdown(self, force=False):
         self._loop.set()
