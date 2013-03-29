@@ -9,22 +9,44 @@ from common.map_parser import SpyLightMap
 
 import common.game_constants as const
 import common.utils as utils
+from math import sin, cos, sqrt
+from random import uniform as rand
 
 class Player(object):
     """Player class, mainly POCO object"""
     PLAYER_RADIUS = 5
+    STATUS_ALIVE = 1
+    STATUS_DEAD = 0
+
     def __init__(self, player_id):
         super(Player, self).__init__()
         self.player_id = player_id
         self.posx = 0 
         self.posy = 0 
+        self.hp = 100 # TODO : Change that ?
+        self.status = STATUS_ALIVE
+        self.weapon = None
+
+    def take_damage(self, damage_amount):
+        self.hp -= damage_amount # TODO change simplistic approach?
+        if self.hp <= 0:
+            self.status = Player.STATUS_DEAD
+
 
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
     def __init__(self, _range, angle_error):
         super(Weapon, self).__init__()
         self.range = _range
-        self.angle_error = angle_error
+        self.angle_error = angle_error # THE ANGLE IS IN RADIANS DUDES
+        self.dps = 10 # damage per shoot #TODO: assign value using a constructor parameter?
+
+    # @param{Player} victim: Victim to damage using this weapon
+    def damage(self, victim):
+        victim.take_damage(self.dps)
+
+    def draw_random_error(self):
+        return rand(-angle_error, angle_error)
         
 
 class GameEngine(object):
@@ -69,14 +91,22 @@ class GameEngine(object):
 
     # @param pid player id
     # @param angle shoot angle, kivy convention, in degree
+    # @return{Player} the victim that has been shot, if any, else None
     def shoot(self, pid, angle):
-        # Direction of the bullet (normalized vector)
+        shooter = self._players[pid]
+        # Shoot "angle"
         a = radians(angle)
+        # Weapon error angle application:
+        a += shooter.weapon.draw_random_error()
+        
+        # Direction of the bullet (normalized vector)
         normalized_direction_vector = (-sin(a), cos(a)) # x, y, but in the kivy convention
+        
         # This vector/line represents the trajectory of the bullet
-        origin = (self._players[pid].posx, self._players[pid].posy)
-        vector = (origin, origin + normalized_direction_vector * self._players[pid].weapon.range)
+        origin = (shooter.posx, shooter.posy)
+        vector = (origin, origin + normalized_direction_vector * shooter.weapon.range)
         line = LineString(vector)
+        
         # First, check if we could even potentially shoot any player
         victims = []
         for p in self._players:
@@ -90,17 +120,23 @@ class GameEngine(object):
         # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
             if not self._shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
-                self._harm_first_victim(victims, self._players[pid])
+                return self._harm_first_victim(victims, shooter)
+        else: # Else, there's just nothing to do, you did not aim at anyone, n00b
+            return None
 
     stepx = const.CELL_SIZE
     stepy = const.CELL_SIZE
 
     # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
+    # @return{Player} the victim harmed
     def _harm_first_victim(self, victims, shooter): # @TODO
-        pass
+        first_victim = sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0][1] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list, then we get the [1] if the tuple to get the victim)
+        shooter.weapon.damage(first_victim)
+        return first_victim
+        
 
-    def _shoot_collide_with_obstacle(self, vector, geometric_line): # @TODO
+    def _shoot_collide_with_obstacle(self, vector, geometric_line):
         x = (vector[0][0] // const.CELL_SIZE) * cons.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         while x < vector[1][0]: # x end
             y = (vector[0][1] // const.CELL_SIZE) * cons.CELL_SIZE # y origin, same process as for x
