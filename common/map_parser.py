@@ -114,6 +114,13 @@ class SpyLightMap(object):
     def is_obstacle(self, x, y):
         row = y // const.CELL_SIZE
         col = x // const.CELL_SIZE
+        return is_obstacle_from_cell_coords(row, col)
+
+    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone through, a static rigid body)
+    # @param{integer} row : map_tiles matrix row
+    # @param{integer} col : map_tiles matrix column
+    # @return{bool} True if yes, False if no
+    def is_obstacle_from_cell_coords(self, row, col):
         if row > self.height or row < 0 or col < 0 or col > self.width:
             return False
         if self.HFM_TO_MAP[self.map_tiles[row][col]] in self.OBSTACLES_TYPES:
