@@ -18,8 +18,10 @@ class Player(object):
     PLAYER_RADIUS = 5
     STATUS_ALIVE = 1
     STATUS_DEAD = 0
+    SPY_TEAM = const.SPY_TEAM
+    MERC_TEAM = const.MERC_TEAM
 
-    def __init__(self, player_id):
+    def __init__(self, player_id, team):
         super(Player, self).__init__()
         self.player_id = player_id
         self.posx = 0 
@@ -27,6 +29,7 @@ class Player(object):
         self.hp = 100 # TODO : Change that ?
         self.status = Player.STATUS_ALIVE
         self.weapon = None
+        self.team = team
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -36,21 +39,36 @@ class Player(object):
 
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
-    def __init__(self, _range, angle_error):
+    def __init__(self):
         super(Weapon, self).__init__()
-        self.range = _range
-        self.angle_error = angle_error # THE ANGLE IS IN RADIANS DUDES
-        self.dps = 10 # damage per shoot #TODO: assign value using a constructor parameter?
+        self.dps = 0 # damage per shoot #TODO: assign value using a constructor parameter?
 
     # @param{Player} victim: Victim to damage using this weapon
     def damage(self, victim):
         victim.take_damage(self.dps)
 
+
+class GunWeapon(Weapon):
+    """Simplistic Gun Weapon implementation"""
+    def __init__(self, _range, angle_error, dps):
+        super(GunWeapon, self).__init__()
+        self.range = _range
+        self.angle_error = angle_error # THE ANGLE IS IN RADIANS DUDES
+        self.dps = dps
+
     def draw_random_error(self):
         return rand(-self.angle_error, self.angle_error)
+
+class MineWeapon(Weapon):
+    """Simplistic Mine Weapon implementation"""
+    def __init__(self):
+        super(MineWeapon, self).__init__()
+        self.dps = 50
+        
+
     
 class ActionableItem(object):
-    """docstring for ActionableItem"""
+    """Simplistic ActionableItem implementation"""
     def __init__(self, x, y):
         super(ActionableItem, self).__init__()
         self.posx = x
@@ -58,6 +76,28 @@ class ActionableItem(object):
 
     def act(self, originPlayer):
         pass # Todo implement that
+    
+class MineAI(ActionableItem):
+    """simplistic Mine implementation"""
+    def __init__(self, x, y):
+        super(MineAI, self).__init__(x, y)
+    
+    def act(self, originPlayer):
+        if originPlayer.team == Player.SPY_TEAM:
+            # Deactivate the current mine
+            GameEngine().remove_new_actionable_item(self) # Example of acting back with the GameEngine
+
+class ProximityObject(object):
+    """docstring for ProximityObject"""
+    def __init__(self, _range_of_action):
+        super(ProximityObject, self).__init__()
+        self.range_of_action = _range_of_action
+
+class MinePO(ProximityObject):
+    """docstring for MineProxObj"""
+    def __init__(self, _range):
+        super(MinePO, self).__init__(_range)
+        self.weapon = MineWeapon()
         
 
 class GameEngine(object):
@@ -77,12 +117,15 @@ class GameEngine(object):
 
     # @function push_new_actionable_item will register a new ActionableItem on the current game's map
     # @param{ActionableItem} item
-    def __push_new_actionable_item(self, item):
-        key = str(item.posx) + "," + str(item.posy)
+    def push_new_actionable_item(self, item):
+        key = self.__actionable_item_key_from_row_col(item.posx // const.CELL_SIZE. item.posy // const.CELL_SIZE)
         try:
             self.__actionable_items[key].append(item)
         except KeyError:
             self.__actionable_items[key] = [item]
+
+    def remove_new_actionable_item(self, item):# TODO implementation of that
+        pass
 
     @property
     def loop(self):
@@ -107,7 +150,7 @@ class GameEngine(object):
         self.__player_number = 4  # TODO: Update with the true player number
                                  #       read from the map file.
         # Loading players
-        self.__players = [Player(i) for i in xrange(0, self.__player_number)]
+        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__player_number)] # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
 
     def get_nb_players(self):
@@ -165,7 +208,6 @@ class GameEngine(object):
         shooter.weapon.damage(first_victim)
         return first_victim
         
-
     def __shoot_collide_with_obstacle(self, vector, geometric_line):
         x = (vector[0][0] // const.CELL_SIZE) * const.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         while x < vector[1][0]: # x end
