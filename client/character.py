@@ -39,9 +39,9 @@ Builder.load_string('''
 
 ''')
 
-_teams = [
-    {'name': 'spy', 'sprite': utils.spritePath.format('spy')},
-    {'name': 'mercenary', 'sprite': utils.spritePath.format('mercenary')}
+teams = [
+    {'name': 'ninja', 'sprite': utils.spritePath.format('spy')},
+    {'name': 'mercenaire', 'sprite': utils.spritePath.format('mercenary')}
 ]
 
 
@@ -53,7 +53,7 @@ class Character(Widget):
     def __init__(self, team, init_pos, on_new_offset_callback):
         self.screenpos = Window.size[0]/2, Window.size[1]/2
         self.center = self.screenpos
-        self.sprite = _teams[team]['sprite']
+        self.sprite = teams[team]['sprite']
         self.bind(offset=on_new_offset_callback)
         self.set_game_pos(init_pos)
         super(Character, self).__init__()

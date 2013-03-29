@@ -1,9 +1,9 @@
 #:kivy 1.5.1
 <GameConfigScreen>:
     serverIp: serverIp
-    map: map
-    cbMerc: cbMerc
-    cbSpy: cbSpy
+    nick: nick
+    cb0: cb0
+    cb1: cb1
 
     BoxLayout:
         orientation: 'vertical'
@@ -14,7 +14,7 @@
             size_hint: (1, 0.2)
             text: 'Configuration de la partie'
             halign: 'center'
-        
+
         StackLayout:
             orientation: 'lr-tb'
             Label:
@@ -31,12 +31,12 @@
             orientation: 'lr-tb'
             Label:
                 size_hint: (0.3, None)
-                text: 'Map'
+                text: 'Pseudo'
                 height: 30
             TextInput:
                 size_hint: (0.3, None)
                 height: 30
-                id: map
+                id: nick
                 multiline: False
 
 
@@ -45,16 +45,16 @@
             rows: 2
             Label:
                 size: (100, 30)
-                text: 'Jouer en tant que mercenaire'
+                text: 'Jouer en tant que {0}'.format(root.team[0])
             CheckBox:
-                group: 'rolecb'
-                id: cbMerc
+                group: 'teamcb'
+                id: cb0
             Label:
                 size: (100, 30)
-                text: 'Jouer en tant qu\'espion'
+                text: 'Jouer en tant que {0}'.format(root.team[1])
             CheckBox:
-                group: 'rolecb'
-                id: cbSpy
+                group: 'teamcb'
+                id: cb1
 
 
         Button:

@@ -1,7 +1,4 @@
 #!/usr/bin/python
-import sys
-from time import sleep
-import logging
 
 import socket
 import threading
@@ -15,23 +12,31 @@ class NetworkInterface(object):
     """docstring for NetworkInterface"""
 
     def __init__(self, hostname, port, on_message_recieved=None):
+        self._hostname = hostname
+        self._port = port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.connect((hostname, port))
+        self.on_message_recieved = on_message_recieved
 
-        if on_message_recieved:
-            self.on_message_recieved = on_message_recieved
+    def connect(self, init_message):
+        self._socket.connect((self._hostname, self._port))
+        self.send(init_message)
+        return self.receive()
+
+    def ready(self):
+        # @TODO: send ready message?
 
         t = threading.Thread(target=self._receive_forever)
         t.daemon = True  # helpful if you want it to die automatically
         t.start()
 
     def send(self, message):
-        msglen = len(message)
+        bmessage = msgpack.packb(message)
+        msglen = len(bmessage)
         Logger.debug('SL|NetworkInterface: Sending message (%d): %s', msglen, message)
         self._socket.send(struct.pack('!i', msglen))
         totalsent = 0
         while totalsent < msglen:
-            sent = self._socket.send(message[totalsent:])
+            sent = self._socket.send(bmessage[totalsent:])
             if sent == 0:
                 raise RuntimeError("socket connection broken")
             totalsent = totalsent + sent

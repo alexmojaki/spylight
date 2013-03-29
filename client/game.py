@@ -29,7 +29,7 @@ from client import utils
 
 
 class GameScreen(Screen):
-    def __init__(self, character, mapname, serverip, serverport, gameduration, **kwargs):
+    def __init__(self, serverip, serverport, team, nick, **kwargs):
         Builder.load_file(utils.kvPath.format('game_screen'))
         super(GameScreen, self).__init__(**kwargs)  # init with the name
 
@@ -38,8 +38,7 @@ class GameScreen(Screen):
         self.km.bind(quit=self.goToPauseScreen)
         self.tm = TouchManager()
 
-        game = SpylightGame(character, mapname, serverip, serverport,
-                            gameduration, self.km, self.tm)
+        game = SpylightGame(serverip, serverport, team, nick, self.km, self.tm)
         self.add_widget(game)
 
     def goToPauseScreen(self, instance, value):
@@ -49,29 +48,34 @@ class GameScreen(Screen):
 
 class SpylightGame(Widget):
 
-    def __init__(self, character, mapname, serverip, serverport, gameduration,
-                 keyboardMgr, touchMgr):
+    def __init__(self, serverip, serverport, team, nick, keyboardMgr, touchMgr):
         super(SpylightGame, self).__init__()
 
         # Register to the server
         self._ni = NetworkInterface(serverip, serverport)
+        init_response = self._ni.connect({'team': team, 'nick': nick})
 
         # Parse server init message
-        # initString = self._ni.recieve()
-        # gameduration = ?  # or remaining time
-        # mapname = ?
+        self.team = init_response['team']
+        self.nick = nick
+        self.playerid = init_response['id']
+        self.players = init_response['players']
 
         # Init environment
-        self.map = SpyLightMap()
-        self.map.load_map('test.hfm')
-        Logger.info("SL|SLGame: Map loaded: %s", self.map.title)
-        Logger.info("SL|SLGame: Map size: %s", self.map.size)
+        loaded_map = SpyLightMap(init_response['map'])
+        Logger.info("SL|SLGame: Map loaded: %s", loaded_map.title)
+        Logger.info("SL|SLGame: Map size: %s", loaded_map.size)
 
-        self.mv = MapView(self.map)
+        if init_response['map_hash'] != loaded_map.get_hash():
+            Logger.error("SL|SLGame: Wrong map hash")
+            sys.exit()
+
+        self.mv = MapView(loaded_map)
         self.add_widget(self.mv)
         # Init char replicas
 
-        self.char = Character(0, [100, 100], self.mv.update_pos)
+        self.char = Character(self.team, init_response['pos'],
+                              self.mv.update_pos)
         self.add_widget(self.char)
 
         self.hud = SpylightHUD(self, 300)
@@ -79,25 +83,11 @@ class SpylightGame(Widget):
 
         # Register input listeners
         self.am = ActionManager(self._ni, keyboardMgr, touchMgr)
-        # keyboardMgr.bind(movement=self.move_char)  # @TODO tmp
 
         # Send a message to say it's ready?
 
         # Game client ready
         self._ni.on_message_recieved = self.update
-
-    def move_char(self, mgr, data):  # tmp
-        if data[0]:
-            self.char.gamepos[1] = self.char.gamepos[1] + 10
-        if data[1]:
-            self.char.gamepos[0] = self.char.gamepos[0] - 10
-        if data[2]:
-            self.char.gamepos[1] = self.char.gamepos[1] - 10
-        if data[3]:
-            self.char.gamepos[0] = self.char.gamepos[0] + 10
-
-        self.char.update_offset()
-        print self.char.gamepos, self.char.offset
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)

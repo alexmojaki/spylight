@@ -20,13 +20,16 @@ class SpyLightMap(object):
         'L': {'section': 'it', 'value': '3'}   # Lamp
     }
 
-    def __init__(self):
+    def __init__(self, filename=None):
         self.title = None
         self.size = (0, 0)
         self.height = 0
         self.witdh = 0
         self.map_tiles = []
         self.nb_players = (0, 0)
+
+        if filename:
+            self.load_map(filename)
 
     def _to_legacy_format(self):
         output = {
@@ -90,6 +93,8 @@ class SpyLightMap(object):
         else:
             return -1
 
+    def get_hash():
+        return 'bleh'
 
 if __name__ == '__main__':
     slm = SpyLightMap().load_map(sys.argv[1])

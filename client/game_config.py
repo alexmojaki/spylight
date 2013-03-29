@@ -5,18 +5,19 @@ from kivy.uix.screenmanager import Screen
 
 from client import utils
 from client.config import config
+from client.character import teams
 
 
 class GameConfigScreen(Screen):
     def __init__(self, app=None, **kwargs):
         global config
+        self.team = [x['name'] for x in teams]
         Builder.load_file(utils.kvPath.format('game_config_screen'))
         super(GameConfigScreen, self).__init__(**kwargs)
 
-        role = config.get('GameConfig', 'character')
-        self.cbSpy.active = (role == 'spy')
-        self.cbMerc.active = (role == 'merc')
-        self.map.text = "TODO système chargement map serveur"
+        team = config.get('GameConfig', 'team')
+        self.cb0.active = (team == 0)
+        self.cb1.active = (team == 1)
         self.serverIp.text = config.get('GameConfig', 'serverIp')
 
         # @TODO: GUI field
@@ -26,17 +27,12 @@ class GameConfigScreen(Screen):
         self.app = app
 
     def validateParameters(self):
-        print self.cbSpy.active
-        print self.cbMerc.active
-        print self.serverIp.text
-
-        # TODO: Check if the other player is ready, params are good, etc
-        if self.cbSpy.active:
-            role = 'spy'
+        if self.cb0.active:
+            team = 0
         else:
-            role = 'merc'
-        self.app.displayGameScreen(character=role,
-                                   mapname='test2.map',
+            team = 1
+
+        self.app.displayGameScreen(team=team,
+                                   nick=self.nick.text,
                                    serverip=self.serverIp.text,
-                                   serverport=self.serverPort,
-                                   gameduration=self.gameduration)
+                                   serverport=self.serverPort)

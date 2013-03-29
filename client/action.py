@@ -1,5 +1,3 @@
-import msgpack
-
 from kivy.logger import Logger
 
 from client.config import config
@@ -47,7 +45,7 @@ class ActionManager(object):
         # Send direction, run state
         print direction, speed
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
-        self._ni.send(msgpack.packb({'d': direction, 's': speed}))
+        self._ni.send({'d': direction, 's': speed})
 
     def notify_touch_event(self, mgr, data):
         pass
