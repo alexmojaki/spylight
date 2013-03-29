@@ -9,8 +9,9 @@ from common.map_parser import SpyLightMap
 
 import common.game_constants as const
 import common.utils as utils
-from math import sin, cos, sqrt
+from math import sin, cos, sqrt, radians
 from random import uniform as rand
+from shapely.geometry import Point, LineString
 
 class Player(object):
     """Player class, mainly POCO object"""
@@ -24,7 +25,7 @@ class Player(object):
         self.posx = 0 
         self.posy = 0 
         self.hp = 100 # TODO : Change that ?
-        self.status = STATUS_ALIVE
+        self.status = Player.STATUS_ALIVE
         self.weapon = None
 
     def take_damage(self, damage_amount):
@@ -46,7 +47,7 @@ class Weapon(object):
         victim.take_damage(self.dps)
 
     def draw_random_error(self):
-        return rand(-angle_error, angle_error)
+        return rand(-self.angle_error, self.angle_error)
         
 
 class GameEngine(object):
@@ -137,9 +138,9 @@ class GameEngine(object):
         
 
     def _shoot_collide_with_obstacle(self, vector, geometric_line):
-        x = (vector[0][0] // const.CELL_SIZE) * cons.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
+        x = (vector[0][0] // const.CELL_SIZE) * const.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         while x < vector[1][0]: # x end
-            y = (vector[0][1] // const.CELL_SIZE) * cons.CELL_SIZE # y origin, same process as for x
+            y = (vector[0][1] // const.CELL_SIZE) * const.CELL_SIZE # y origin, same process as for x
             while y < vector[1][1]: # y end
                 if self.slmap.is_obstacle_from_cell_coords(x, y):
                     obstacle = utils.create_square_from_top_left_coords(x, y) # Construct the obstacle
