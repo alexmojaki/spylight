@@ -6,18 +6,32 @@ class SpyLightMap(object):
     Used in server and client. Must stay as plain old python (no kivy here)
     """
 
+    WA_WA0 = 0 # TODO: Rename that constant to something meaningful
+    WA_WA1 = 1 # TODO: Rename that constant to something meaningful
+    WA_WA2 = 2 # TODO: Rename that constant to something meaningful
+    WA_SPY_ONLY_DOOR = 3
+    WA_MERC_ONLY_DOOR = 4 # TODO: Rename that constant to something meaningful
+ 
+    SP_SP0 = 0 # TODO: Rename that constant to something meaningful
+    SP_SP1 = 1 # TODO: Rename that constant to something meaningful
+
+    IT_TERMINAL = 0
+    IT_BRIEFCASE = 1
+    IT_CAMERA = 2
+    IT_LAMP = 3
+
     HFM_TO_MAP = {
-        '+': {'section': 'wa', 'value': '0'},
-        '-': {'section': 'wa', 'value': '1'},
-        '|': {'section': 'wa', 'value': '2'},
-        '#': {'section': 'wa', 'value': '0'},  # Spy-only door
-        '@': {'section': 'wa', 'value': '0'},  # Mercenary-only door
-        'M': {'section': 'sp', 'value': '0'},
-        'S': {'section': 'sp', 'value': '1'},
-        'T': {'section': 'it', 'value': '0'},  # Terminal
-        'B': {'section': 'it', 'value': '1'},  # Briefcase
-        'C': {'section': 'it', 'value': '2'},  # Camera
-        'L': {'section': 'it', 'value': '3'}   # Lamp
+        '+': {'section': 'wa', 'value': SpyLightMap.WA_WA0 },
+        '-': {'section': 'wa', 'value': SpyLightMap.WA_WA1 },
+        '|': {'section': 'wa', 'value': SpyLightMap.WA_WA2 },
+        '#': {'section': 'wa', 'value': SpyLightMap.WA_SPY_ONLY_DOOR },  # Spy-only door
+        '@': {'section': 'wa', 'value': SpyLightMap.WA_MERC_ONLY_DOOR },  # Mercenary-only door
+        'M': {'section': 'sp', 'value': SpyLightMap.SP_SP0 },
+        'S': {'section': 'sp', 'value': SpyLightMap.SP_SP1 },
+        'T': {'section': 'it', 'value': SpyLightMap.IT_TERMINAL },  # Terminal
+        'B': {'section': 'it', 'value': SpyLightMap.IT_BRIEFCASE },  # Briefcase
+        'C': {'section': 'it', 'value': SpyLightMap.IT_CAMERA },  # Camera
+        'L': {'section': 'it', 'value': SpyLightMap.IT_LAMP}   # Lamp
     }
 
     def __init__(self):

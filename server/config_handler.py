@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from ConfigParser import SafeConfigParser as ConfigParser
+from ConfigParser import NoOptionError, SafeConfigParser as ConfigParser
 
 
 class ConfigHandler(object):
@@ -22,12 +22,13 @@ class ConfigHandler(object):
                     object.__getattribute__(self, '_section_cache')[name] = s
                     break
             if name not in object.__getattribute__(self, '_section_cache'):
-                object.__getattribute__(self, '_section_cache')[name] = None
-        if object.__getattribute__(self, '_section_cache')[name] is not None:
+                object.__getattribute__(self, '_section_cache')[name] = \
+                    'DEFAULT'
+        try:
             if name in object.__getattribute__(self, '_types'):
                 if object.__getattribute__(self, '_types')[name] == int:
                     return object.__getattribute__(self,
-                                                   'config_parser').getint(
+                                                   '_config_parser').getint(
                                                        object.__getattribute__(
                                                            self,
                                                            '_section_cache')
@@ -54,6 +55,6 @@ float, bool or str')
                 return object.__getattribute__(self, '_config_parser').get(
                     object.__getattribute__(self, '_section_cache')[name],
                     name)
-        else:
-            return AttributeError("'{}' object has no attribute '{}'".format(
-                object.__getattribute__(self, '__name__'), name))
+        except NoOptionError:
+            raise AttributeError("'{}' object has no attribute '{}'".format(
+                object.__getattribute__(self, '__class__').__name__, name))

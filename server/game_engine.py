@@ -4,6 +4,7 @@
 from threading import Event
 
 from config_handler import ConfigHandler
+from config_helper import default_config, option_types
 
 class Player(object):
     """Player class, mainly POCO object"""
@@ -42,7 +43,9 @@ class GameEngine(object):
         return not self._loop.is_set()
 
     def load_config(self, config_file):
-        self.config = ConfigHandler(config_file)
+        self.config = ConfigHandler(config_file, default_config, option_types)
+
+    def load_map(self, map_file):
         self._player_number = 4  # TODO: Update with the true player number
                                  #       read from the map file.
         # Loading players

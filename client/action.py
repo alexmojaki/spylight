@@ -1,5 +1,8 @@
-from client.config import config
 import msgpack
+
+from kivy.logger import Logger
+
+from client.config import config
 
 
 class ActionManager(object):
@@ -43,6 +46,7 @@ class ActionManager(object):
         speed = 0 if s == 0 else 1 if keyboardState[4] else self._WALK_SPEED
         # Send direction, run state
         print direction, speed
+        Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
         self._ni.send(msgpack.packb({'d': direction, 's': speed}))
 
     def notify_touch_event(self, mgr, data):
