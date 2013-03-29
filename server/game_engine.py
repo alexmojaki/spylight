@@ -61,22 +61,50 @@ class GameEngine(object):
     def updateMovementDir(self, pid, angle):
         self._players[pid].movAngle = angle
 
+    # @param pid player id
+    # @param angle shoot angle, kivy convention, in degree
     def shoot(self, pid, angle):
+        # Direction of the bullet (normalized vector)
+        a = radians(angle)
+        normalized_direction_vector = (-sin(a), cos(a)) # x, y, but in the kivy convention
         # This vector/line represents the trajectory of the bullet
-        vector = LineString(((self._players[pid].posx, self._players[pid].posy), (self._players[pid].posx + self._players[pid].weapon.range, self._players[pid].weapon.range)))
+        origin = (self._players[pid].posx, self._players[pid].posy)
+        vector = (origin, origin + normalized_direction_vector * self._players[pid].weapon.range)
+        line = LineString(vector)
         # First, check if we could even potentially shoot any player
         victims = []
         for p in self._players:
             # Yes, we do compute the player's hitbox on shoot. It is in fact lighter that storing it in the player, because storing it in the player's object would mean
             # updating it on every player's move. Here we do computation only on shoots, we are going to be many times less frequent that movements!
             hitbox = Point(p.posx,p.posy).buffer(Player.PLAYER_RADIUS)
-            if vector.intersects(hitbox): # hit!
+            if line.intersects(hitbox): # hit!
                 victims.append(p)
 
         # Then, if yes, check that there is not any obstacle to that shoot
         # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
-                    
+            if not self._shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
+                self._harm_first_victim(victims, self._players[pid])
+
+    stepx = MAP_CELL_SIZE # @TODO
+    stepy = MAP_CELL_SIZE # @TODO
+
+    # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
+    # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
+    def _harm_first_victim(self, victims, shooter): # @TODO
+        pass
+
+    def _shoot_collide_with_obstacle(self, vector, geometric_line): # @TODO
+        x = vector[0][0] # x origin
+        while x < vector[1][0]: # x end
+            y = vector[0][1] # y origin
+            while y < vector[1][1]: # y end
+                if geometric_line.intersects(obstacle):
+                    return True
+                y += self.stepy
+            x += self.stepx
+        return False
+            
 
     def shutdown(self, force=False):
         self._loop.set()
