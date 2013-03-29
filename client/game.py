@@ -100,7 +100,7 @@ class SpylightGame(Widget):
         print self.char.gamepos, self.char.offset
 
     def update(self, data):
-        Logger.info('SL|SLGame: update parameter: %s', data)
+        Logger.debug('SL|SLGame: update parameter: %s', data)
         # Prints the internal fps and the number of frames rendered
         # (if no change, it won't be rendered)
         Logger.debug('SL|SLGame: fps: %d, rfps: %d',
