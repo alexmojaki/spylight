@@ -48,11 +48,20 @@ class Weapon(object):
 
     def draw_random_error(self):
         return rand(-self.angle_error, self.angle_error)
+    
+class ActionableItem(object):
+    """docstring for ActionableItem"""
+    def __init__(self, x, y):
+        super(ActionableItem, self).__init__()
+        self.posx = x
+        self.posy = y
+
+    def act(self, originPlayer):
+        pass # Todo implement that
         
 
 class GameEngine(object):
     _instances = {}
-    players = None
 
     def __new__(cls, *args, **kargs):
         if GameEngine._instances.get(cls) is None:
@@ -61,9 +70,19 @@ class GameEngine(object):
 
     def init(self, config_file, map_file):
         self._loop = Event()
-
         self.load_config(config_file)
         self.load_map(map_file)
+        self._actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
+        # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
+
+    # @function push_new_actionable_item will register a new ActionableItem on the current game's map
+    # @param{ActionableItem} item
+    def push_new_actionable_item(self, item):
+        key = str(item.posx) + "," + str(item.posy)
+        try:
+            self._actionable_items[key].append(item)
+        except KeyError:
+            self._actionable_items[key] = [item]
 
     @property
     def loop(self):
