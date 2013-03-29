@@ -69,24 +69,34 @@ class GameEngine(object):
         return GameEngine._instances[cls]
 
     def init(self, config_file, map_file):
-        self._loop = Event()
+        self.__loop = Event()
         self.load_config(config_file)
         self.load_map(map_file)
-        self._actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
+        self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
 
     # @function push_new_actionable_item will register a new ActionableItem on the current game's map
     # @param{ActionableItem} item
-    def push_new_actionable_item(self, item):
+    def __push_new_actionable_item(self, item):
         key = str(item.posx) + "," + str(item.posy)
         try:
-            self._actionable_items[key].append(item)
+            self.__actionable_items[key].append(item)
         except KeyError:
-            self._actionable_items[key] = [item]
+            self.__actionable_items[key] = [item]
 
     @property
     def loop(self):
-        return not self._loop.is_set()
+        return not self.__loop.is_set()
+
+    def __actionable_item_key_from_row_col(self, row, col):
+        return str(row) + "," + str(col)
+    
+    def action(self, pid):
+        actioner = self.__players[pid]
+        key = self.__actionable_item_key_from_row_col(actioner.posx // const.CELL_SIZE, actioner.posy // const.CELL_SIZE)
+        objs = self.__actionable_items[key]
+        # Aribtray here: Take the first of the list to act on... (TODO: See if we want to make priorities)
+        objs[0].act(actioner)
 
     def load_config(self, config_file):
         self.config = ConfigHandler(config_file, default_config, option_types)
@@ -94,26 +104,26 @@ class GameEngine(object):
     def load_map(self, map_file):
         self.slmap = SpyLightMap()
         self.slmap.load_map(map_file)
-        self._player_number = 4  # TODO: Update with the true player number
+        self.__player_number = 4  # TODO: Update with the true player number
                                  #       read from the map file.
         # Loading players
-        self._players = [Player(i) for i in xrange(0, self._player_number)]
+        self.__players = [Player(i) for i in xrange(0, self.__player_number)]
         # Do some things like settings the weapon for each player...
 
     def get_nb_players(self):
-        return self._player_number
+        return self.__player_number
 
     def start(self):
-        self._loop.clear()
+        self.__loop.clear()
 
     def updateMovementDir(self, pid, angle):
-        self._players[pid].movAngle = angle
+        self.__players[pid].movAngle = angle
 
     # @param pid player id
     # @param angle shoot angle, kivy convention, in degree
     # @return{Player} the victim that has been shot, if any, else None
     def shoot(self, pid, angle):
-        shooter = self._players[pid]
+        shooter = self.__players[pid]
         # Shoot "angle"
         a = radians(angle)
         # Weapon error angle application:
@@ -129,7 +139,7 @@ class GameEngine(object):
         
         # First, check if we could even potentially shoot any player
         victims = []
-        for p in self._players:
+        for p in self.__players:
             # Yes, we do compute the player's hitbox on shoot. It is in fact lighter that storing it in the player, because storing it in the player's object would mean
             # updating it on every player's move. Here we do computation only on shoots, we are going to be many times less frequent that movements!
             hitbox = Point(p.posx,p.posy).buffer(Player.PLAYER_RADIUS)
@@ -139,8 +149,8 @@ class GameEngine(object):
         # Then, if yes, check that there is not any obstacle to that shoot
         # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
-            if not self._shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
-                return self._harm_first_victim(victims, shooter)
+            if not self.__shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
+                return self.__harm_first_victim(victims, shooter)
         else: # Else, there's just nothing to do, you did not aim at anyone, n00b
             return None
 
@@ -150,13 +160,13 @@ class GameEngine(object):
     # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
     # @return{Player} the victim harmed
-    def _harm_first_victim(self, victims, shooter): # @TODO
+    def __harm_first_victim(self, victims, shooter): # @TODO
         first_victim = sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0][1] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list, then we get the [1] if the tuple to get the victim)
         shooter.weapon.damage(first_victim)
         return first_victim
         
 
-    def _shoot_collide_with_obstacle(self, vector, geometric_line):
+    def __shoot_collide_with_obstacle(self, vector, geometric_line):
         x = (vector[0][0] // const.CELL_SIZE) * const.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         while x < vector[1][0]: # x end
             y = (vector[0][1] // const.CELL_SIZE) * const.CELL_SIZE # y origin, same process as for x
@@ -170,4 +180,4 @@ class GameEngine(object):
         return False
 
     def shutdown(self, force=False):
-        self._loop.set()
+        self.__loop.set()
