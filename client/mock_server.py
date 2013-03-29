@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import socket
 import struct
 import threading
@@ -5,7 +7,7 @@ import math
 import msgpack
 
 
-msg_template = '{{ l: 0, p: {pos}, d: 0, s: 0, v: 0, k: 0, vp: 0, pi: 0, vo: 0, ao: 0, ev: 0, ti: 0 }}'
+msg_template = '{{ "l": 0, "p": {pos}, "d": 0, "s": 0, "v": 0, "k": 0, "vp": 0, "pi": 0, "vo": 0, "ao": 0, "ev": 0, "ti": 0 }}'
 
 
 def run_server():
@@ -37,20 +39,23 @@ class GameMock(object):
 
     def update_pos(self, msg):
         direction = float(msg['d'])
+        print direction
         speed = float(msg['s'])
-        dx = -math.sin(direction) * speed
-        dy = math.cos(direction) * speed
+        dx = -math.sin(math.radians(direction)) * speed
+        dy = math.cos(math.radians(direction)) * speed
+        print dx, dy
         self.charpos = [self.charpos[0] + dx, self.charpos[1] + dy]
         print self.charpos
         msg = msg_template.format(pos=self.charpos)
-        print msg
         mysend(self._socket, msgpack.packb(msg))
 
 
 def mysend(socket, msg):
     msglen = len(msg)
     print 'msglen:', msglen
-    socket.send(struct.pack('!i', msglen))
+    msglenb = struct.pack('!i', msglen)
+    print msglenb, len(msglenb)
+    socket.send(msglenb)
     totalsent = 0
     while totalsent < msglen:
         sent = socket.send(msg[totalsent:])
