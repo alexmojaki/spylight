@@ -3,16 +3,15 @@
 
 import sys
 
-from SocketServer import ThreadingTCPServer
-from threading import Thread
 from time import sleep
 
 from game_engine import GameEngine
-from request_handler import RequestHandler
+from spylight_request_handler import SpylightRequestHandler
+from threading_tcp_server import ThreadingTCPServer
 
 
 class SpylightServer(object):
-    def __init__(self, host, port, map_file, config_file='config.ini'):
+    def __init__(self, host, port, map_file, config_file='spylight.cfg'):
         self.init_game_engine(config_file, map_file)
         self.init_tcp_server(host, port)
 
@@ -20,14 +19,15 @@ class SpylightServer(object):
         GameEngine().init(config_file, map_file)
 
     def init_tcp_server(self, host, port):
-        self._tcp_server = ThreadingTCPServer((host, port), RequestHandler)
-        self._tcp_server_thread = Thread(target=self._tcp_server.serve_forever)
+        self._tcp_server = ThreadingTCPServer((host, port),
+                                              SpylightRequestHandler)
+        self._tcp_server.serve_forever(start=False)
 
     def start(self):
         print 'Starting server...'
 
         GameEngine().start()
-        self._tcp_server_thread.start()
+        self._tcp_server.handler_thread.start()
 
         self.run()
 
@@ -48,9 +48,10 @@ class SpylightServer(object):
         print 'Shutting down server{}...'.format(' (the hardcore way)' if
                                                  force else '')
 
-        GameEngine().shutdown(force)
         self._tcp_server.shutdown()
-        self._tcp_server_thread.join()
+        self._tcp_server.handler_thread.stop(force)
+        self._tcp_server.handler_thread.join()
+        GameEngine().shutdown(force)
 
 
 if __name__ == '__main__':
