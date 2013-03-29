@@ -13,8 +13,8 @@ class SpylightRequestHandler(StreamRequestHandler, object):
         print 'New client connected'
         super(SpylightRequestHandler, self).setup()
         self.writer_busy = Event()
-        self.writer = Timer(int(GameEngine().config.send_state_interval),
-                            self.send_game_state)
+        self.writer = Timer(GameEngine().config.send_state_interval, self.
+                            send_game_state)
         self.writer.start()
 
     def handle(self):
@@ -27,7 +27,7 @@ class SpylightRequestHandler(StreamRequestHandler, object):
             return
 
     def send_game_state(self):
-        self.writer = Timer(int(GameEngine().config.send_state_interval), self.
+        self.writer = Timer(GameEngine().config.send_state_interval, self.
                             send_game_state)
         self.writer.start()
         if not self.server.handler_thread.is_stopped():
