@@ -84,11 +84,9 @@ class SpylightGame(Widget):
         # Register input listeners
         self.am = ActionManager(self._ni, keyboardMgr, touchMgr)
 
-        # Send a message to say it's ready?
-
         # Game client ready
         self._ni.on_message_recieved = self.update
-        print "ready"
+        self._ni.ready()
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)
