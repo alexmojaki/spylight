@@ -114,6 +114,7 @@ class GameEngine(object):
         self.load_map(map_file)
         self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
+        return self # allow chaining
 
     # @function push_new_actionable_item will register a new ActionableItem on the current game's map
     # @param{ActionableItem} item
@@ -123,9 +124,10 @@ class GameEngine(object):
             self.__actionable_items[key].append(item)
         except KeyError:
             self.__actionable_items[key] = [item]
+        return self # allow chaining
 
     def remove_new_actionable_item(self, item):# TODO implementation of that
-        pass
+        return self # allow chaining
 
     @property
     def loop(self):
@@ -143,6 +145,7 @@ class GameEngine(object):
 
     def load_config(self, config_file):
         self.config = ConfigHandler(config_file, default_config, option_types)
+        return self # allow chaining
 
     def load_map(self, map_file):
         self.slmap = SpyLightMap()
@@ -152,15 +155,18 @@ class GameEngine(object):
         # Loading players
         self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__player_number)] # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
+        return self # allow chaining
 
     def get_nb_players(self):
         return self.__player_number
 
     def start(self):
         self.__loop.clear()
+        return self # allow chaining
 
     def updateMovementDir(self, pid, angle):
         self.__players[pid].movAngle = angle
+        return self # allow chaining
 
     # @param pid player id
     # @param angle shoot angle, kivy convention, in degree
@@ -223,3 +229,4 @@ class GameEngine(object):
 
     def shutdown(self, force=False):
         self.__loop.set()
+        return self # allow chaining

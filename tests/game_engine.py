@@ -17,9 +17,14 @@ class GameEngineTest(unittest.TestCase):
 		
 	def test_instanciate(self):
 		self.getGE()
+
+	def test_load_config_1(self):
+		ge = self.getGE()
+		self.assertTrue(ge.config is not None, "The config of the GameEngine was not loaded successfully and is None")
+
 	def test_load_config(self):
 		ge = self.getGE()
-		ge.conf
+		self.assertTrue(ge.config.send_state_interval == 0.02)
 
 if __name__ == '__main__':
 	unittest.main()
