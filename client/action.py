@@ -1,3 +1,5 @@
+import math
+
 from kivy.logger import Logger
 
 from client.config import config
@@ -21,14 +23,16 @@ class ActionManager(object):
     print config.sections()
     _WALK_SPEED = config.get('KeyConfig', 'walkSpeed')
 
-    def __init__(self, networkInterface, keyboardMgr, touchMgr):
+    def __init__(self, networkInterface, keyboardMgr, touchMgr, game):
         self._ni = networkInterface
+        self.game = game
         keyboardMgr.bind(movement=self.notify_movement_event)
         keyboardMgr.bind(action=self.notify_action)
         touchMgr.bind(click_state=self.notify_touch_event)
 
     def notify_action(self, mgr, data):
-        pass
+        if data:
+            self._ni.send({'e': True})
 
     def process_move_angle(self, data):
         pass
@@ -47,5 +51,14 @@ class ActionManager(object):
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
         self._ni.send({'d': direction, 's': speed})
 
-    def notify_touch_event(self, mgr, data):
-        pass
+    def notify_touch_event(self, mgr, data):  # data is [[x,y], bool_down]
+        if data[1]:  # on mouse down only
+            self._ni.send({'v': self.get_angle_with_char(data[0]), 'sh': True})
+
+    def get_angle_with_char(self, other_point):
+        cur_pos = self.game.char.gamepos
+        # on_screen_pos - offset = in game pos
+        dx = other_point[0] - self.game.char.offsetx - cur_pos[0]
+        dy = other_point[1] - self.game.char.offsety - cur_pos[1]
+        # atan2 returns an angle between -pi and +pi (-180 and + 180)
+        return math.degrees(math.atan2(dx, -dy)) + 180  # now 0 - 360

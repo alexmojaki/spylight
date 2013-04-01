@@ -6,8 +6,8 @@ from ast import literal_eval
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
-from kivy.core.window import Window
-from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty
+# from kivy.core.window import Window
+# from kivy.properties import NumericProperty, ReferenceListProperty
 from kivy.clock import Clock
 
 # Colored logs. the text before the first ':' will be used as log tag
@@ -82,13 +82,11 @@ class SpylightGame(Widget):
         self.add_widget(self.hud)
 
         # Register input listeners
-        self.am = ActionManager(self._ni, keyboardMgr, touchMgr)
-
-        # Send a message to say it's ready?
+        self.am = ActionManager(self._ni, keyboardMgr, touchMgr, self)
 
         # Game client ready
         self._ni.on_message_recieved = self.update
-        print "ready"
+        self._ni.ready()
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)
