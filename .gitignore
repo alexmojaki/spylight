@@ -1,7 +1,8 @@
 *.py[co]
 *.ini
 *.sublime-*
-
+*.idea
+*.ropeproject*
 # Packages
 *.egg
 *.egg-info
