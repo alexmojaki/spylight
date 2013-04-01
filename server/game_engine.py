@@ -12,6 +12,7 @@ import common.utils as utils
 from math import sin, cos, sqrt, radians
 from random import uniform as rand
 from shapely.geometry import Point, LineString
+from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 
 class Player(object):
     """Player class, mainly POCO object"""
@@ -179,11 +180,11 @@ class GameEngine(object):
         a += shooter.weapon.draw_random_error()
         
         # Direction of the bullet (normalized vector)
-        normalized_direction_vector = (-sin(a), cos(a)) # x, y, but in the kivy convention
+        normalized_direction_vector = array((-sin(a), cos(a))) # x, y, but in the kivy convention
         
         # This vector/line represents the trajectory of the bullet
-        origin = (shooter.posx, shooter.posy)
-        vector = (origin, origin + normalized_direction_vector * shooter.weapon.range)
+        origin = array((shooter.posx, shooter.posy))
+        vector = (tuple(origin), tuple(origin + normalized_direction_vector * shooter.weapon.range))
         line = LineString(vector)
         
         # First, check if we could even potentially shoot any player
@@ -191,7 +192,7 @@ class GameEngine(object):
         for p in self.__players:
             # Yes, we do compute the player's hitbox on shoot. It is in fact lighter that storing it in the player, because storing it in the player's object would mean
             # updating it on every player's move. Here we do computation only on shoots, we are going to be many times less frequent that movements!
-            hitbox = Point(p.posx,p.posy).buffer(Player.PLAYER_RADIUS)
+            hitbox = Point(p.posx, p.posy).buffer(Player.PLAYER_RADIUS)
             if line.intersects(hitbox): # hit!
                 victims.append(p)
 
@@ -209,7 +210,7 @@ class GameEngine(object):
     # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
     # @return{Player} the victim harmed
-    def __harm_first_victim(self, victims, shooter): # @TODO
+    def __harm_first_victim(self, victims, shooter):
         first_victim = sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0][1] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list, then we get the [1] if the tuple to get the victim)
         shooter.weapon.damage(first_victim)
         return first_victim
