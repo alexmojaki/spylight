@@ -3,6 +3,9 @@
 import sys
 import unittest
 sys.path.append("../")
+
+import common.game_constants as const
+from common.utils import mt
 from server.game_engine import Player
 
 from server.game_engine import GameEngine
@@ -45,16 +48,18 @@ class GameEngineTest(unittest.TestCase):
 		expected = "1,2"
 		self.assertTrue(result == expected)
 	
-	def test_shoot(self):
+	def test_easy_straight_horizontal_line_shoot(self):
 		ge = self.getGE()
 		players = self.__gp(ge, "__players")
-		p1, p2 = Player(0, 0), Player(1, 1)
-		p1.posx = 0
-		p1.posy = 0
-		p2.posx = 10
-		p2.posy = 10
-		players[0] = p1
-		players[1] = p2
+		id_p1, id_p2 = 0, 1
+		p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+		original_health = p2.hp
+		(p1.posx, p1.posy) = mt((1, 1), const.CELL_SIZE)
+		(p2.posx, p2.posy) = mt((3, 1), const.CELL_SIZE)
+		players[id_p1] = p1
+		players[id_p2] = p2
+		ge.shoot(id_p1, 90)
+		self.assertTrue(p2.hp < original_health, "The player should have been shot and lost HP but has not.")
 
 
 if __name__ == '__main__':
