@@ -1,22 +1,17 @@
-import sys
+from kivy.lang import Builder
+from kivy.properties import NumericProperty, ReferenceListProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
-from kivy.properties import NumericProperty, ReferenceListProperty, StringProperty
-from kivy.vector import Vector
-from kivy.lang import Builder
-from kivy.logger import Logger
-from kivy.clock import Clock
 
-# from client.network import ClientNetworker
 from client import utils
-import common.network_protocol as np
-import common.game_constants as c
+
 
 Builder.load_string('''
 <Character>:
     size: 32,32
     rotation: 0
+    center: root.screenpos
     # collisionBox: collisionBox
 
     Scatter:
@@ -32,10 +27,14 @@ Builder.load_string('''
         Image:
             source: root.sprite
 
-    # Widget:
-    #     id: collisionBox
-    #     size: 25,25
-    #     center: root.center
+    Widget:
+        id: collisionBox
+        size: 25,25
+        center: root.center
+        canvas:
+            Rectangle
+                pos: self.pos
+                size: 25, 25
 
 ''')
 
@@ -66,6 +65,14 @@ class Character(Widget):
         self.offsetx = self.screenpos[0] - self.gamepos[0]
         self.offsety = self.screenpos[1] - self.gamepos[1]
 
+
+# import sys
+# from client.network import ClientNetworker
+# from kivy.vector import Vector
+# from kivy.logger import Logger
+# from kivy.clock import Clock
+# import common.network_protocol as np
+# import common.game_constants as c
 # clientNetworker = None
 
 

@@ -46,7 +46,8 @@ class GameMock(object):
     def _receive_forever(self):
         while 1:
             msg = myreceive(self._socket)
-            self.update_pos(msg)
+            if 'd' in msg:
+                self.update_pos(msg)
         print 'fin'
 
     def update_pos(self, msg):
@@ -63,13 +64,13 @@ class GameMock(object):
 
 
 def mysend(socket, msg):
+    print msg
     msg = msgpack.packb(msg)
     msglen = len(msg)
     print 'msglen:', msglen
     msglenb = struct.pack('!i', msglen)
     socket.send(msglenb)
     totalsent = 0
-    print msg
     while totalsent < msglen:
         sent = socket.send(msg[totalsent:])
         if sent == 0:
