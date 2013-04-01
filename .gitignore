@@ -1,5 +1,5 @@
 *.py[co]
-*.ini
+# *.ini
 *.sublime-*
 *.idea
 *.ropeproject*
