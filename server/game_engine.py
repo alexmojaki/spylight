@@ -13,6 +13,11 @@ from math import sin, cos, sqrt, radians
 from random import uniform as rand
 from shapely.geometry import Point, LineString
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
+import logging
+
+_logger = logging.getLogger("ge.log")
+_logger.addHandler(logging.FileHandler("ge.log"))
+_logger.setLevel(logging.INFO)
 
 class Player(object):
     """Player class, mainly POCO object"""
@@ -173,6 +178,7 @@ class GameEngine(object):
     # @param angle shoot angle, kivy convention, in degree
     # @return{Player} the victim that has been shot, if any, else None
     def shoot(self, pid, angle):
+        _logger.info("Starting shoot method")
         shooter = self.__players[pid]
         # Shoot "angle"
         a = radians(angle)
@@ -184,12 +190,17 @@ class GameEngine(object):
         
         # This vector/line represents the trajectory of the bullet
         origin = array((shooter.posx, shooter.posy))
-        vector = (tuple(origin), tuple(origin + normalized_direction_vector * shooter.weapon.range))
+        vector = (tuple(origin), tuple(origin + (normalized_direction_vector * shooter.weapon.range)))
         line = LineString(vector)
-        
+
+        _logger.info("origin=" + str(origin))
+        _logger.info("vector=" + str(vector))
+
         # First, check if we could even potentially shoot any player
         victims = []
         for p in self.__players:
+            if p == shooter:
+                continue # you cannot shoot yourself
             # Yes, we do compute the player's hitbox on shoot. It is in fact lighter that storing it in the player, because storing it in the player's object would mean
             # updating it on every player's move. Here we do computation only on shoots, we are going to be many times less frequent that movements!
             hitbox = Point(p.posx, p.posy).buffer(Player.PLAYER_RADIUS)
