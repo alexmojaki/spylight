@@ -20,8 +20,8 @@ class SpyLightMap(object):
 
     OBSTACLES_TYPES = (WA_WA0, WA_WA1, WA_WA2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
 
-    SP_SP0 = 0  # TODO: Rename that constant to something meaningful
-    SP_SP1 = 1  # TODO: Rename that constant to something meaningful
+    SPAWN_MERC = 0
+    SPAWN_SPY = 1
 
     IT_TERMINAL = 0
     IT_BRIEFCASE = 1
@@ -34,8 +34,8 @@ class SpyLightMap(object):
         '|': {'section': 'wa', 'value': WA_WA2},
         '#': {'section': 'wa', 'value': WA_SPY_ONLY_DOOR},  # Spy-only door
         '@': {'section': 'wa', 'value': WA_MERC_ONLY_DOOR},  # Mercenary-only door
-        'M': {'section': 'sp', 'value': SP_SP0},
-        'S': {'section': 'sp', 'value': SP_SP1},
+        'M': {'section': 'sp', 'value': SPAWN_MERC},
+        'S': {'section': 'sp', 'value': SPAWN_SPY},
         'T': {'section': 'it', 'value': IT_TERMINAL},  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
         'C': {'section': 'it', 'value': IT_CAMERA},  # Camera
