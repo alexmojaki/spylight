@@ -7,6 +7,7 @@ sys.path.append("../")
 import common.game_constants as const
 from common.utils import mt
 from server.game_engine import Player
+from server.game_engine import GunWeapon
 
 from server.game_engine import GameEngine
 
@@ -53,6 +54,8 @@ class GameEngineTest(unittest.TestCase):
 		players = self.__gp(ge, "__players")
 		id_p1, id_p2 = 0, 1
 		p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+		_range, angle_error, dps = 10000, 0.0, 10
+		p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
 		original_health = p2.hp
 		(p1.posx, p1.posy) = mt((1, 1), const.CELL_SIZE)
 		(p2.posx, p2.posy) = mt((3, 1), const.CELL_SIZE)
