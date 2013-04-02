@@ -5,6 +5,9 @@ import struct
 import threading
 import math
 import msgpack
+import sys
+from ast import literal_eval
+# from time import sleep
 
 
 msg_template = '{{ "l": 0, "p": {pos}, "d": 0, "s": 0, "v": 0, "k": 0, "vp": 0, "pi": 0, "vo": 0, "ao": 0, "ev": 0, "ti": 0 }}'
@@ -22,10 +25,7 @@ def run_server():
     t = threading.Thread(target=game._receive_forever)
     t.daemon = True  # helpful if you want it to die automatically
     t.start()
-    while 1:
-        msg = raw_input("> ")
-        mysend(clientsocket, msg)
-        pass
+    t.join()
 
 
 class GameMock(object):
@@ -54,13 +54,13 @@ class GameMock(object):
         direction = float(msg['d'])
         print direction
         speed = float(msg['s'])
-        dx = -math.sin(math.radians(direction)) * speed
-        dy = math.cos(math.radians(direction)) * speed
+        dx = -math.sin(math.radians(direction)) * speed * 20
+        dy = math.cos(math.radians(direction)) * speed * 20
         print dx, dy
         self.charpos = [self.charpos[0] + dx, self.charpos[1] + dy]
         print self.charpos
         msg = msg_template.format(pos=self.charpos)
-        mysend(self._socket, msg)
+        mysend(self._socket, literal_eval(msg))
 
 
 def mysend(socket, msg):
@@ -79,7 +79,10 @@ def mysend(socket, msg):
 
 
 def myreceive(socket):
-    msg_len = struct.unpack('!i', socket.recv(4))[0]
+    msg_len = socket.recv(4)
+    if msg_len is None or len(msg_len) == 0:
+        sys.exit()
+    msg_len = struct.unpack('!i', msg_len)[0]
     msg = socket.recv(int(msg_len))
     msg = msgpack.unpackb(msg)
 

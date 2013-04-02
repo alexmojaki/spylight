@@ -30,29 +30,3 @@
 <Shadow>:
     size: -42, -42
     pos: 100, 100
-
-
-<MapView>:
-    size_hint: None, None
-    canvas:
-        # StencilPush
-        # Triangle:
-        #     points: self.character.points
-        # StencilUse
-        # Color:
-        #     rgb: 255/163.,255/160.,255/161.
-        Rectangle:
-            pos: root.pos
-            size: root.size
-            texture:self.groundTexture
-        #Color:
-        #    rgb: 0,0,0
-        #    a: 0.5
-        # Rectangle:
-        #     pos: self.shadow.pos
-        #     size: self.shadow.size
-        #     source: self.shadow.sprite
-        # StencilUnUse
-        # Triangle:
-        #     points: self.character.points
-        # StencilPop

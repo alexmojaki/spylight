@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from ast import literal_eval
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
@@ -22,7 +21,7 @@ from client.network import NetworkInterface
 from common.map_parser import SpyLightMap
 from client.character import Character
 from client.hud import SpylightHUD
-from client.environment import MapView
+from client.environment import MapView, LightenedArea
 from client.input import KeyboardManager, TouchManager
 from client.action import ActionManager
 from client import utils
@@ -70,13 +69,7 @@ class SpylightGame(Widget):
             Logger.error("SL|SLGame: Wrong map hash")
             sys.exit()
 
-        self.mv = MapView(loaded_map)
-        self.add_widget(self.mv)
-        # Init char replicas
-
-        self.char = Character(self.team, init_response['pos'],
-                              self.mv.update_pos)
-        self.add_widget(self.char)
+        self.init_game_view(loaded_map, init_response['pos'])
 
         self.hud = SpylightHUD(self, 300)
         self.add_widget(self.hud)
@@ -88,6 +81,20 @@ class SpylightGame(Widget):
         self._ni.on_message_recieved = self.update
         self._ni.ready()
 
+    def init_game_view(self, loaded_map, charpos):
+        self.char = Character(self.team, (500, 500))
+
+        self.mv = MapView(loaded_map, self.char)
+        self.add_widget(self.mv)
+        # Init char replicas
+
+        self.add_widget(self.char)  # after the map!
+        self.char.bind(offset=self.mv.update_pos)
+
+        # self.mv.draw_canvas(enemies=[], allies=[],
+                            # lightened_areas=[self.char.get_vision()], items=[])
+        self.char.set_game_pos(charpos)
+
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)
         # Prints the internal fps and the number of frames rendered
@@ -95,7 +102,7 @@ class SpylightGame(Widget):
         Logger.debug('SL|SLGame: fps: %d, rfps: %d',
                      Clock.get_fps(), Clock.get_rfps())
 
-        data = literal_eval(data)
+        # data = literal_eval(data)
         new_pos = data['p']
         self.char.set_game_pos(new_pos)
         # To update:
