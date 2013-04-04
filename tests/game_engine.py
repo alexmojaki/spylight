@@ -134,6 +134,46 @@ class GameEngineTest(unittest.TestCase):
         ge.shoot(id_p1, shoot_angle)
         self.__check_is_harmed(p2, original_health)
 
+    def test_shot_in_hole_in_the_wall_2(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((6, 6), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.__check_is_harmed(p2, original_health)
+
+    def test_shot_in_hole_in_the_wall_3(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((5, 6), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.__check_is_harmed(p2, original_health)
+
     def test_shot_not_aiming(self):
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
