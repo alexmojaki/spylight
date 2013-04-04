@@ -11,7 +11,7 @@ from server.game_engine import GunWeapon
 
 from server.game_engine import GameEngine
 
-DBG = True
+DBG = False
 
 class GameEngineTest(unittest.TestCase):
     """Tests for GameEngine class"""
@@ -50,9 +50,15 @@ class GameEngineTest(unittest.TestCase):
         result = self.__gp(ge, "__actionable_item_key_from_row_col")(1, 2)
         expected = "1,2"
         self.assertTrue(result == expected)
-    
+
+    def __check_is_harmed(self, player, original_health):
+        self.assertTrue(player.hp < original_health, "The player should have been shot and lost HP but has not (hp, orig_hp)=" + str((player.hp, original_health)))
+
+    def __check_is_not_harmed(self, player, original_health):
+        self.assertTrue(player.hp == original_health, "The player should NOOOOOT have been shot (hp, orig_hp)=" + str((player.hp, original_health)) + ". The shot should have been stopped by an obstacle.")
+
     def test_easy_straight_horizontal_line_shoot(self):
-        return #todo remove that
+        self.map_file = "map_test.hfm"
         ge = self.getGE()
         players = self.__gp(ge, "__players")
         id_p1, id_p2 = 0, 1
@@ -61,12 +67,12 @@ class GameEngineTest(unittest.TestCase):
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 0), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((8, 0), const.CELL_SIZE)
+        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((7, 2), const.CELL_SIZE)
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)
-        self.assertTrue(p2.hp < original_health, "The player should have been shot and lost HP but has not.")
+        self.__check_is_harmed(p2, original_health)
 
     def test_obstructed_straight_horizontal_line_shoot(self):
         self.map_file = "map_test_scinded.hfm"
@@ -79,16 +85,74 @@ class GameEngineTest(unittest.TestCase):
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
         (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((8, 2), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((7, 2), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)
-        self.assertTrue(p2.hp == original_health, "The player should NOOOOOT have been shot. The shot should have been stopped by an obstacle.")
-        self.map_file = "map_test.hfm"
+        self.__check_is_not_harmed(p2, original_health)
 
+    def test_obstructed_straight_diagonal_line_shoot(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 270 # shoot to the right of him
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((7, 3), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.__check_is_not_harmed(p2, original_health)
+
+    def test_shot_in_hole_in_the_wall(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((7, 6), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.__check_is_harmed(p2, original_health)
+
+    def test_shot_not_aiming(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 0
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((7, 6), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.__check_is_not_harmed(p2, original_health)
 
 
 if __name__ == '__main__':
