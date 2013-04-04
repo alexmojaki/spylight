@@ -210,22 +210,29 @@ class GameEngine(object):
         # Then, if yes, check that there is not any obstacle to that shoot
         # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
-            if not self.__shoot_collide_with_obstacle(vector, line): # no collision with any obstacle, thus we can harm the victim
-                return self.__harm_first_victim(victims, shooter)
+            distance, first_victim = self.__find_closest_victim(victims, shooter)
+            # We re-compute the vector, stopping it at the victim's position. Indeed, if we used the "vector" variable
+            # to look for collisions, as it uses the maximum weapon's range, we would look for collision BEHIND the
+            # victim as well !
+            to_first_victim_vector = (tuple(origin), tuple(origin + (normalized_direction_vector * distance)))
+            if not self.__shoot_collide_with_obstacle(to_first_victim_vector, line): # no collision with any obstacle, thus we can harm the victim
+                return self.__harm_victim(first_victim, shooter)
         else: # Else, there's just nothing to do, you did not aim at anyone, n00b
             return None
 
     stepx = const.CELL_SIZE
     stepy = const.CELL_SIZE
 
-    # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
+    def __find_closest_victim(self, victims, shooter):
+        return sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list
+
+
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
     # @return{Player} t        # First, check if we could even potentially shoot any player
     # @return{Player} the victim harmed
-    def __harm_first_victim(self, victims, shooter):
-        first_victim = sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0][1] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list, then we get the [1] if the tuple to get the victim)
-        shooter.weapon.damage(first_victim)
-        return first_victim
+    def __harm_victim(self, victim, shooter):
+        shooter.weapon.damage(victim)
+        return victim
 
     def __norm_to_cell(self, coord):
         return (coord // const.CELL_SIZE)
