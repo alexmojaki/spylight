@@ -232,20 +232,29 @@ class GameEngine(object):
 
     def __shoot_collide_with_obstacle(self, vector, geometric_line):
         col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
-        _logger.info("__shoot_collide_with_obstacle(): x=" + str(row))
+        _logger.info("__shoot_collide_with_obstacle(): x=" + str(col_orig))
         row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
-        _logger.info("__shoot_collide_with_obstacle(): y=" + str(col_orig))
-        row_end = int(self.__norm_to_cell(vector[1][0]))
-        col_end = int(self.__norm_to_cell(vector[1][1]))
+        _logger.info("__shoot_collide_with_obstacle(): y=" + str(row))
+        col_end = int(self.__norm_to_cell(vector[1][0]))
+        row_end = int(self.__norm_to_cell(vector[1][1]))
         # The following variables will be used to increment in the "right direction" (negative if the end if lower
         # than the origin, etc....
         col_increment_sign = 1 if (col_end-col_orig) > 0 else -1
         row_increment_sign = 1 if (row_end-row) > 0 else -1
-        while (row-row_end) != 0:
+        # A bit of explanation of the conditions here :
+        # row < self.slmap.height --> Self explanatory, do not go over the map (as the line is multiplied by a
+        # coefficient, this check is necessary
+        # (row-row_end) != row_increment_sign --> This means that we want to stop when the "row" variable has gone one
+        # unit further than the row_end variable. row_increment_sign will always have the same sign as
+        # (row-row_end) when row is one unit further than row_end (by further we mean : one iteration further, in the
+        # "direction" in which we are iterating: that could be forward or backward). Stopping when we are "one further"
+        # means that we iterate until we reach the row_end... INCLUDED! (else, would not work when perfectly aligned)
+        # same thing for the condition with "row" replaced by "col"
+        while row < self.slmap.height and (row-row_end) != row_increment_sign:
             col = col_orig
-            while (col-col_end) != 0:
+            while col < self.slmap.width and (col-col_end) != col_increment_sign:
                 if self.slmap.is_obstacle_from_cell_coords(row, col):
-                    obstacle = utils.create_square_from_top_left_coords(row, col) # Construct the obstacle
+                    obstacle = utils.create_square_from_top_left_coords(row*const.CELL_SIZE, col*const.CELL_SIZE, const.CELL_SIZE) # Construct the obstacle
                     if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
                         return True # Yes!
                 col += col_increment_sign * 1

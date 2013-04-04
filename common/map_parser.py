@@ -152,11 +152,11 @@ class SpyLightMap(object):
     # @param{integer} col : map_tiles matrix column
     # @return{bool} True if yes, False if no
     def is_obstacle_from_cell_coords(self, row, col):
-        if row > self.height or row < 0 or col < 0 or col > self.width:
+        if row >= self.height or row < 0 or col < 0 or col >= self.width:
             return False
         try:
             cell = self.HFM_TO_MAP[self.map_tiles[row][col]]
-            if cell in self.OBSTACLES_TYPES:
+            if cell['value'] in self.OBSTACLES_TYPES:
                 return True
             return False
         except KeyError:

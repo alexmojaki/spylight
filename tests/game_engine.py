@@ -86,7 +86,7 @@ class GameEngineTest(unittest.TestCase):
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)
-        self.assertTrue(p2.hp == original_health, "The player should not have been shot. The shot should have been stopped by an obstacle.")
+        self.assertTrue(p2.hp == original_health, "The player should NOOOOOT have been shot. The shot should have been stopped by an obstacle.")
         self.map_file = "map_test.hfm"
 
 
