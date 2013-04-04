@@ -58,12 +58,31 @@ class GameEngineTest(unittest.TestCase):
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((1, 1), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((3, 1), const.CELL_SIZE)
+        (p1.posx, p1.posy) = mt((2, 1), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((8, 1), const.CELL_SIZE)
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)
         self.assertTrue(p2.hp < original_health, "The player should have been shot and lost HP but has not.")
+
+    def test_obstructed_straight_horizontal_line_shoot(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__gp(ge, "__players")
+        id_p1, id_p2 = 0, 1
+        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        _range, angle_error, dps = 10000, 0.0, 10
+        shoot_angle = 270 # shoot to the right of him
+        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
+        original_health = p2.hp
+        (p1.posx, p1.posy) = mt((2, 1), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((8, 1), const.CELL_SIZE)
+        players[id_p1] = p1
+        players[id_p2] = p2
+        ge.shoot(id_p1, shoot_angle)
+        self.assertTrue(p2.hp == original_health, "The player should not have been shot. The shot should have been stopped by an obstacle.")
+        self.map_file = "map_test.hfm"
+
 
 
 if __name__ == '__main__':
