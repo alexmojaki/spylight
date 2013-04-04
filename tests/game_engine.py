@@ -11,6 +11,8 @@ from server.game_engine import GunWeapon
 
 from server.game_engine import GameEngine
 
+DBG = True
+
 class GameEngineTest(unittest.TestCase):
     """Tests for GameEngine class"""
     def setUp(self):
@@ -58,8 +60,8 @@ class GameEngineTest(unittest.TestCase):
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 1), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((8, 1), const.CELL_SIZE)
+        (p1.posx, p1.posy) = mt((2, 0), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((8, 0), const.CELL_SIZE)
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)
@@ -75,8 +77,11 @@ class GameEngineTest(unittest.TestCase):
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 1), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((8, 1), const.CELL_SIZE)
+        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
+        (p2.posx, p2.posy) = mt((8, 2), const.CELL_SIZE)
+        if DBG:
+            print "Player1 pos=", (p1.posx, p1.posy)
+            print "Player2 pos=", (p2.posx, p2.posy)
         players[id_p1] = p1
         players[id_p2] = p2
         ge.shoot(id_p1, shoot_angle)

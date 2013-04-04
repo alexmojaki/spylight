@@ -220,17 +220,25 @@ class GameEngine(object):
 
     # @param{list<Player>} victims : The list of people that could take the bullet (not sorted, we will have to find which one to harm)
     # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
+    # @return{Player} t        # First, check if we could even potentially shoot any player
     # @return{Player} the victim harmed
     def __harm_first_victim(self, victims, shooter):
         first_victim = sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0][1] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list, then we get the [1] if the tuple to get the victim)
         shooter.weapon.damage(first_victim)
         return first_victim
-        
+
+    def __norm_to_cell(self, coord):
+        return (coord // const.CELL_SIZE)
+
     def __shoot_collide_with_obstacle(self, vector, geometric_line):
-        x = (vector[0][0] // const.CELL_SIZE) * const.CELL_SIZE # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
-        while x < vector[1][0]: # x end
-            y = (vector[0][1] // const.CELL_SIZE) * const.CELL_SIZE # y origin, same process as for x
-            while y < vector[1][1]: # y end
+        x = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
+        _logger.info("__shoot_collide_with_obstacle(): x=" + str(x))
+        y = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
+        _logger.info("__shoot_collide_with_obstacle(): y=" + str(y))
+        x_end = self.__norm_to_cell(vector[1][0])
+        y_end = self.__norm_to_cell(vector[1][1])
+        while x <= x_end:
+            while y <= y_end:
                 if self.slmap.is_obstacle_from_cell_coords(x, y):
                     obstacle = utils.create_square_from_top_left_coords(x, y) # Construct the obstacle
                     if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
