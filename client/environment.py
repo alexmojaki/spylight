@@ -16,6 +16,7 @@ _MAP_VIEW_KV_TEMPLATE = '''
         StencilPush
 {lightened_areas}
         StencilUse
+            func_op: 'lequal'
         Rectangle:
             pos: self.pos
             size: self.size
@@ -70,8 +71,8 @@ class MapView(RelativeWidget):
             self.__dict__[cam.camname] = cam
 
         lightened_areas_kvstring = self.la_kv_string()
-        # print _MAP_VIEW_KV_TEMPLATE.format(
-        #        lightened_areas=lightened_areas_kvstring)
+        print _MAP_VIEW_KV_TEMPLATE.format(
+               lightened_areas=lightened_areas_kvstring)
         Builder.load_string(_MAP_VIEW_KV_TEMPLATE.format(
             lightened_areas=lightened_areas_kvstring))
 
