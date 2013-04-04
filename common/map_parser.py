@@ -16,7 +16,11 @@ class SpyLightMap(object):
     WA_SPY_ONLY_DOOR = 3
     WA_MERC_ONLY_DOOR = 4  # TODO: Rename that constant to something meaningful
 
-    OBSTACLES_TYPES = (WA_WA0, WA_WA1, WA_WA2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
+    WALL0 = {'section': 'wa', 'value': WA_WA0}
+    WALL1 = {'section': 'wa', 'value': WA_WA1}
+    WALL2 = {'section': 'wa', 'value': WA_WA2}
+
+    OBSTACLES_TYPES = (WALL0, WALL1, WALL2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
 
     SPAWN_MERC = 0
     SPAWN_SPY = 1
@@ -29,9 +33,9 @@ class SpyLightMap(object):
     PATH_STD = 0
 
     HFM_TO_MAP = {
-        '+': {'section': 'wa', 'value': WA_WA0},
-        '-': {'section': 'wa', 'value': WA_WA1},
-        '|': {'section': 'wa', 'value': WA_WA2},
+        '+': WALL0,
+        '-': WALL1,
+        '|': WALL2,
         '#': {'section': 'wa', 'value': WA_SPY_ONLY_DOOR},  # Spy-only door
         '@': {'section': 'wa', 'value': WA_MERC_ONLY_DOOR},  # Mercenary-only door
         'M': {'section': 'sp', 'value': SPAWN_MERC},
@@ -156,7 +160,7 @@ class SpyLightMap(object):
             return False
         try:
             cell = self.HFM_TO_MAP[self.map_tiles[row][col]]
-            if cell['value'] in self.OBSTACLES_TYPES:
+            if cell in self.OBSTACLES_TYPES:
                 return True
             return False
         except KeyError:
