@@ -26,6 +26,8 @@ class SpyLightMap(object):
     IT_CAMERA = 2
     IT_LAMP = 3
 
+    PATH_STD = 0
+
     HFM_TO_MAP = {
         '+': {'section': 'wa', 'value': WA_WA0},
         '-': {'section': 'wa', 'value': WA_WA1},
@@ -37,7 +39,8 @@ class SpyLightMap(object):
         'T': {'section': 'it', 'value': IT_TERMINAL},  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
         'C': {'section': 'it', 'value': IT_CAMERA},  # Camera
-        'L': {'section': 'it', 'value': IT_LAMP}   # Lamp
+        'L': {'section': 'it', 'value': IT_LAMP},   # Lamp
+        ' ': {'section': 'pa', 'value': PATH_STD}
     }
 
     def __init__(self, filename=None):
@@ -151,9 +154,13 @@ class SpyLightMap(object):
     def is_obstacle_from_cell_coords(self, row, col):
         if row > self.height or row < 0 or col < 0 or col > self.width:
             return False
-        if self.HFM_TO_MAP[self.map_tiles[row][col]] in self.OBSTACLES_TYPES:
-            return True
-        return False
+        try:
+            cell = self.HFM_TO_MAP[self.map_tiles[row][col]]
+            if cell in self.OBSTACLES_TYPES:
+                return True
+            return False
+        except KeyError:
+            return False
 
 
 if __name__ == '__main__':

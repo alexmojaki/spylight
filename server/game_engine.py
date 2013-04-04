@@ -231,20 +231,25 @@ class GameEngine(object):
         return (coord // const.CELL_SIZE)
 
     def __shoot_collide_with_obstacle(self, vector, geometric_line):
-        x = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
-        _logger.info("__shoot_collide_with_obstacle(): x=" + str(x))
-        y = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
-        _logger.info("__shoot_collide_with_obstacle(): y=" + str(y))
-        x_end = self.__norm_to_cell(vector[1][0])
-        y_end = self.__norm_to_cell(vector[1][1])
-        while x <= x_end:
-            while y <= y_end:
-                if self.slmap.is_obstacle_from_cell_coords(x, y):
-                    obstacle = utils.create_square_from_top_left_coords(x, y) # Construct the obstacle
+        col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
+        _logger.info("__shoot_collide_with_obstacle(): x=" + str(row))
+        row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
+        _logger.info("__shoot_collide_with_obstacle(): y=" + str(col_orig))
+        row_end = int(self.__norm_to_cell(vector[1][0]))
+        col_end = int(self.__norm_to_cell(vector[1][1]))
+        # The following variables will be used to increment in the "right direction" (negative if the end if lower
+        # than the origin, etc....
+        col_increment_sign = 1 if (col_end-col_orig) > 0 else -1
+        row_increment_sign = 1 if (row_end-row) > 0 else -1
+        while (row-row_end) != 0:
+            col = col_orig
+            while (col-col_end) != 0:
+                if self.slmap.is_obstacle_from_cell_coords(row, col):
+                    obstacle = utils.create_square_from_top_left_coords(row, col) # Construct the obstacle
                     if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
                         return True # Yes!
-                y += self.stepy
-            x += self.stepx
+                col += col_increment_sign * 1
+            row += row_increment_sign * 1
         return False
 
     def shutdown(self, force=False):
