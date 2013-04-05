@@ -30,12 +30,15 @@ class Player(object):
     def __init__(self, player_id, team):
         super(Player, self).__init__()
         self.player_id = player_id
+        self.team = team
         self.posx = 0 
         self.posy = 0 
+        self.speedx = 0
+        self.speedy = 0
+        self.move_angle = 0
         self.hp = 100 # TODO : Change that ?
         self.status = Player.STATUS_ALIVE
         self.weapon = None
-        self.team = team
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -147,6 +150,18 @@ class GameEngine(object):
     def loop(self):
         return not self.__loop.is_set()
 
+    def step(self):
+        # Update player's positions
+        for p in self.__players:
+            normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
+            p.posx += normalized_array[0] * p.speedx
+            p.posy += normalized_array[1] * p.speedy
+        # Update player's sight
+        # TODO: Parametrize things for occlusion
+        # TODO: Launch occlusion
+        # TODO: from shapely.occlusion import occlusion
+        # TODO: p.sight = occlusion(args)
+    
     def __actionable_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
     
@@ -194,9 +209,18 @@ class GameEngine(object):
         self.__loop.clear()
         return self # allow chaining
 
-    def updateMovementDir(self, pid, angle):
-        self.__players[pid].movAngle = angle
+    def set_movement_angle(self, pid, angle):
+        self.__players[pid].move_angle = angle
         return self # allow chaining
+
+    def set_movement_speedx(self, pid, speedx):
+        self.__players[pid].speedx = speedx
+
+    def set_movement_speedy(self, pid, speedy):
+        self.__players[pid].speedy = speedy
+
+    def __get_normalized_direction_vector_from_angle(self, a):
+        return array((-sin(a), cos(a)))
 
     # @param pid player id
     # @param angle shoot angle, kivy convention, in degree
@@ -210,7 +234,7 @@ class GameEngine(object):
         a += shooter.weapon.draw_random_error()
         
         # Direction of the bullet (normalized vector)
-        normalized_direction_vector = array((-sin(a), cos(a))) # x, y, but in the kivy convention
+        normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the kivy convention
         
         # This vector/line represents the trajectory of the bullet
         origin = array((shooter.posx, shooter.posy))
