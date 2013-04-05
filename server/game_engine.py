@@ -75,18 +75,18 @@ class MineWeapon(Weapon):
     
 class ActionableItem(object):
     """Simplistic ActionableItem implementation"""
-    def __init__(self, x, y):
+    def __init__(self, row, col):
         super(ActionableItem, self).__init__()
-        self.posx = x
-        self.posy = y
+        self.pos_row = row
+        self.pos_col = col
 
     def act(self, originPlayer):
         pass # Todo implement that
     
 class MineAI(ActionableItem):
     """simplistic Mine implementation"""
-    def __init__(self, x, y):
-        super(MineAI, self).__init__(x, y)
+    def __init__(self, **kwargs):
+        super(MineAI, self).__init__(kwargs)
     
     def act(self, originPlayer):
         if originPlayer.team == Player.SPY_TEAM:
@@ -104,7 +104,15 @@ class MinePO(ProximityObject):
     def __init__(self, _range):
         super(MinePO, self).__init__(_range)
         self.weapon = MineWeapon()
-        
+
+
+class TerminalAI(ActionableItem):
+    def __init(self, **args):
+        """
+            TerminalAI class: Terminal ActionableItem. Terminal are piratable by spies only.
+        """
+        super(TerminalAI, self).__init__(args)
+
 
 class GameEngine(object):
     _instances = {}
@@ -115,17 +123,17 @@ class GameEngine(object):
         return GameEngine._instances[cls]
 
     def init(self, config_file, map_file):
+        self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         self.__loop = Event()
         self.load_config(config_file)
         self.load_map(map_file)
-        self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
         return self # allow chaining
 
     # @function push_new_actionable_item will register a new ActionableItem on the current game's map
     # @param{ActionableItem} item
     def push_new_actionable_item(self, item):
-        key = self.__actionable_item_key_from_row_col(item.posx // const.CELL_SIZE. item.posy // const.CELL_SIZE)
+        key = self.__actionable_item_key_from_row_col(item.pos_row, item.pos_col)
         try:
             self.__actionable_items[key].append(item)
         except KeyError:
@@ -143,11 +151,20 @@ class GameEngine(object):
         return str(row) + "," + str(col)
     
     def action(self, pid):
+        """
+
+        :param pid: id of the player that is "actioning" (doing "action" action)
+        :return: True of there was something to do, False else
+        """
         actioner = self.__players[pid]
         key = self.__actionable_item_key_from_row_col(actioner.posx // const.CELL_SIZE, actioner.posy // const.CELL_SIZE)
-        objs = self.__actionable_items[key]
-        # Aribtray here: Take the first of the list to act on... (TODO: See if we want to make priorities)
+        try:
+            objs = self.__actionable_items[key]
+        except KeyError:
+            return False
+        # Arbitrary here: Take the first of the list to act on... (TODO: See if we want to make priorities)
         objs[0].act(actioner)
+        return True
 
     def load_config(self, config_file):
         self.config = ConfigHandler(config_file, default_config, option_types)
@@ -156,6 +173,13 @@ class GameEngine(object):
     def load_map(self, map_file):
         self.slmap = SpyLightMap()
         self.slmap.load_map(map_file)
+        # Go through the whole map to find for special things to register, like actionable items...
+        for row in xrange(0, self.slmap.height):
+            for col in xrange(0, self.slmap.width):
+                if self.slmap.map_tiles[row][col] == self.slmap.TERMINAL_KEY:
+                    terminal = TerminalAI(row, col)
+                    self.push_new_actionable_item(terminal)
+
         self.__player_number = 4  # TODO: Update with the true player number
                                  #       read from the map file.
         # Loading players

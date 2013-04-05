@@ -194,27 +194,35 @@ class GameEngineTest(unittest.TestCase):
         ge.shoot(id_p1, shoot_angle)
         self.__check_is_not_harmed(p2, original_health)
 
-    def __setup_two_players(self, ge):
+    def __setup_players(self, ge, positions):
         players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        n = len(positions) # the number of players
+        middle = n/2+1
         _range, angle_error, dps = 10000, 0.0, 10
-        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
-        original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((7, 6), const.CELL_SIZE)
-        if DBG:
-            print "Player1 pos=", (p1.posx, p1.posy)
-            print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        return (id_p1, p1), (id_p2, p2)
+        for pid in xrange(0, n):
+            player = Player(pid, pid // middle)
+            player.weapon = GunWeapon(_range, angle_error, dps)
+            (player.posx, player.posy) = mt(positions[pid], const.CELL_SIZE)
+            players[pid] = player
+        return players
 
     def test_simplistic_action_does_not_crash(self):
         self.map_file = "map_test_action.hfm"
         ge = self.getGE()
-        setup = self.__setup_two_players(ge)
-        ge.action(setup[0][0])
+        players = self.__setup_players(ge, [(2, 6)])
+        ge.action(players[0].player_id)
+
+    def test_simplistic_action_no_action_to_take(self):
+        self.map_file = "map_test_action.hfm"
+        ge = self.getGE()
+        players = self.__setup_players(ge, [(2, 6)])
+        self.assertTrue(ge.action(players[0].player_id) == False, "There should not have been anything to do here.")
+
+    def test_simplistic_action_terminal(self):
+        self.map_file = "map_test_action.hfm"
+        ge = self.getGE()
+        players = self.__setup_players(ge, [(3, 3)])
+        self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
 
 if __name__ == '__main__':
     unittest.main()

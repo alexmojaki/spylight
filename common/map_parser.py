@@ -30,6 +30,11 @@ class SpyLightMap(object):
     IT_CAMERA = 2
     IT_LAMP = 3
 
+    TERMINAL_KEY = 'T'
+    TERMINAL = {'section': 'it', 'value': IT_TERMINAL}
+    LAMP_KEY = 'L'
+    LAMP = {'section': 'it', 'value': IT_LAMP}
+
     PATH_STD = 0
 
     HFM_TO_MAP = {
@@ -40,10 +45,10 @@ class SpyLightMap(object):
         '@': {'section': 'wa', 'value': WA_MERC_ONLY_DOOR},  # Mercenary-only door
         'M': {'section': 'sp', 'value': SPAWN_MERC},
         'S': {'section': 'sp', 'value': SPAWN_SPY},
-        'T': {'section': 'it', 'value': IT_TERMINAL},  # Terminal
+        TERMINAL_KEY: TERMINAL,  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
         'C': {'section': 'it', 'value': IT_CAMERA},  # Camera
-        'L': {'section': 'it', 'value': IT_LAMP},   # Lamp
+        LAMP_KEY: LAMP,   # Lamp
         ' ': {'section': 'pa', 'value': PATH_STD}
     }
 
@@ -142,7 +147,8 @@ class SpyLightMap(object):
     def get_hash(self):
         return 'bleh'
 
-    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone through, a static rigid body)
+    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
+    # through, a static rigid body)
     # @param{integer} x : x coordinate (game's coordinate)
     # @param{integer} y : y coordinate (game's coordinate)
     # @return{bool} True if yes, False if no
@@ -151,7 +157,8 @@ class SpyLightMap(object):
         col = x // const.CELL_SIZE
         return self.is_obstacle_from_cell_coords(row, col)
 
-    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone through, a static rigid body)
+    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
+    # through, a static rigid body)
     # @param{integer} row : map_tiles matrix row
     # @param{integer} col : map_tiles matrix column
     # @return{bool} True if yes, False if no
