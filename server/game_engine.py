@@ -167,7 +167,7 @@ class GameEngine(object):
             p.posx += normalized_array[0] * p.speedx
             p.posy += normalized_array[1] * p.speedy
         # Update player's sight
-        # TODO: Parametrize things for occlusion
+        # TODO: Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
         # TODO: Launch occlusion
         # TODO: from shapely.occlusion import occlusion
         # TODO: p.sight = occlusion(args)
