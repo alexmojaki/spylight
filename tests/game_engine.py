@@ -224,5 +224,11 @@ class GameEngineTest(unittest.TestCase):
         players = self.__setup_players(ge, [(3, 3)])
         self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
 
+    def test_simplistic_move(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        players = self.__setup_players(ge, [(3, 3)])
+        self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
+
 if __name__ == '__main__':
     unittest.main()
