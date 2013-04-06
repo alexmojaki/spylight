@@ -227,14 +227,32 @@ class GameEngineTest(unittest.TestCase):
     def test_simplistic_move(self):
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        posx, posy, speedx, speedy, move_angle = 3, 3, 100, 100, 45
-        players = self.__setup_players(ge, [(posx, posy)])
+        row, col = 3, 3
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0, -45
+        players = self.__setup_players(ge, [(col, row)])
         pid = players[0].player_id
         ge.set_movement_angle(pid, move_angle)
         ge.set_movement_speedx(pid, speedx)
         ge.set_movement_speedy(pid, speedy)
         ge.step()
         self.assertTrue(players[0].posx != posx and players[0].posy != posy, "The playe coordinates should have changed.")
+
+    def test_simplistic_move_with_speed_check(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0, -45
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 2*const.CELL_SIZE
+        p.max_speedy = 2*const.CELL_SIZE
+        expected_posx, expected_posy = posx + speedx * p.max_speedx, posy + speedy * p.max_speedy # easy calculation as -45 degrees = (1, 1) direction vector 
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, "The player coordinates should have been closer to expected ones. \nExpected: " + str((expected_posx, expected_posy)) + "\nResult: " + str((p.posx, p.posy)))
 
 if __name__ == '__main__':
     unittest.main()
