@@ -234,7 +234,7 @@ class GameEngine(object):
         return array((-sin(a), cos(a)))
 
     # @param pid player id
-    # @param angle shoot angle, kivy convention, in degree
+    # @param angle shoot angle, "kivy convention", in degree
     # @return{Player} the victim that has been shot, if any, else None
     def shoot(self, pid, angle):
         _logger.info("Starting shoot method")
@@ -245,7 +245,7 @@ class GameEngine(object):
         a += shooter.weapon.draw_random_error()
         
         # Direction of the bullet (normalized vector)
-        normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the kivy convention
+        normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the "kivy convention"
         
         # This vector/line represents the trajectory of the bullet
         origin = array((shooter.posx, shooter.posy))
@@ -267,7 +267,7 @@ class GameEngine(object):
                 victims.append(p)
 
         # Then, if yes, check that there is not any obstacle to that shoot
-        # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
+        # Only check on obstacles that are close to that shot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
             distance, first_victim = self.__find_closest_victim(victims, shooter)
             # We re-compute the vector, stopping it at the victim's position. Indeed, if we used the "vector" variable
@@ -286,7 +286,7 @@ class GameEngine(object):
         return sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list
 
 
-    # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
+    # @param{Player} shooter : Player object (will give us the weapon to harm the victim and the original position of the shoot, to find who to harm)
     # @return{Player} t        # First, check if we could even potentially shoot any player
     # @return{Player} the victim harmed
     def __harm_victim(self, victim, shooter):
