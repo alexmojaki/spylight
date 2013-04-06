@@ -32,3 +32,6 @@ pip-log.txt
 
 # Windows thumbnails cache file
 Thumbs.db
+
+# Virtualenv
+virtualenv/

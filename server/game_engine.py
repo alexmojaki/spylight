@@ -59,11 +59,11 @@ class GameEngine(object):
             GameEngine._instances[cls] = object.__new__(cls, *args, **kargs)
         return GameEngine._instances[cls]
 
-    def init(self, config_file, map_file):
+    def init(self, config_file):
         self._loop = Event()
 
         self.load_config(config_file)
-        self.load_map(map_file)
+        self.load_map(self.config.map_file)
 
     @property
     def loop(self):
