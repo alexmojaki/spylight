@@ -44,6 +44,8 @@ class Player(object):
         self.hp -= damage_amount # TODO change simplistic approach?
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
+    def get_state(self):
+        return {'x': self.posx, 'y': self.posy} # TODO: Actually put what we need here
 
 
 class Weapon(object):
@@ -146,6 +148,9 @@ class GameEngine(object):
     def remove_new_actionable_item(self, item):# TODO implementation of that
         return self # allow chaining
 
+    def end_of_game(self):
+        self.__loop.shutdown()
+
     @property
     def loop(self):
         return not self.__loop.is_set()
@@ -201,6 +206,9 @@ class GameEngine(object):
         self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__player_number)] # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
+
+    def get_player_state(self, pid):
+        return self.__players[pid].get_state()
 
     def get_nb_players(self):
         return self.__player_number
