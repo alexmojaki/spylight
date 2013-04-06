@@ -127,11 +127,14 @@ class GameEngine(object):
             GameEngine._instances[cls] = object.__new__(cls, *args, **kargs)
         return GameEngine._instances[cls]
 
-    def init(self, config_file, map_file):
+    def init(self, config_file, map_file=None):
         self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         self.__loop = Event()
         self.load_config(config_file)
-        self.load_map(map_file)
+        if map_file is not None:
+            self.load_map(map_file)
+        else:
+            self.load_map(self.config.map_file)
         # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
         return self # allow chaining
 
