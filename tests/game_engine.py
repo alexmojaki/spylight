@@ -216,19 +216,25 @@ class GameEngineTest(unittest.TestCase):
         self.map_file = "map_test_action.hfm"
         ge = self.getGE()
         players = self.__setup_players(ge, [(2, 6)])
-        self.assertTrue(ge.action(players[0].player_id) == False, "There should not have been anything to do here.")
+        self.assertTrue(ge.action(players[0].player_id) is False, "There should not have been anything to do here.")
 
     def test_simplistic_action_terminal(self):
         self.map_file = "map_test_action.hfm"
         ge = self.getGE()
         players = self.__setup_players(ge, [(3, 3)])
-        self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
+        self.assertTrue(ge.action(players[0].player_id) is True, "There should have been something to activate (a terminal).")
 
     def test_simplistic_move(self):
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__setup_players(ge, [(3, 3)])
-        self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
+        posx, posy, speedx, speedy, move_angle = 3, 3, 100, 100, 45
+        players = self.__setup_players(ge, [(posx, posy)])
+        pid = players[0].player_id
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(players[0].posx != posx and players[0].posy != posy, "The playe coordinates should have changed.")
 
 if __name__ == '__main__':
     unittest.main()
