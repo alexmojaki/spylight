@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import game_constants as const
 
@@ -27,7 +29,7 @@ class SpyLightMap(object):
 
     IT_TERMINAL = 0
     IT_BRIEFCASE = 1
-    IT_CAMERA = 2
+    IT_CAMERA = 42
     IT_LAMP = 3
 
     TERMINAL_KEY = 'T'
@@ -57,7 +59,7 @@ class SpyLightMap(object):
         self.size = (0, 0)
         self.height = 0
         self.witdh = 0
-        self.map_tiles = []  # self.map_tiles[y][x] (1st array is the v-axis)
+        self.map_tiles = None  # self.map_tiles[y][x] (1st array is the v-axis)
         self.nb_players = (0, 0)
 
         if filename:
@@ -83,6 +85,7 @@ class SpyLightMap(object):
 
     def load_map(self, filename):
         with open(filename, 'r') as f:
+            curMapLine = -1
             for line in f:
                 if line == "" or line[0] == '#':  # Empty line or comment
                     continue
@@ -90,16 +93,27 @@ class SpyLightMap(object):
                     strsize = line.split(':')[1].split()
                     self.size = (int(strsize[0]), int(strsize[1]))
                     self.width, self.height = self.size
+                    self.map_tiles = [None] * self.height
+                    curMapLine = self.height - 1
                 elif line.find('title:') == 0:  # Line starts with size
                     self.title = line.split(':')[1].replace('\n', '')
                 elif line.find('players:') == 0:  # Line starts with players
                     strnbp = line.split(':')[1].split()
                     self.nb_players = (int(strnbp[0]), int(strnbp[1]))
                 else:  # Regular map line
-                    mapLine = []
-                    for c in line:
-                        mapLine.append(c)
-                    self.map_tiles.append(mapLine)
+                    if self.map_tiles is None:
+                        print "La taille de la carte doit être déclarée avant de la dessiner."
+                        sys.exit()
+                    else:
+                        mapLine = []
+                        for c in line:
+                            mapLine.append(c)
+                        try:
+                            self.map_tiles[curMapLine] = mapLine
+                        except IndexError:
+                            print 'Erreur de taille de la carte.'
+                            sys.exit()
+                        curMapLine = curMapLine - 1
 
     def print_legacy_map(self):
         output = self._to_legacy_format()
@@ -173,7 +187,16 @@ class SpyLightMap(object):
         except KeyError:
             return False
 
+    def get_cameras(self):
+        cameras = []
+        for y in xrange(self.size[1]):
+            for x in xrange(self.size[0]):
+                if self.map_tiles[y][x] == 'C':
+                    print x, y
+                    cameras.append((x, y))
+        return cameras
 
 if __name__ == '__main__':
     slm = SpyLightMap(sys.argv[1])
-    slm.print_legacy_map()
+    # slm.print_legacy_map()
+    print slm.get_cameras()
