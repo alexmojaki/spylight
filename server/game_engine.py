@@ -34,9 +34,11 @@ class Player(object):
         self.posx = 0 
         self.posy = 0 
         self.speedx = 0
+        self.max_speedx = 100 # TODO: Change that, pass as constructor value or any other thing
         self.speedy = 0
+        self.max_speedy = 100 # TODO: Change that, pass as constructor value or any other thing
         self.move_angle = 0
-        self.hp = 100 # TODO : Change that ?
+        self.hp = 100 # TODO: Change that, pass as constructor value or any other thing
         self.status = Player.STATUS_ALIVE
         self.weapon = None
 
@@ -221,14 +223,37 @@ class GameEngine(object):
         return self # allow chaining
 
     def set_movement_angle(self, pid, angle):
-        self.__players[pid].move_angle = angle
+        """
+        Set the movement angle ("kivy convention") of the given player.
+        This angle will define in which direction the player is heading when it will have a speed assigned
+
+        :param pid: Player id (int)
+        :param angle: heading direction angle IN DEGREES (real or integer)
+        """
+        self.__players[pid].move_angle = radians(angle)
         return self # allow chaining
 
-    def set_movement_speedx(self, pid, speedx):
-        self.__players[pid].speedx = speedx
+    def set_movement_speedx(self, pid, percentage):
+        """
+        Set the speed of a given player, on the xy axis
 
-    def set_movement_speedy(self, pid, speedy):
-        self.__players[pid].speedy = speedy
+        :param pid: Player id (int)
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        """
+        p = self.__players[pid]
+        p.speedx = percentage * p.max_speedx
+        return self
+
+    def set_movement_speedy(self, pid, percentage):
+        """
+        Set the speed of a given player, on the y axis
+
+        :param pid: Player id (int)
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        """
+        p = self.__players[pid]
+        p.speedy = percentage * p.max_speedy
+        return self
 
     def __get_normalized_direction_vector_from_angle(self, a):
         return array((-sin(a), cos(a)))
