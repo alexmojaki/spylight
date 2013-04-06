@@ -256,7 +256,8 @@ class GameEngine(object):
         return self
 
     def __get_normalized_direction_vector_from_angle(self, a):
-        return array((-sin(a), cos(a)))
+        x, y = -sin(a), cos(a)
+        return (array((x, y)) / sqrt(x**2 + y**2))
 
     # @param pid player id
     # @param angle shoot angle, "kivy convention", in degree
