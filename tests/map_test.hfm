@@ -1,0 +1,13 @@
+#Human friendlier map
+title: uber map
+players: 2 0
+size: 9 9
++-----+-+
+|     | |
+|     | |
++-----+ |
+|       |
+|       |
+|  S   M|
+|       |
++-------+

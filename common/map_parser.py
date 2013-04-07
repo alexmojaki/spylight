@@ -18,7 +18,11 @@ class SpyLightMap(object):
     WA_SPY_ONLY_DOOR = 3
     WA_MERC_ONLY_DOOR = 4  # TODO: Rename that constant to something meaningful
 
-    OBSTACLES_TYPES = (WA_WA0, WA_WA1, WA_WA2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
+    WALL0 = {'section': 'wa', 'value': WA_WA0}
+    WALL1 = {'section': 'wa', 'value': WA_WA1}
+    WALL2 = {'section': 'wa', 'value': WA_WA2}
+
+    OBSTACLES_TYPES = (WALL0, WALL1, WALL2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
 
     SPAWN_MERC = 0
     SPAWN_SPY = 1
@@ -29,19 +33,26 @@ class SpyLightMap(object):
     IT_LAMP = 3
 
     # Sections: wall, spawn, item, vision
+    TERMINAL_KEY = 'T'
+    TERMINAL = {'section': 'it', 'value': IT_TERMINAL}
+    LAMP_KEY = 'L'
+    LAMP = {'section': 'vi', 'value': IT_LAMP}
+
+    PATH_STD = 0
 
     HFM_TO_MAP = {
-        '+': {'section': 'wa', 'value': WA_WA0},
-        '-': {'section': 'wa', 'value': WA_WA1},
-        '|': {'section': 'wa', 'value': WA_WA2},
+        '+': WALL0,
+        '-': WALL1,
+        '|': WALL2,
         '#': {'section': 'wa', 'value': WA_SPY_ONLY_DOOR},  # Spy-only door
         '@': {'section': 'wa', 'value': WA_MERC_ONLY_DOOR},  # Mercenary-only door
         'M': {'section': 'sp', 'value': SPAWN_MERC},
         'S': {'section': 'sp', 'value': SPAWN_SPY},
-        'T': {'section': 'it', 'value': IT_TERMINAL},  # Terminal
+        TERMINAL_KEY: TERMINAL,  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
         'C': {'section': 'vi', 'value': IT_CAMERA},  # Camera
-        'L': {'section': 'vi', 'value': IT_LAMP}   # Lamp
+        LAMP_KEY: LAMP,   # Lamp
+        ' ': {'section': 'pa', 'value': PATH_STD}
     }
 
     def __init__(self, filename=None):
@@ -151,7 +162,8 @@ class SpyLightMap(object):
     def get_hash(self):
         return 'bleh'
 
-    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone through, a static rigid body)
+    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
+    # through, a static rigid body)
     # @param{integer} x : x coordinate (game's coordinate)
     # @param{integer} y : y coordinate (game's coordinate)
     # @return{bool} True if yes, False if no
@@ -160,16 +172,21 @@ class SpyLightMap(object):
         col = x // const.CELL_SIZE
         return self.is_obstacle_from_cell_coords(row, col)
 
-    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone through, a static rigid body)
+    # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
+    # through, a static rigid body)
     # @param{integer} row : map_tiles matrix row
     # @param{integer} col : map_tiles matrix column
     # @return{bool} True if yes, False if no
     def is_obstacle_from_cell_coords(self, row, col):
-        if row > self.height or row < 0 or col < 0 or col > self.width:
+        if row >= self.height or row < 0 or col < 0 or col >= self.width:
             return False
-        if self.HFM_TO_MAP[self.map_tiles[row][col]] in self.OBSTACLES_TYPES:
-            return True
-        return False
+        try:
+            cell = self.HFM_TO_MAP[self.map_tiles[row][col]]
+            if cell in self.OBSTACLES_TYPES:
+                return True
+            return False
+        except KeyError:
+            return False
 
     def get_cameras(self):
         cameras = []
