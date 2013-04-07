@@ -32,10 +32,11 @@ class SpyLightMap(object):
     IT_CAMERA = 42
     IT_LAMP = 3
 
+    # Sections: wall, spawn, item, vision
     TERMINAL_KEY = 'T'
     TERMINAL = {'section': 'it', 'value': IT_TERMINAL}
     LAMP_KEY = 'L'
-    LAMP = {'section': 'it', 'value': IT_LAMP}
+    LAMP = {'section': 'vi', 'value': IT_LAMP}
 
     PATH_STD = 0
 
@@ -49,7 +50,7 @@ class SpyLightMap(object):
         'S': {'section': 'sp', 'value': SPAWN_SPY},
         TERMINAL_KEY: TERMINAL,  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
-        'C': {'section': 'it', 'value': IT_CAMERA},  # Camera
+        'C': {'section': 'vi', 'value': IT_CAMERA},  # Camera
         LAMP_KEY: LAMP,   # Lamp
         ' ': {'section': 'pa', 'value': PATH_STD}
     }
@@ -195,6 +196,18 @@ class SpyLightMap(object):
                     print x, y
                     cameras.append((x, y))
         return cameras
+
+    def get_tile(self, x, y):
+        '''
+        Returns the section and the value of a tile.
+        If it's empty, (None, None) is returned
+        '''
+        try:
+            tmp = self.HFM_TO_MAP[self.map_tiles[y][x]]
+            return (tmp['section'], tmp['value'])
+        except KeyError:
+            return (None, None)
+
 
 if __name__ == '__main__':
     slm = SpyLightMap(sys.argv[1])
