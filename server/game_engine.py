@@ -12,6 +12,7 @@ import common.utils as utils
 from math import sin, cos, sqrt, radians
 from random import uniform as rand
 from shapely.geometry import Point, LineString
+from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
@@ -34,11 +35,20 @@ class Player(object):
         self.posx = 0 
         self.posy = 0 
         self.speedx = 0
+        self.max_speedx = 100 # TODO: Change that, pass as constructor value or any other thing
         self.speedy = 0
+        self.max_speedy = 100 # TODO: Change that, pass as constructor value or any other thing
         self.move_angle = 0
-        self.hp = 100 # TODO : Change that ?
+        self.hp = 100 # TODO: Change that, pass as constructor value or any other thing
+        self.sight_range = 200 # TODO: Change that, pass as constructor value or any other thing
         self.status = Player.STATUS_ALIVE
         self.weapon = None
+
+        # Occlusion related things
+        self.sight_vertices = []
+        self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
+        self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
+        self.sight_polygon_coords = []
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -164,15 +174,36 @@ class GameEngine(object):
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
             p.posx += normalized_array[0] * p.speedx
             p.posy += normalized_array[1] * p.speedy
-        # Update player's sight
-        # TODO: Parametrize things for occlusion
-        # TODO: Launch occlusion
-        # TODO: from shapely.occlusion import occlusion
-        # TODO: p.sight = occlusion(args)
+            p.obstacles_in_sight = []
+            p.obstacles_in_sight_n = 0
+            # ------- Update player's sight -------
+            # Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
+            sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
+            vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
+            self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
+            # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
+            p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
+            # Launch occlusion
+            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
     
+    def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
+        p = kwargs['player']
+
+        p.obstacles_in_sight.extend(
+            [col, row,
+            col + const.CELL_SIZE, row,
+            col + const.CELL_SIZE, row + const.CELL_SIZE,
+            col, row + const.CELL_SIZE])
+        p.obstacles_in_sight_n += 8
+        return None # just to explicitely tell the calling function to continue (I hate implicit things)
+
+
     def __actionable_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
     
+    def get_player_sight(self, pid):
+        return self.__players[pid].sight_vertices
+
     def action(self, pid):
         """
 
@@ -220,21 +251,48 @@ class GameEngine(object):
         self.__loop.clear()
         return self # allow chaining
 
+    def set_sight_angle(self, pid, angle):
+        return self.set_movement_angle(pid, angle)
+
     def set_movement_angle(self, pid, angle):
-        self.__players[pid].move_angle = angle
+        """
+        Set the movement angle ("kivy convention") of the given player.
+        This angle will define in which direction the player is heading when it will have a speed assigned
+
+        :param pid: Player id (int)
+        :param angle: heading direction angle IN DEGREES (real or integer)
+        """
+        self.__players[pid].move_angle = radians(angle)
         return self # allow chaining
 
-    def set_movement_speedx(self, pid, speedx):
-        self.__players[pid].speedx = speedx
+    def set_movement_speedx(self, pid, percentage):
+        """
+        Set the speed of a given player, on the xy axis
 
-    def set_movement_speedy(self, pid, speedy):
-        self.__players[pid].speedy = speedy
+        :param pid: Player id (int)
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        """
+        p = self.__players[pid]
+        p.speedx = percentage * p.max_speedx
+        return self
+
+    def set_movement_speedy(self, pid, percentage):
+        """
+        Set the speed of a given player, on the y axis
+
+        :param pid: Player id (int)
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        """
+        p = self.__players[pid]
+        p.speedy = percentage * p.max_speedy
+        return self
 
     def __get_normalized_direction_vector_from_angle(self, a):
-        return array((-sin(a), cos(a)))
+        x, y = -sin(a), cos(a)
+        return (array((x, y)) / sqrt(x**2 + y**2))
 
     # @param pid player id
-    # @param angle shoot angle, kivy convention, in degree
+    # @param angle shoot angle, "kivy convention", in degree
     # @return{Player} the victim that has been shot, if any, else None
     def shoot(self, pid, angle):
         _logger.info("Starting shoot method")
@@ -245,7 +303,7 @@ class GameEngine(object):
         a += shooter.weapon.draw_random_error()
         
         # Direction of the bullet (normalized vector)
-        normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the kivy convention
+        normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the "kivy convention"
         
         # This vector/line represents the trajectory of the bullet
         origin = array((shooter.posx, shooter.posy))
@@ -267,7 +325,7 @@ class GameEngine(object):
                 victims.append(p)
 
         # Then, if yes, check that there is not any obstacle to that shoot
-        # Only check on obstacles that are close to that shoot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
+        # Only check on obstacles that are close to that shot's trajectory (that is to say, not < (x,y) (depending on the angle, could be not > (x,y) or event more complex cases, but that's the idea)))
         if 0 != len(victims):
             distance, first_victim = self.__find_closest_victim(victims, shooter)
             # We re-compute the vector, stopping it at the victim's position. Indeed, if we used the "vector" variable
@@ -286,7 +344,7 @@ class GameEngine(object):
         return sorted([(sqrt((shooter.posx - v.posx)**2 + (shooter.posy - v.posy)**2), v) for v in victims])[0] # Ugly line, huh? We create a list of (distance, victim) tuples, sort it (thus, the shortest distance will bring the first victim at pos [0] of the list
 
 
-    # @param{Player} shooter : Player object (will give us the weapong to harm the victim and the original position of the shoot, to find who to harm)
+    # @param{Player} shooter : Player object (will give us the weapon to harm the victim and the original position of the shoot, to find who to harm)
     # @return{Player} t        # First, check if we could even potentially shoot any player
     # @return{Player} the victim harmed
     def __harm_victim(self, victim, shooter):
@@ -296,7 +354,19 @@ class GameEngine(object):
     def __norm_to_cell(self, coord):
         return (coord // const.CELL_SIZE)
 
-    def __shoot_collide_with_obstacle(self, vector, geometric_line):
+    def __for_obstacle_in_range(self, vector, callback, **callback_args):
+        """
+            Finds the obstacle in the given range (range = a distance range + an angle (factorized in the "vector" argument))
+            and executes the callback for each found obstacle
+
+            :param vector: range/direction vector, of the form ((x_orig, y_orig), (x_end, y_end)) in real map coordinates
+            :param callback: callback function, signature must be func([self, ]vector, row, col, **kwargs)
+            :param callback_args: Additional arguments that will be passed to the callback function when executed
+
+            /!\ Important /!\ Returns:
+                - None either if the callback was never called or if it never returned anything else than None
+                - the callback value, if a callback call returns anything that is not None
+        """
         col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         _logger.info("__shoot_collide_with_obstacle(): x=" + str(col_orig))
         row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
@@ -320,12 +390,24 @@ class GameEngine(object):
             col = col_orig
             while col < self.slmap.width and (col-col_end) != col_increment_sign:
                 if self.slmap.is_obstacle_from_cell_coords(row, col):
-                    obstacle = utils.create_square_from_top_left_coords(row*const.CELL_SIZE, col*const.CELL_SIZE, const.CELL_SIZE) # Construct the obstacle
-                    if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
-                        return True # Yes!
+                    callback_result = callback(vector, row, col, **callback_args)
+                    if callback_result is not None:
+                        return callback_result
                 col += col_increment_sign * 1
             row += row_increment_sign * 1
-        return False
+        return None
+
+    def __shoot_collide_with_obstacle(self, vector, geometric_line):
+        if self.__for_obstacle_in_range(vector, self.__shoot_collide_with_obstacle_callback, geomatric_line=geometric_line) is not None:
+            return True # Found some obstacle collision !
+        return False # Did not found any obstacle collision
+
+    def __shoot_collide_with_obstacle_callback(self, vector, row, col, **kwargs):
+        geometric_line = kwargs['geomatric_line']
+        obstacle = utils.create_square_from_top_left_coords(row*const.CELL_SIZE, col*const.CELL_SIZE, const.CELL_SIZE) # Construct the obstacle
+        if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
+            return True # Yes!
+        return None
 
     def shutdown(self, force=False):
         self.__loop.set()

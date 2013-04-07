@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from math import radians, cos
 
 import sys
 import unittest
@@ -216,13 +217,106 @@ class GameEngineTest(unittest.TestCase):
         self.map_file = "map_test_action.hfm"
         ge = self.getGE()
         players = self.__setup_players(ge, [(2, 6)])
-        self.assertTrue(ge.action(players[0].player_id) == False, "There should not have been anything to do here.")
+        self.assertTrue(ge.action(players[0].player_id) is False, "There should not have been anything to do here.")
 
     def test_simplistic_action_terminal(self):
         self.map_file = "map_test_action.hfm"
         ge = self.getGE()
         players = self.__setup_players(ge, [(3, 3)])
-        self.assertTrue(ge.action(players[0].player_id) == True, "There should have been something to activate (a terminal).")
+        self.assertTrue(ge.action(players[0].player_id) is True, "There should have been something to activate (a terminal).")
+
+    def test_simplistic_move(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 3, 3
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0, 315
+        players = self.__setup_players(ge, [(col, row)])
+        pid = players[0].player_id
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(players[0].posx != posx and players[0].posy != posy, "The playe coordinates should have changed.")
+
+    def test_simplistic_move_with_speed_check(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0, 315
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 2*const.CELL_SIZE
+        p.max_speedy = 2*const.CELL_SIZE
+        diagonal_move_reduc_coeff = cos(radians(45))
+        expected_posx, expected_posy = posx + speedx * diagonal_move_reduc_coeff * p.max_speedx, posy + speedy * diagonal_move_reduc_coeff * p.max_speedy
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, "The player coordinates should have been closer to expected ones. \nExpected: " + str((expected_posx, expected_posy)) + "\nResult: " + str((p.posx, p.posy)))
+
+    def test_simplistic_move_with_speed_check2(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 0.0, 1.0, 0
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 2*const.CELL_SIZE
+        p.max_speedy = 4*const.CELL_SIZE
+        expected_posx, expected_posy = posx, posy + speedy * p.max_speedy
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, "The player coordinates should have been closer to expected ones. \nExpected: " + str((expected_posx, expected_posy)) + "\nResult: " + str((p.posx, p.posy)))
+
+    def test_simplistic_move_with_speed_check3(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy, move_angle = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0, 270
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 2*const.CELL_SIZE
+        p.max_speedy = 4*const.CELL_SIZE
+        expected_posx, expected_posy = posx + speedx * p.max_speedx, posy
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, "The player coordinates should have been closer to expected ones. \nExpected: " + str((expected_posx, expected_posy)) + "\nResult: " + str((p.posx, p.posy)))
+
+    def test_simplistic_step_with_occlusion(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy, move_angle = row * const.CELL_SIZE, col * const.CELL_SIZE, 1.0, 1.0, 270
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 2*const.CELL_SIZE
+        p.max_speedy = 4*const.CELL_SIZE
+        expected_posx, expected_posy = posx + speedx * p.max_speedx, posy
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        ge.step()
+        n = len(p.sight_vertices)
+        self.assertTrue(16 >= n, "The player's sight should have been consituted of more vertices than " + str(n))
+
+    def test_empirical_occlusion(self):
+        from shapely.occlusion import occlusion
+        mpos_x, mpos_y = 0, 0
+        sight_triangle_width, sight_triangle_height = 100, 100
+        sight_polygon_coords = [[mpos_x, mpos_y], [mpos_x - sight_triangle_width/2, mpos_y + sight_triangle_height], [mpos_x + sight_triangle_width/2, mpos_y + sight_triangle_height]]
+        res1 = occlusion(0, 0, sight_polygon_coords, [0, 10, 0, 18, 8, 18, 8, 10], 8)
+        res2 = occlusion(0, 0, sight_polygon_coords, [], 0)
+        res3 = occlusion(0, 0, sight_polygon_coords, [12, 0, 12, 8, 20, 8, 20, 0], 8)
+        self.assertTrue(res1 != res2 and res1 != res3 and res2 == res3, "Those three executions of occlusion() should have returned different results for res1 and res2 but same for res2 and res3")
 
 if __name__ == '__main__':
     unittest.main()
