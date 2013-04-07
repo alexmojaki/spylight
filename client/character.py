@@ -99,10 +99,10 @@ class Replica(Character):
         pass
 
 
-MERC_TEAM_ID = 1
-SPY_TEAM_ID = 0
+MERC_TEAM_ID = 0
+SPY_TEAM_ID = 1
 
 teams = [
-    {'name': '\'espion', 'sprite': utils.spritePath.format('spy'), 'vision_class': SpyVision},
-    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary'), 'vision_class': MercVision}
+    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary'), 'vision_class': MercVision},
+    {'name': '\'espion', 'sprite': utils.spritePath.format('spy'), 'vision_class': SpyVision}
 ]
