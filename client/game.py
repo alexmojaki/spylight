@@ -21,7 +21,7 @@ from client.network import NetworkInterface
 from common.map_parser import SpyLightMap
 from client.character import Character
 from client.hud import SpylightHUD
-from client.environment import MapView, LightenedArea
+from client.map_view import MapView
 from client.input import KeyboardManager, TouchManager
 from client.action import ActionManager
 from client import utils
