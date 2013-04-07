@@ -45,6 +45,7 @@ class Player(object):
         self.weapon = None
 
         # Occlusion related things
+        self.sight_vertices = []
         self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
         self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
 
@@ -197,6 +198,9 @@ class GameEngine(object):
     def __actionable_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
     
+    def get_player_sight(self, pid):
+        return self.__players[pid].sight_vertices
+
     def action(self, pid):
         """
 
