@@ -1,6 +1,7 @@
 #:kivy 1.5.1
 <GameConfigScreen>:
     serverIp: serverIp
+    serverPort: serverPort
     nick: nick
     cb0: cb0
     cb1: cb1
@@ -25,6 +26,18 @@
                 size_hint: (0.3, None)
                 height: 30
                 id: serverIp
+                multiline: False
+
+        StackLayout:
+            orientation: 'lr-tb'
+            Label:
+                size_hint: (0.3, None)
+                text: 'Port Serveur'
+                height: 30
+            TextInput:
+                size_hint: (0.3, None)
+                height: 30
+                id: serverPort
                 multiline: False
 
         StackLayout:
