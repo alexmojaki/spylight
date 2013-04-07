@@ -3,24 +3,10 @@ import math
 from kivy.logger import Logger
 
 from client.config import config
+from client.network import MessageFactory
 
 
 class ActionManager(object):
-    _ARB_DIR_TO_ANGLE = {
-        11: 45,
-        10: 0,
-        9: 315,
-        1: 90,
-        0: 0,
-        -1: 270,
-        -9: 135,
-        -10: 180,
-        -11: 225
-    }
-
-    _ARBITRARY_DIR_VALUES = [10, 1, -10, -1]
-
-    print config.sections()
     _WALK_SPEED = config.get('KeyConfig', 'walkSpeed')
 
     def __init__(self, networkInterface, keyboardMgr, touchMgr, game):
@@ -32,30 +18,40 @@ class ActionManager(object):
 
     def notify_action(self, mgr, data):
         if data:
-            self._ni.send({'e': True})
-
-    def process_move_angle(self, data):
-        pass
+            self._ni.send(MessageFactory.action(True))
 
     def notify_movement_event(self, keyPressed, keyboardState):
         # Angle calculation @TODO: replace with tangent method?
-        s = 0
-        for i in xrange(len(self._ARBITRARY_DIR_VALUES)):
-            if keyboardState[i]:
-                s = s + self._ARBITRARY_DIR_VALUES[i]
+        dir_to_angle = {
+            11: 45,
+            10: 0,
+            9: 315,
+            1: 90,
+            0: 0,
+            -1: 270,
+            -9: 135,
+            -10: 180,
+            -11: 225
+        }
 
-        direction = self._ARB_DIR_TO_ANGLE[s]
+        dir_values = [10, 1, -10, -1]
+        s = 0
+        for i in xrange(len(dir_values)):
+            if keyboardState[i]:
+                s = s + dir_values[i]
+
+        direction = dir_to_angle[s]
         speed = 0 if s == 0 else 1 if keyboardState[4] else self._WALK_SPEED
+
         # Send direction, run state
-        print direction, speed
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
-        self._ni.send({'d': direction, 's': speed})
+        self._ni.send(MessageFactory.move(direction, speed))
 
     def notify_touch_event(self, mgr, data):  # data is [[x,y], bool_down]
         if data[1]:  # on mouse down only
-            self._ni.send({'v': self.get_angle_with_char(data[0]), 'sh': True})
+            self._ni.send(MessageFactory.shoot(self._get_angle_with_char(data[0])))
 
-    def get_angle_with_char(self, other_point):
+    def _get_angle_with_char(self, other_point):
         cur_pos = self.game.char.gamepos
         # on_screen_pos - offset = in game pos
         dx = other_point[0] - self.game.char.offsetx - cur_pos[0]

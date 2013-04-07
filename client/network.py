@@ -8,6 +8,33 @@ import msgpack
 from kivy.logger import Logger
 
 
+class MessageFactory(object):
+
+    @staticmethod
+    def init(team, nick):
+        return {'type': 'init', 'team': team, 'nick': nick}
+
+    @staticmethod
+    def move(direction, speed):
+        return {'type': 'move', 'd': direction, 's': speed}
+
+    @staticmethod
+    def turn(angle):
+        return {'type': 'turn', 'v': angle}
+
+    @staticmethod
+    def shoot(angle):
+        return {'type': 'shoot', 'v': angle, 'sh': True}
+
+    @staticmethod
+    def action(keydown):
+        return {'type': 'action', 'e': True}
+
+    @staticmethod
+    def update(team, nick):
+        pass
+
+
 class NetworkInterface(object):
     """docstring for NetworkInterface"""
 

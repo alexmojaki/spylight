@@ -16,7 +16,7 @@ from kivy.logger import Logger
 # import common.network_protocol as np
 # import common.game_constants as c
 
-from client.network import NetworkInterface
+from client.network import NetworkInterface, MessageFactory
 # from common.slmap import SLMap
 from common.map_parser import SpyLightMap
 from client.character import Character
@@ -52,7 +52,7 @@ class SpylightGame(Widget):
 
         # Register to the server
         self._ni = NetworkInterface(serverip, serverport)
-        init_response = self._ni.connect({'team': team, 'nick': nick})
+        init_response = self._ni.connect(MessageFactory.init(team, nick))
 
         # Parse server init message
         self.team = init_response['team']
