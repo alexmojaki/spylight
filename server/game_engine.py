@@ -322,7 +322,19 @@ class GameEngine(object):
     def __norm_to_cell(self, coord):
         return (coord // const.CELL_SIZE)
 
-    def __shoot_collide_with_obstacle(self, vector, geometric_line):
+    def __for_obstacle_in_range(self, vector, callback, **callback_args):
+        """
+            Finds the obstacle in the given range (range = a distance range + an angle (factorized in the "vector" argument))
+            and executes the callback for each found obstacle
+
+            :param vector: range/direction vector, of the form ((x_orig, y_orig), (x_end, y_end)) in real map coordinates
+            :param callback: callback function, signature must be func([self, ]vector, row, col, **kwargs)
+            :param callback_args: Additional arguments that will be passed to the callback function when executed
+
+            /!\ Important /!\ Returns:
+                - None either if the callback was never called or if it never returned anything else than None
+                - the callback value, if a callback call returns anything that is not None
+        """
         col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         _logger.info("__shoot_collide_with_obstacle(): x=" + str(col_orig))
         row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
@@ -346,12 +358,24 @@ class GameEngine(object):
             col = col_orig
             while col < self.slmap.width and (col-col_end) != col_increment_sign:
                 if self.slmap.is_obstacle_from_cell_coords(row, col):
-                    obstacle = utils.create_square_from_top_left_coords(row*const.CELL_SIZE, col*const.CELL_SIZE, const.CELL_SIZE) # Construct the obstacle
-                    if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
-                        return True # Yes!
+                    callback_result = callback(vector, row, col, **callback_args)
+                    if callback_result is not None:
+                        return callback_result
                 col += col_increment_sign * 1
             row += row_increment_sign * 1
-        return False
+        return None
+
+    def __shoot_collide_with_obstacle(self, vector, geometric_line):
+        if self.__for_obstacle_in_range(vector, self.__shoot_collide_with_obstacle_callback, geomatric_line=geometric_line) is not None:
+            return True # Found some obstacle collision !
+        return False # Did not found any obstacle collision
+
+    def __shoot_collide_with_obstacle_callback(self, vector, row, col, **kwargs):
+        geometric_line = kwargs['geomatric_line']
+        obstacle = utils.create_square_from_top_left_coords(row*const.CELL_SIZE, col*const.CELL_SIZE, const.CELL_SIZE) # Construct the obstacle
+        if geometric_line.intersects(obstacle): # Is the obstacle in the way of the bullet?
+            return True # Yes!
+        return None
 
     def shutdown(self, force=False):
         self.__loop.set()
