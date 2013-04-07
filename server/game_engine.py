@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from threading import Event
+from threading import Event, Lock
 
 from config_handler import ConfigHandler
 from config_helper import default_config, option_types
@@ -10,9 +10,9 @@ from common.map_parser import SpyLightMap
 import common.game_constants as const
 import common.utils as utils
 from math import sin, cos, sqrt, radians
-from random import uniform as rand
+from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
-from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
+#from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
@@ -32,8 +32,8 @@ class Player(object):
         super(Player, self).__init__()
         self.player_id = player_id
         self.team = team
-        self.posx = 0 
-        self.posy = 0 
+        self.posx = 0
+        self.posy = 0
         self.speedx = 0
         self.max_speedx = 100 # TODO: Change that, pass as constructor value or any other thing
         self.speedy = 0
@@ -43,6 +43,8 @@ class Player(object):
         self.sight_range = 200 # TODO: Change that, pass as constructor value or any other thing
         self.status = Player.STATUS_ALIVE
         self.weapon = None
+        self.nickname = None  # Updated when a client connects to the server
+        self.connected = False  # Indicate if a client is using this player
 
         # Occlusion related things
         self.sight_vertices = []
@@ -55,7 +57,7 @@ class Player(object):
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
     def get_state(self):
-        return {'x': self.posx, 'y': self.posy} # TODO: Actually put what we need here
+        return {'hp': self.hp, 'x': self.posx, 'y': self.posy} # TODO: Actually put what we need here
 
 
 class Weapon(object):
@@ -85,9 +87,9 @@ class MineWeapon(Weapon):
     def __init__(self):
         super(MineWeapon, self).__init__()
         self.dps = 50
-        
 
-    
+
+
 class ActionableItem(object):
     """Simplistic ActionableItem implementation"""
     def __init__(self, row, col):
@@ -97,12 +99,12 @@ class ActionableItem(object):
 
     def act(self, originPlayer):
         pass # Todo implement that
-    
+
 class MineAI(ActionableItem):
     """simplistic Mine implementation"""
     def __init__(self, **kwargs):
         super(MineAI, self).__init__(kwargs)
-    
+
     def act(self, originPlayer):
         if originPlayer.team == Player.SPY_TEAM:
             # Deactivate the current mine
@@ -140,6 +142,8 @@ class GameEngine(object):
     def init(self, config_file, map_file=None):
         self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         self.__loop = Event()
+        self.__curr_player_number = 0
+        self.__player_connection = Lock()
         self.load_config(config_file)
         if map_file is not None:
             self.load_map(map_file)
@@ -184,8 +188,8 @@ class GameEngine(object):
             # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
             p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
             # Launch occlusion
-            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
-    
+#            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
 
@@ -200,7 +204,7 @@ class GameEngine(object):
 
     def __actionable_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
-    
+
     def get_player_sight(self, pid):
         return self.__players[pid].sight_vertices
 
@@ -225,6 +229,7 @@ class GameEngine(object):
         return self # allow chaining
 
     def load_map(self, map_file):
+        self.__map_file = map_file
         self.slmap = SpyLightMap()
         self.slmap.load_map(map_file)
         # Go through the whole map to find for special things to register, like actionable items...
@@ -234,18 +239,53 @@ class GameEngine(object):
                     terminal = TerminalAI(row, col)
                     self.push_new_actionable_item(terminal)
 
-        self.__player_number = 4  # TODO: Update with the true player number
-                                 #       read from the map file.
+        self.__max_player_number = 4  # TODO: Update with the true player number
+                                      #       read from the map file.
         # Loading players
-        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__player_number)] # TODO: replace that by the actual player loading
+        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__max_player_number)] # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
+
+    def connect_to_player(self, team, nickname):
+        if self.__curr_player_number == self.__max_player_number:
+            return None
+
+        players = [p for p in self.__players if not p.connected and p.team == \
+            team]
+
+        self.__player_connection.acquire()
+        if len(players) > 1:
+            player = choice(players)
+        elif len(players) == 1:
+            player = players[0]
+        else:
+            self.__player_connection.release()
+            return None
+
+        player.connected = True
+        player.nickname = nickname
+        self.__curr_player_number += 1
+        self.__player_connection.release()
+
+        return player.player_id
+
+    def get_map_name(self):
+        return self.__map_file
+
+    def get_map_title(self):
+        return self.slmap.title
+
+    def get_map_hash(self):
+        return self.slmap.get_hash()
 
     def get_player_state(self, pid):
         return self.__players[pid].get_state()
 
     def get_nb_players(self):
-        return self.__player_number
+        return self.__curr_player_number
+
+    def get_players_info(self):
+        return [(p.nickname, p.player_id, p.team) for p in self.__players]
 
     def start(self):
         self.__loop.clear()
@@ -301,10 +341,10 @@ class GameEngine(object):
         a = radians(angle)
         # Weapon error angle application:
         a += shooter.weapon.draw_random_error()
-        
+
         # Direction of the bullet (normalized vector)
         normalized_direction_vector = self.__get_normalized_direction_vector_from_angle(a) # x, y, but in the "kivy convention"
-        
+
         # This vector/line represents the trajectory of the bullet
         origin = array((shooter.posx, shooter.posy))
         vector = (tuple(origin), tuple(origin + (normalized_direction_vector * shooter.weapon.range)))

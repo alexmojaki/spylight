@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from msgpack import unpackb as m_unpack
+from msgpack import packb as m_pack, unpackb as m_unpack
 from SocketServer import StreamRequestHandler
-from struct import unpack as s_unpack
+from string import printable as printable_chars
+from struct import pack as s_pack, unpack as s_unpack
 from threading import Event, Timer
+from traceback import print_exc
 
+from common.game_constants import MERC_TEAM, SPY_TEAM
 from game_engine import GameEngine
 from stoppable_thread import ThreadExit
+
+
+printable_chars = set(printable_chars)
 
 
 class SpylightRequestHandler(StreamRequestHandler, object):
@@ -33,7 +39,7 @@ class SpylightRequestHandler(StreamRequestHandler, object):
 
             if not self._sender_busy.is_set():
                 self._sender_busy.set()
-                self.send()
+                self.send_game_state()
                 self._sender_busy.clear()
 
         if self._sender is not None:
@@ -77,7 +83,7 @@ message content (' + str(data_size) + '\nbytes long)'
                             self.update_status(self.CONNECTION_STOP)
                         else:
                             try:
-                                data = m_unpack(data)
+                                data = m_unpack(data, use_list=False)
                             except Exception as exception:
                                 print 'Wrong input received:', exception
                                 self.update_status(self.CONNECTION_STOP)
@@ -92,7 +98,6 @@ message's type"
                                     print 'Wrong input received: no `type` \
 field in message'
                                     self.update_status(self.CONNECTION_STOP)
-                                    self._handle_print(data)
                                 else:
                                     # We must ensure that `type` field contains
                                     # a string type object
@@ -119,25 +124,60 @@ invalid message field `type`; must be "init" during the\ninitialisation phase.'
                                             except AttributeError:
                                                 print 'Wrong input received: \
 invalid message field `type`'
-                                                self.update_status(self.
-                                                    CONNECTION_STOP)
-                                                self._handle_print(data)
+                                                self.update_status(
+                                                    self.CONNECTION_STOP)
                                             else:
                                                 self.update_status()
         except ThreadExit:
             self.update_status(self.CONNECTION_STOP)
 
     def handle_init(self, data):
-        pass
+        try:
+            if not data['team'] in (MERC_TEAM, SPY_TEAM):
+                print 'Wrong input received: invalid message field `team`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+            elif not set(data['nick']).issubset(printable_chars):
+                print 'Wrong input received: invalid message field `nick`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+        except KeyError:
+            print 'Wrong input received: missing field(s) in message of type \
+`init`'
+            self.update_status(self.CONNECTION_STOP)
+            return
 
-    def _handle_print(self, data):
-        print data
+        player_id = GameEngine().connect_to_player(data['team'], data['nick'])
+
+        if player_id is None:
+            print 'Initialisation failed: team full'
+            self.update_status(self.CONNECTION_STOP)
+            return
+
+        player_state = GameEngine().get_player_state(player_id)
+        pos_x, pos_y, max_hp = (player_state[k] for k in ('x', 'y', 'hp'))
+
+        self.send({'type': 'init', 'id': player_id, 'pos': (pos_x, pos_y),
+                  'max_hp': max_hp, 'team': data['team'], 'map': GameEngine().
+                  get_map_name(), 'map_hash': GameEngine().get_map_hash(),
+                  'players': GameEngine().get_players_info()})
 
     def handle_test(self, data):
         print 'Test message received:', data
 
-    def send(self):
-        self.send_game_state()
+    def send(self, message):
+        try:
+            data = m_pack(message)
+        except Exception as exception:
+            print 'Output error:', exception
+        else:
+            data_size = len(data)
+            if data_size > 65536:
+                print 'Output error: message too big to be sent'
+            else:
+                data_size = s_pack('!I', data_size)
+                self.wfile.write(data_size + data)
+                self.wfile.flush()
 
     def send_game_state(self):
         self.wfile.write('Plop!\n')

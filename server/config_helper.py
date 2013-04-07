@@ -6,7 +6,7 @@
 default_config = {
     'map_file': 'test.hfm',
     'server_host': '0.0.0.0',
-    'server_port': '12321',
+    'server_port': '9999',
     'send_state_interval': '3.0',
 }
 
