@@ -310,9 +310,12 @@ class GameEngineTest(unittest.TestCase):
 
     def test_empirical_occlusion(self):
         from shapely.occlusion import occlusion
-        res1 = occlusion(0, 0, [0, 10, 0, 18, 8, 18, 8, 10], 8, 100, 140)
-        res2 = occlusion(0, 0, [], 0, 100, 140)
-        res3 = occlusion(0, 0, [12, 0, 12, 8, 20, 8, 20, 0], 8, 100, 140)
+        mpos_x, mpos_y = 0, 0
+        sight_triangle_width, sight_triangle_height = 100, 100
+        sight_polygon_coords = [[mpos_x, mpos_y], [mpos_x - sight_triangle_width/2, mpos_y + sight_triangle_height], [mpos_x + sight_triangle_width/2, mpos_y + sight_triangle_height]]
+        res1 = occlusion(0, 0, sight_polygon_coords, [0, 10, 0, 18, 8, 18, 8, 10], 8)
+        res2 = occlusion(0, 0, sight_polygon_coords, [], 0)
+        res3 = occlusion(0, 0, sight_polygon_coords, [12, 0, 12, 8, 20, 8, 20, 0], 8)
         self.assertTrue(res1 != res2 and res1 != res3 and res2 == res3, "Those three executions of occlusion() should have returned different results for res1 and res2 but same for res2 and res3")
 
 if __name__ == '__main__':

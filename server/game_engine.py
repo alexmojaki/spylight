@@ -48,6 +48,7 @@ class Player(object):
         self.sight_vertices = []
         self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
         self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
+        self.sight_polygon_coords = []
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -180,8 +181,10 @@ class GameEngine(object):
             sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
             vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
+            # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
+            p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
             # Launch occlusion
-            p.sight_vertices = occlusion(p.posx, p.posy, p.obstacles_in_sight, p.obstacles_in_sight_n, p.sight_range, p.sight_range)
+            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
     
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
@@ -247,6 +250,9 @@ class GameEngine(object):
     def start(self):
         self.__loop.clear()
         return self # allow chaining
+
+    def set_sight_angle(self, pid, angle):
+        return self.set_movement_angle(pid, angle)
 
     def set_movement_angle(self, pid, angle):
         """
