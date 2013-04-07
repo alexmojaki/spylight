@@ -11,40 +11,119 @@ from stoppable_thread import ThreadExit
 
 
 class SpylightRequestHandler(StreamRequestHandler, object):
+    CONNECTION_INIT = 'CONNECTION_INIT'
+    CONNECTION_RUN = 'CONNECTION_RUN'
+    CONNECTION_STOP = 'CONNECTION_STOP'
+
     def setup(self):
         print 'New client connected'
         super(SpylightRequestHandler, self).setup()
-        self.writer_busy = Event()
-        self.writer = Timer(GameEngine().config.send_state_interval, self.
-                            send_game_state)
-        self.writer.start()
+
+        self._sender_busy = Event()
+        self._sender_interval = -1
+        self._sender = None
+
+        self._status = self.CONNECTION_INIT
+
+    def setup_sender(self, interval):
+        def _sender_action():
+            self._sender = Timer(self._sender_interval, _sender_action)
+            self._sender.start()
+
+            if not self._sender_busy.is_set():
+                self._sender_busy.set()
+                self.send()
+                self._sender_busy.clear()
+
+        if self._sender is not None:
+            self._sender.cancel()
+            self._sender_interval = -1
+            self._sender = None
+
+        if interval > 0:
+            self._sender_interval = interval
+            self._sender = Timer(interval, _sender_action)
+            self._sender.start()
+
+    def update_status(self, status=None):
+        if self.server.handler_thread.is_stopped():
+            self._status = self.CONNECTION_STOP
+        elif status is not None:
+            self._status = status
+
+        if self._status == self.CONNECTION_STOP:
+            self.setup_sender(-1)
 
     def handle(self):
+        # The next line WILL move
+        self.setup_sender(GameEngine().config.send_state_interval)
+
         try:
-            while not self.server.handler_thread.is_stopped():
+            while self._status != self.CONNECTION_STOP:
                 data_size = self.rfile.read(4)
                 if len(data_size) < 4:
                     print 'Wrong input received: EOF while waiting for \
 message length (4 bytes long)'
-                    continue  # Discard the received bytes and start again
-                data = m_unpack(self.rfile.read(s_unpack('!I', data_size)[0]))
-                print data
+                    self.update_status(self.CONNECTION_STOP)
+                else:
+                    data_size = s_unpack('!I', data_size)[0]
+                    if data_size > 4096:
+                        print 'Wrong input received: message size exceeds \
+4096 bytes'
+                        self.update_status(self.CONNECTION_STOP)
+                    else:
+                        data = self.rfile.read(data_size)
+                        if len(data) < data_size:
+                            print 'Wrong input received: EOF while waiting \
+message content (' + str(data_size) + '\nbytes long)'
+                            self.update_status(self.CONNECTION_STOP)
+                        else:
+                            try:
+                                data = m_unpack(data)
+                            except Exception as exception:
+                                print 'Wrong input received:', exception
+                                self.update_status(self.CONNECTION_STOP)
+                            else:
+                                try:
+                                    handler_suffix = data['type']
+                                except TypeError:
+                                    print "Wrong input received: invalid \
+message's type"
+                                    self.update_status(self.CONNECTION_STOP)
+                                except KeyError:
+                                    print 'Wrong input received: no `type` \
+field in message'
+                                    self.update_status(self.CONNECTION_STOP)
+                                else:
+                                    try:
+                                        handler_name = 'handle_' + \
+                                            handler_suffix
+                                    except TypeError:
+                                        print 'Wrong input received: invalid \
+message field `type`'
+                                        self.update_status(self.
+                                                           CONNECTION_STOP)
+                                    else:
+                                        try:
+                                            getattr(self, handler_name)(data)
+                                        except AttributeError:
+                                            print 'Wrong input received: \
+invalid message field `type`'
+                                            self.update_status(self.
+                                                               CONNECTION_STOP)
+                                        else:
+                                            self.update_status()
         except ThreadExit:
-            return
+            self.update_status(self.CONNECTION_STOP)
+
+    def handle_test(self, data):
+        print 'Test message received:', data
+
+    def send(self):
+        self.send_game_state()
 
     def send_game_state(self):
-        self.writer = Timer(GameEngine().config.send_state_interval, self.
-                            send_game_state)
-        self.writer.start()
-        if not self.server.handler_thread.is_stopped():
-            if not self.writer_busy.is_set():
-                self.writer_busy.set()
-
-                self.wfile.write('Plop!\n')
-
-                self.writer_busy.clear()
-        else:
-            self.writer.cancel()
+        self.wfile.write('Plop!\n')
 
     def finish(self):
         print 'Client disconnected'
