@@ -12,6 +12,7 @@ import common.utils as utils
 from math import sin, cos, sqrt, radians
 from random import uniform as rand
 from shapely.geometry import Point, LineString
+from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
@@ -39,8 +40,13 @@ class Player(object):
         self.max_speedy = 100 # TODO: Change that, pass as constructor value or any other thing
         self.move_angle = 0
         self.hp = 100 # TODO: Change that, pass as constructor value or any other thing
+        self.sight_range = 200 # TODO: Change that, pass as constructor value or any other thing
         self.status = Player.STATUS_ALIVE
         self.weapon = None
+
+        # Occlusion related things
+        self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
+        self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -166,12 +172,28 @@ class GameEngine(object):
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
             p.posx += normalized_array[0] * p.speedx
             p.posy += normalized_array[1] * p.speedy
-        # Update player's sight
-        # TODO: Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
-        # TODO: Launch occlusion
-        # TODO: from shapely.occlusion import occlusion
-        # TODO: p.sight = occlusion(args)
+            p.obstacles_in_sight = []
+            p.obstacles_in_sight_n = 0
+            # ------- Update player's sight -------
+            # Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
+            sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
+            vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
+            self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
+            # Launch occlusion
+            p.sight_vertices = occlusion(p.posx, p.posy, p.obstacles_in_sight, p.obstacles_in_sight_n, p.sight_range, p.sight_range)
     
+    def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
+        p = kwargs['player']
+
+        p.obstacles_in_sight.extend(
+            [col, row,
+            col + const.CELL_SIZE, row,
+            col + const.CELL_SIZE, row + const.CELL_SIZE,
+            col, row + const.CELL_SIZE])
+        p.obstacles_in_sight_n += 8
+        return None # just to explicitely tell the calling function to continue (I hate implicit things)
+
+
     def __actionable_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
     
