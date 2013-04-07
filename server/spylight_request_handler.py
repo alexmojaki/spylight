@@ -16,7 +16,8 @@ class SpylightRequestHandler(StreamRequestHandler, object):
     CONNECTION_STOP = 'CONNECTION_STOP'
 
     def setup(self):
-        print 'New client connected'
+        print 'New client connected:', self.client_address[0], \
+            self.client_address[1]
         super(SpylightRequestHandler, self).setup()
 
         self._sender_busy = Event()
@@ -55,9 +56,6 @@ class SpylightRequestHandler(StreamRequestHandler, object):
             self.setup_sender(-1)
 
     def handle(self):
-        # The next line WILL move
-        self.setup_sender(GameEngine().config.send_state_interval)
-
         try:
             while self._status != self.CONNECTION_STOP:
                 data_size = self.rfile.read(4)
@@ -94,27 +92,46 @@ message's type"
                                     print 'Wrong input received: no `type` \
 field in message'
                                     self.update_status(self.CONNECTION_STOP)
+                                    self._handle_print(data)
                                 else:
-                                    try:
-                                        handler_name = 'handle_' + \
-                                            handler_suffix
-                                    except TypeError:
+                                    # We must ensure that `type` field contains
+                                    # a string type object
+                                    if not isinstance(handler_suffix,
+                                                      basestring):
                                         print 'Wrong input received: invalid \
 message field `type`'
                                         self.update_status(self.
                                                            CONNECTION_STOP)
                                     else:
-                                        try:
-                                            getattr(self, handler_name)(data)
-                                        except AttributeError:
+                                        handler_name = 'handle_' + \
+                                            handler_suffix
+                                        if self._status == \
+                                                self.CONNECTION_INIT and \
+                                                handler_suffix != 'init':
                                             print 'Wrong input received: \
-invalid message field `type`'
+invalid message field `type`; must be "init" during the\ninitialisation phase.'
                                             self.update_status(self.
                                                                CONNECTION_STOP)
                                         else:
-                                            self.update_status()
+                                            try:
+                                                getattr(self, handler_name)(
+                                                    data)
+                                            except AttributeError:
+                                                print 'Wrong input received: \
+invalid message field `type`'
+                                                self.update_status(self.
+                                                    CONNECTION_STOP)
+                                                self._handle_print(data)
+                                            else:
+                                                self.update_status()
         except ThreadExit:
             self.update_status(self.CONNECTION_STOP)
+
+    def handle_init(self, data):
+        pass
+
+    def _handle_print(self, data):
+        print data
 
     def handle_test(self, data):
         print 'Test message received:', data
