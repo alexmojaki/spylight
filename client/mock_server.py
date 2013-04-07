@@ -43,7 +43,7 @@ class GameMock(object):
             'pos': self.charpos,
             'players': [],
             'map': 'test.hfm',
-            'map_hash': 'bleh'
+            'map_hash': 'f52fd3990a9df5cb7e3e491a242927dbd876de34'
         })
 
     def _receive_forever(self):
