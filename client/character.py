@@ -1,5 +1,5 @@
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -27,16 +27,6 @@ Builder.load_string('''
 
         Image:
             source: root.sprite
-
-    #Widget:
-    #    id: collisionBox
-    #    size: 25,25
-    #    center: root.center
-    #    canvas:
-    #        Rectangle
-    #            pos: self.pos
-    #            size: 25, 25
-
 ''')
 
 teams = None
@@ -55,9 +45,6 @@ class SpyVision(LightenedArea):
 {indent}    size: {instance}.size
 '''
 
-    def draw(self):
-        Ellipse(pos=self.pos, size=self.size)
-
 
 class MercVision(LightenedArea):
     points = ListProperty([])
@@ -68,9 +55,10 @@ class MercVision(LightenedArea):
         self.points = [self.char.screenpos[0], self.char.screenpos[1],
                        self.char.screenpos[0] - 100, self.char.screenpos[1] + 100,
                        self.char.screenpos[0] + 100, self.char.screenpos[1] + 100]
-
-    def draw(self):
-        Triangle(points=self.points)
+        self.kv_string_template = '''
+{indent}Triangle:
+{indent}    points: {instance}.points
+'''
 
 
 class Character(Widget):
@@ -78,15 +66,19 @@ class Character(Widget):
     offsety = NumericProperty(0)
     offset = ReferenceListProperty(offsetx, offsety)
 
-    def __init__(self, team, init_pos, on_new_offset_callback=None):
+    def __init__(self, team, playerid, nick):
         self.team = team
         self.screenpos = Window.size[0]/2, Window.size[1]/2
         self.center = self.screenpos
+        self.playerid = playerid
+        self.nick = nick
         self.sprite = teams[team]['sprite']
-        if on_new_offset_callback:
-            self.bind(offset=on_new_offset_callback)
-        self.set_game_pos(init_pos)
+        self.gamepos = (0, 0)
         super(Character, self).__init__()
+
+    def update(self, data):
+        self.set_game_pos(data['p'])
+        self.rotation = data['d']
 
     def set_game_pos(self, pos):
         self.gamepos = pos
@@ -100,8 +92,15 @@ class Character(Widget):
         return teams[self.team]['vision_class'](self)
 
 
-MERC_TEAM_ID = 0
-SPY_TEAM_ID = 1
+class Replica(Character):
+    visible = BooleanProperty(False)
+
+    def update(self, data):
+        pass
+
+
+MERC_TEAM_ID = 1
+SPY_TEAM_ID = 0
 
 teams = [
     {'name': '\'espion', 'sprite': utils.spritePath.format('spy'), 'vision_class': SpyVision},

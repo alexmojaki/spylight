@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import hashlib
+
 import game_constants as const
 
 
@@ -160,7 +162,9 @@ class SpyLightMap(object):
             return -1
 
     def get_hash(self):
-        return 'bleh'
+        m = hashlib.sha1()
+        m.update(str(self.map_tiles))
+        return m.hexdigest()
 
     # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
     # through, a static rigid body)
