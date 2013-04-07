@@ -71,7 +71,7 @@ class SpylightGame(Widget):
 
         self.init_game_view(loaded_map, init_response['pos'])
 
-        self.hud = SpylightHUD(self, 300)
+        self.hud = SpylightHUD(self, max_hp=init_response['max_hp'])
         self.add_widget(self.hud)
 
         # Register input listeners
@@ -105,6 +105,8 @@ class SpylightGame(Widget):
         # data = literal_eval(data)
         new_pos = data['p']
         self.char.set_game_pos(new_pos)
+        self.char.rotation = data['d']
+        self.hud.update(data)
         # To update:
         #   view cone
         #   hud

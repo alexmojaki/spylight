@@ -1,20 +1,63 @@
 #:kivy 1.5.1
+#: import Window kivy.core.window.Window
 
 <Timer>:
     size: 100, 40
+    size_hint: None, None
     Label:
-        pos:0,0
+        pos: root.pos
         size:root.size
         text:root.time
 
-
 <CapInfo>:
     size: 100, 40
+    size_hint: None, None
+    minutes: 0
+
     Label:
-        pos:200,0
-        size:root.size
-        text:root.percentage
+        pos: root.pos
+        size: root.size
+        text: root.percentage
+
+<HPBar>:
+    size_hint: None, None
+    size: 200, 40
+    ProgressBar:
+        id: bar
+        pos: root.pos
+        size: root.width, root.height/2
+        value: root.current_hp
+        max: root.max_hp
+    Label:
+        pos: root.x, root.height/2
+        size: root.width, root.height/2
+        text: str(root.current_hp) + '/' + str(root.max_hp)
+
+<HUDArea>:
+    size: Window.size
+    pos: 0, 0
+    padding: 10
+
 
 <SpylightHUD>:
+    timer: timer
+    cap_info: cap_info
+    hp_bar: hp_bar
 
+    HUDArea:
+        anchor_x: 'left'
+        anchor_y: 'bottom'
+        HPBar:
+            id: hp_bar
 
+    HUDArea:
+        anchor_x: 'right'
+        anchor_y: 'bottom'
+        Timer:
+            id: timer
+
+    HUDArea:
+        anchor_x: 'left'
+        anchor_y: 'top'
+        CapInfo:
+            id: cap_info
