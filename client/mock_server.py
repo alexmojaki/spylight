@@ -10,7 +10,7 @@ from ast import literal_eval
 # from time import sleep
 
 
-msg_template = '{{ "l": 0, "p": {pos}, "d": 0, "s": 0, "v": 0, "k": 0, "vp": 0, "pi": 0, "vo": 0, "ao": 0, "ev": 0, "ti": 0 }}'
+msg_template = '{{ "l": {hp}, "p": {pos}, "d": {dir}, "s": 0, "v": 0, "k": 0, "vp": 0, "pi": [[1, 100], [2, 75]], "vo": 0, "ao": 0, "ev": 0, "ti": {ti} }}'
 
 
 def run_server():
@@ -32,11 +32,14 @@ class GameMock(object):
     def __init__(self, socket):
         self._socket = socket
         self.charpos = [100, 200]
+        self.hp = 100
+        self.remaining_time = 300
 
         init_info = myreceive(socket)
         mysend(socket, {
             'team': init_info['team'],
             'id': 0,
+            'max_hp': self.hp,
             'pos': self.charpos,
             'players': [],
             'map': 'test.hfm',
@@ -59,7 +62,9 @@ class GameMock(object):
         print dx, dy
         self.charpos = [self.charpos[0] + dx, self.charpos[1] + dy]
         print self.charpos
-        msg = msg_template.format(pos=self.charpos)
+        self.hp = self.hp-1
+        self.remaining_time = self.remaining_time - 1
+        msg = msg_template.format(pos=self.charpos, hp=self.hp, dir=direction, ti=self.remaining_time)
         mysend(self._socket, literal_eval(msg))
 
 

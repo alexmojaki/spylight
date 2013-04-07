@@ -18,12 +18,9 @@ class GameConfigScreen(Screen):
         team = config.get('GameConfig', 'team')
         self.cb0.active = (team == '0')
         self.cb1.active = (team == '1')
-        self.serverIp.text = config.get('GameConfig', 'serverIp')
+        self.serverIp.text = config.get('GameConfig', 'serverip')
+        self.serverPort.text = config.get('GameConfig', 'serverport')
         self.nick.text = config.get('GameConfig', 'nick')
-
-        # @TODO: GUI field
-        self.serverPort = 9999
-        self.gameduration = 3
 
         self.app = app
 
@@ -36,4 +33,4 @@ class GameConfigScreen(Screen):
         self.app.displayGameScreen(team=team,
                                    nick=self.nick.text,
                                    serverip=self.serverIp.text,
-                                   serverport=self.serverPort)
+                                   serverport=int(self.serverPort.text))

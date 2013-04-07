@@ -16,7 +16,7 @@ from kivy.logger import Logger
 # import common.network_protocol as np
 # import common.game_constants as c
 
-from client.network import NetworkInterface
+from client.network import NetworkInterface, MessageFactory
 # from common.slmap import SLMap
 from common.map_parser import SpyLightMap
 from client.character import Character
@@ -52,7 +52,7 @@ class SpylightGame(Widget):
 
         # Register to the server
         self._ni = NetworkInterface(serverip, serverport)
-        init_response = self._ni.connect({'team': team, 'nick': nick})
+        init_response = self._ni.connect(MessageFactory.init(team, nick))
 
         # Parse server init message
         self.team = init_response['team']
@@ -71,7 +71,7 @@ class SpylightGame(Widget):
 
         self.init_game_view(loaded_map, init_response['pos'])
 
-        self.hud = SpylightHUD(self, 300)
+        self.hud = SpylightHUD(self, max_hp=init_response['max_hp'])
         self.add_widget(self.hud)
 
         # Register input listeners
@@ -105,6 +105,8 @@ class SpylightGame(Widget):
         # data = literal_eval(data)
         new_pos = data['p']
         self.char.set_game_pos(new_pos)
+        self.char.rotation = data['d']
+        self.hud.update(data)
         # To update:
         #   view cone
         #   hud
