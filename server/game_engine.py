@@ -144,6 +144,7 @@ class GameEngine(object):
         self.__loop = Event()
         self.__curr_player_number = 0
         self.__player_connection = Lock()
+        self.all_players_connected = Event()
         self.load_config(config_file)
         if map_file is not None:
             self.load_map(map_file)
@@ -242,18 +243,20 @@ class GameEngine(object):
         self.__max_player_number = 4  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
-        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, self.__max_player_number)] # TODO: replace that by the actual player loading
+        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, 2)] # TODO: replace that by the actual player loading
+        self.__players.extend([Player(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 
     def connect_to_player(self, team, nickname):
-        if self.__curr_player_number == self.__max_player_number:
+        if self.all_players_connected.is_set():
             return None
+
+        self.__player_connection.acquire()
 
         players = [p for p in self.__players if not p.connected and p.team == \
             team]
 
-        self.__player_connection.acquire()
         if len(players) > 1:
             player = choice(players)
         elif len(players) == 1:
@@ -265,6 +268,9 @@ class GameEngine(object):
         player.connected = True
         player.nickname = nickname
         self.__curr_player_number += 1
+        if self.__curr_player_number == self.__max_player_number:
+            self.all_players_connected.set()
+
         self.__player_connection.release()
 
         return player.player_id

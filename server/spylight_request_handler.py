@@ -6,7 +6,6 @@ from SocketServer import StreamRequestHandler
 from string import printable as printable_chars
 from struct import pack as s_pack, unpack as s_unpack
 from threading import Event, Timer
-from traceback import print_exc
 
 from common.game_constants import MERC_TEAM, SPY_TEAM
 from game_engine import GameEngine
@@ -24,6 +23,7 @@ class SpylightRequestHandler(StreamRequestHandler, object):
     def setup(self):
         print 'New client connected:', self.client_address[0], \
             self.client_address[1]
+
         super(SpylightRequestHandler, self).setup()
 
         self._sender_busy = Event()
@@ -31,6 +31,11 @@ class SpylightRequestHandler(StreamRequestHandler, object):
         self._sender = None
 
         self._status = self.CONNECTION_INIT
+
+        if GameEngine().all_players_connected.is_set():
+            print 'Connection will be closed: game already launched (both \
+teams are full)'
+            self.update_status(self.CONNECTION_STOP)
 
     def setup_sender(self, interval):
         def _sender_action():
@@ -157,6 +162,8 @@ invalid message field `type`'
         player_state = GameEngine().get_player_state(player_id)
         pos_x, pos_y, max_hp = (player_state[k] for k in ('x', 'y', 'hp'))
 
+        GameEngine().all_players_connected.wait()
+
         self.send({'type': 'init', 'id': player_id, 'pos': (pos_x, pos_y),
                   'max_hp': max_hp, 'team': data['team'], 'map': GameEngine().
                   get_map_name(), 'map_hash': GameEngine().get_map_hash(),
@@ -183,5 +190,6 @@ invalid message field `type`'
         self.wfile.write('Plop!\n')
 
     def finish(self):
-        print 'Client disconnected'
+        print 'Client disconnected:', self.client_address[0], \
+            self.client_address[1]
         super(SpylightRequestHandler, self).finish()
