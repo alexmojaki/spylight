@@ -10,7 +10,7 @@ from ast import literal_eval
 # from time import sleep
 
 
-msg_template = '{{ "l": {hp}, "p": {pos}, "d": {dir}, "s": 0, "v": 0, "k": 0, "vp": 0, "pi": [[1, 100], [2, 75]], "vo": 0, "ao": 0, "ev": 0, "ti": {ti} }}'
+msg_template = '{{ "l": {hp}, "p": {pos}, "d": {dir}, "s": 0, "v": 0, "k": 0, "vp": {players}, "pi": [[1, 100], [2, 75]], "vo": 0, "ao": 0, "ev": 0, "ti": {ti} }}'
 
 
 def run_server():
@@ -28,12 +28,31 @@ def run_server():
     t.join()
 
 
+class OtherPlayer(object):
+    def __init__(self):
+        self.x = 200
+        self.y = 200
+        self.rotation = 0
+        self.id = 42
+        self.team = 1
+
+    def update(self):
+        self.x = (self.x + 5) % 200
+        self.y = (self.y + 5) % 200
+        self.rotation = (self.rotation + 15) % 360
+        if self.x > 100 and self.x < 150:
+            return
+        else:
+            return [self.id, self.x, self.y, self.rotation]
+
+
 class GameMock(object):
     def __init__(self, socket):
         self._socket = socket
         self.charpos = [100, 200]
         self.hp = 100
         self.remaining_time = 300
+        self.op = OtherPlayer()
 
         init_info = myreceive(socket)
         mysend(socket, {
@@ -41,7 +60,7 @@ class GameMock(object):
             'id': 0,
             'max_hp': self.hp,
             'pos': self.charpos,
-            'players': [],
+            'players': [[init_info['nick'], 0, init_info['team']], ['plop', self.op.id, self.op.team]],
             'map': 'test.hfm',
             'map_hash': 'f52fd3990a9df5cb7e3e491a242927dbd876de34'
         })
@@ -64,7 +83,8 @@ class GameMock(object):
         print self.charpos
         self.hp = self.hp-1
         self.remaining_time = self.remaining_time - 1
-        msg = msg_template.format(pos=self.charpos, hp=self.hp, dir=direction, ti=self.remaining_time)
+        msg = msg_template.format(pos=self.charpos, hp=self.hp, dir=direction, ti=self.remaining_time,
+                                  players=[self.op.update()])
         mysend(self._socket, literal_eval(msg))
 
 
