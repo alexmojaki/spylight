@@ -12,6 +12,7 @@ Config.set('kivy', 'log_level', 'info')  # Change here to see debug messages
 # Config.set('graphics', 'width', '400')
 # Config.set('graphics', 'height', '400')
 # Config.set('graphics', 'fullscreen', 'auto') # Warning: sucks
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, FadeTransition

@@ -98,12 +98,13 @@ class Replica(RelativeWidget, KVStringAble):
     kv_string_template = '''
 {indent}PushMatrix:
 {indent}Translate:
-{indent}    xy: {instance}.pos
+{indent}    x: {instance}.x + 16  # +16 to offset the sprite size
+{indent}    y: {instance}.y + 16
 {indent}PushMatrix:
 {indent}Rotate:
 {indent}    angle: {instance}.rotation
 {indent}Rectangle:
-{indent}    pos: 0, 0
+{indent}    pos: -16, -16  # Allows to rotate from the center of the sprite
 {indent}    size: 32, 32
 {indent}    source: {instance}.sprite
 {indent}PopMatrix:

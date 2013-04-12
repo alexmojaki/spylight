@@ -87,7 +87,7 @@ class SpylightGame(Widget):
         self.mv = MapView(loaded_map, self.char, self.players)
         self.add_widget(self.mv)
 
-        self.add_widget(self.char)  # after the map to keep it always visible!
+        # self.add_widget(self.char)  # after the map to keep it always visible!
         self.char.bind(offset=self.mv.update_pos)
         self.char.set_game_pos(init_response['pos'])  # Also updates the map
 

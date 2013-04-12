@@ -55,7 +55,8 @@ class MapView(RelativeWidget):
                         # Somehow, Kivy doesn't update the view when the
                         # objects are in a list. Putting them as properties
                         # does the trick. Hence the __dict__ hack.
-                        cam = Camera(pos=self._to_pixel((x, y)))
+                        cam = Camera(pos=self._to_pixel((x, y)),
+                                     dir=cellMap.get_camera_orientation(x, y))
                         self.bind(pos=cam.update_pos)
                         self.lightened_areas.append(cam)
                         self.__dict__[cam.kvname] = cam
@@ -79,6 +80,11 @@ class MapView(RelativeWidget):
         for obj in self.always_visible:
             self.add_widget(obj)
             self.bind(pos=obj.update_pos)
+
+        for obj in self.lightened_areas:  # To add the object's sprite
+            self.add_widget(obj)
+
+        self.add_widget(character)
 
     def _process_kv_template(self):
         la = []

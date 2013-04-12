@@ -52,15 +52,17 @@ class KVStringAble(Widget):
 
 class Camera(RelativeWidget, KVStringAble):
     sprite = utils.spritePath.format('camera')
+    points = ListProperty([])
     kv_string_template = '''
 {indent}Triangle:
 {indent}    points: {instance}.points
 '''
 
-    points = ListProperty([])
-
     def __init__(self, **kwargs):
         kwargs['kvprefix'] = 'cam_'
+        self.rotation = kwargs['dir']
+        self.pos_offset_x = 5
+        self.pos_offset_y = 5
         super(Camera, self).__init__(**kwargs)
 
     def update_pos(self, parent, value):

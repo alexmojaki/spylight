@@ -2,6 +2,8 @@
 
 import sys
 import hashlib
+import math
+import ast
 
 import game_constants as const
 
@@ -14,11 +16,11 @@ class SpyLightMap(object):
     It doesn't know anything about pixels.
     """
 
-    WA_WA0 = 0  # TODO: Rename that constant to something meaningful
-    WA_WA1 = 1  # TODO: Rename that constant to something meaningful
-    WA_WA2 = 2  # TODO: Rename that constant to something meaningful
-    WA_SPY_ONLY_DOOR = 3
-    WA_MERC_ONLY_DOOR = 4  # TODO: Rename that constant to something meaningful
+    WA_WA0 = 1  # TODO: Rename that constant to something meaningful
+    WA_WA1 = 2  # TODO: Rename that constant to something meaningful
+    WA_WA2 = 3  # TODO: Rename that constant to something meaningful
+    WA_SPY_ONLY_DOOR = 4
+    WA_MERC_ONLY_DOOR = 5  # TODO: Rename that constant to something meaningful
 
     WALL0 = {'section': 'wa', 'value': WA_WA0}
     WALL1 = {'section': 'wa', 'value': WA_WA1}
@@ -62,8 +64,10 @@ class SpyLightMap(object):
         self.size = (0, 0)
         self.height = 0
         self.witdh = 0
-        self.map_tiles = None  # self.map_tiles[y][x] (1st array is the v-axis)
+        self.map_tiles = None  # self.map_tiles[col][row]
         self.nb_players = (0, 0)
+        self.special_objects = {}  # Contains miscellanous info regarding specific tiles
+                                   # keys: '{0}-{1}'.format(row, col)
 
         if filename:
             self.load_map(filename)
@@ -87,6 +91,7 @@ class SpyLightMap(object):
         return output
 
     def load_map(self, filename):
+        file_str = ''
         with open(filename, 'r') as f:
             curMapLine = -1
             for line in f:
@@ -103,20 +108,45 @@ class SpyLightMap(object):
                 elif line.find('players:') == 0:  # Line starts with players
                     strnbp = line.split(':')[1].split()
                     self.nb_players = (int(strnbp[0]), int(strnbp[1]))
+                elif line.find('info:') == 0:  # Line starts with info
+                    self._parse_info_line(line.split(':')[1].replace('\n', ''))
                 else:  # Regular map line
                     if self.map_tiles is None:
                         print "La taille de la carte doit être déclarée avant de la dessiner."
                         sys.exit()
                     else:
-                        mapLine = []
-                        for c in line:
-                            mapLine.append(c)
-                        try:
-                            self.map_tiles[curMapLine] = mapLine
-                        except IndexError:
-                            print 'Erreur de taille de la carte.'
-                            sys.exit()
+                        self._parse_map_line(line, curMapLine)
                         curMapLine = curMapLine - 1
+                file_str += line
+
+        m = hashlib.sha1()
+        m.update(str(file_str))
+        self.hash = m.hexdigest()
+
+        print self.special_objects
+
+    def _parse_map_line(self, line, curMapLine):
+        mapLine = []
+        for c in line:
+            mapLine.append(c)
+        try:
+            self.map_tiles[curMapLine] = mapLine
+        except IndexError:
+            print 'Erreur de taille de la carte.'
+            sys.exit()
+
+    def _parse_info_line(self, line):
+        fields = line.split(',')
+        object_key = '{0}-{1}'.format(fields[0], fields[1])
+        object_info = {}
+        for field in fields[3:]:
+            key, value = field.split('=')
+            object_info[key] = ast.literal_eval(value)
+        try:
+            self.special_objects[object_key] = object_info
+        except KeyError:
+            print 'Erreur de lecture de la carte: ', line
+            sys.exit()
 
     def print_legacy_map(self):
         output = self._to_legacy_format()
@@ -131,40 +161,38 @@ class SpyLightMap(object):
         print '\n'.join(''.join(l) for l in output['it'])
         # print nb_players
 
-    def getWallType(self, x, y):
+    def getWallType(self, row, col):
         """
-        Warning: this class only uses tile numbers, so x and y are the
+        Warning: this class only uses tile numbers, so row and col are the
         coordinates of the tile in the tile matrix.
         """
         try:
-            c = self.map_tiles[y][x]
+            c = self.map_tiles[col][row]
             ctype = self.HFM_TO_MAP[c]
             if ctype['section'] == 'wa':
                 return ctype['value']
             else:
-                return -1
+                return None
         except KeyError:
-            return -1
+            return None
 
-    def getItem(self, x, y):
+    def getItem(self, row, col):
         """
-        Warning: this class only uses tile numbers, so x and y are the
+        Warning: this class only uses tile numbers, so row and col are the
         coordinates of the tile in the tile matrix.
         """
         try:
-            c = self.map_tiles[y][x]
+            c = self.map_tiles[col][row]
             ctype = self.HFM_TO_MAP[c]
             if ctype['section'] == 'it':
                 return ctype['value']
             else:
-                return -1
+                return None
         except KeyError:
-            return -1
+            return None
 
     def get_hash(self):
-        m = hashlib.sha1()
-        m.update(str(self.map_tiles))
-        return m.hexdigest()
+        return self.hash
 
     # @function is_obstacle : Tells if the given coordinates belongs to a map obstacle (something that cannot be gone
     # through, a static rigid body)
@@ -192,22 +220,32 @@ class SpyLightMap(object):
         except KeyError:
             return False
 
+    def get_camera_orientation(self, row, col):
+        '''
+        Takes the position of a camera, returns its orientation based on the surrounding walls
+        '''
+        try:
+            return self.special_objects['{0}-{1}'.format(row, col)]['orientation']
+        except KeyError:
+            print 'No camera info registered for coordinates', row, col
+            return 0
+
     def get_cameras(self):
         cameras = []
-        for y in xrange(self.size[1]):
-            for x in xrange(self.size[0]):
-                if self.map_tiles[y][x] == 'C':
-                    print x, y
-                    cameras.append((x, y))
+        for col in xrange(self.size[1]):
+            for row in xrange(self.size[0]):
+                if self.map_tiles[col][row] == 'C':
+                    print row, col
+                    cameras.append((row, col))
         return cameras
 
-    def get_tile(self, x, y):
+    def get_tile(self, row, col):
         '''
         Returns the section and the value of a tile.
         If it's empty, (None, None) is returned
         '''
         try:
-            tmp = self.HFM_TO_MAP[self.map_tiles[y][x]]
+            tmp = self.HFM_TO_MAP[self.map_tiles[col][row]]
             return (tmp['section'], tmp['value'])
         except KeyError:
             return (None, None)

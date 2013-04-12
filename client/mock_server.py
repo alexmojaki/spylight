@@ -37,8 +37,8 @@ class OtherPlayer(object):
         self.team = 1
 
     def update(self):
-        self.x = (self.x + 5) % 200
-        self.y = (self.y + 5) % 200
+        # self.x = (self.x + 5) % 200
+        # self.y = (self.y + 5) % 200
         self.rotation = (self.rotation + 15) % 360
         if self.x > 100 and self.x < 150:
             return
@@ -62,7 +62,7 @@ class GameMock(object):
             'pos': self.charpos,
             'players': [[init_info['nick'], 0, init_info['team']], ['plop', self.op.id, self.op.team]],
             'map': 'test.hfm',
-            'map_hash': 'f52fd3990a9df5cb7e3e491a242927dbd876de34'
+            'map_hash': 'aefa653685023a786f34830756e09db4e8401af1'
         })
 
     def _receive_forever(self):
