@@ -246,8 +246,8 @@ class GameEngineTest(unittest.TestCase):
         players = self.__setup_players(ge, [(col, row)])
         p = players[0]
         pid = players[0].player_id
-        p.max_speedx = 2*const.CELL_SIZE
-        p.max_speedy = 2*const.CELL_SIZE
+        p.max_speedx = 0.8*const.CELL_SIZE
+        p.max_speedy = 0.8*const.CELL_SIZE
         diagonal_move_reduc_coeff = cos(radians(45))
         expected_posx, expected_posy = posx + speedx * diagonal_move_reduc_coeff * p.max_speedx, posy + speedy * diagonal_move_reduc_coeff * p.max_speedy
         ge.set_movement_angle(pid, move_angle)
@@ -264,8 +264,8 @@ class GameEngineTest(unittest.TestCase):
         players = self.__setup_players(ge, [(col, row)])
         p = players[0]
         pid = players[0].player_id
-        p.max_speedx = 2*const.CELL_SIZE
-        p.max_speedy = 4*const.CELL_SIZE
+        p.max_speedx = 0.9*const.CELL_SIZE
+        p.max_speedy = 0.9*const.CELL_SIZE
         expected_posx, expected_posy = posx, posy + speedy * p.max_speedy
         ge.set_movement_angle(pid, move_angle)
         ge.set_movement_speedx(pid, speedx)
@@ -281,8 +281,8 @@ class GameEngineTest(unittest.TestCase):
         players = self.__setup_players(ge, [(col, row)])
         p = players[0]
         pid = players[0].player_id
-        p.max_speedx = 2*const.CELL_SIZE
-        p.max_speedy = 4*const.CELL_SIZE
+        p.max_speedx = 0.9*const.CELL_SIZE
+        p.max_speedy = 0.9*const.CELL_SIZE
         expected_posx, expected_posy = posx + speedx * p.max_speedx, posy
         ge.set_movement_angle(pid, move_angle)
         ge.set_movement_speedx(pid, speedx)
@@ -298,8 +298,8 @@ class GameEngineTest(unittest.TestCase):
         players = self.__setup_players(ge, [(col, row)])
         p = players[0]
         pid = players[0].player_id
-        p.max_speedx = 2*const.CELL_SIZE
-        p.max_speedy = 4*const.CELL_SIZE
+        p.max_speedx = 0.9*const.CELL_SIZE
+        p.max_speedy = 0.9*const.CELL_SIZE
         expected_posx, expected_posy = posx + speedx * p.max_speedx, posy
         ge.set_movement_angle(pid, move_angle)
         ge.set_movement_speedx(pid, speedx)
@@ -317,6 +317,54 @@ class GameEngineTest(unittest.TestCase):
         res2 = occlusion(0, 0, sight_polygon_coords, [], 0)
         res3 = occlusion(0, 0, sight_polygon_coords, [12, 0, 12, 8, 20, 8, 20, 0], 8)
         self.assertTrue(res1 != res2 and res1 != res3 and res2 == res3, "Those three executions of occlusion() should have returned different results for res1 and res2 but same for res2 and res3")
+
+    def test_simplistic_move_with_collision(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy= row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0
+        move_angle = 270
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 0.9*const.CELL_SIZE
+        p.max_speedy = 0.9*const.CELL_SIZE
+        wall_x_pos = 5 * const.CELL_SIZE
+        n_turns = 10
+        expected_posx, expected_posy = wall_x_pos-1, posy 
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        for x in xrange(1,n_turns): # Run n_turns turns, so that the player tries to go through the wall
+            ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, 
+            "The player coordinates should have been closer to expected ones. \nExpected: " 
+            + str((expected_posx, expected_posy)) 
+            + "\nResult: " + str((p.posx, p.posy))
+        )
+
+    def test_simplistic_move_map_bound_y(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        row, col = 0, 0
+        posx, posy, speedx, speedy = row*const.CELL_SIZE, col*const.CELL_SIZE, 1.0, 1.0
+        move_angle = 0
+        players = self.__setup_players(ge, [(col, row)])
+        p = players[0]
+        pid = players[0].player_id
+        p.max_speedx = 0.5*const.CELL_SIZE
+        p.max_speedy = 0.5*const.CELL_SIZE
+        expected_posx, expected_posy = posx, ge.slmap.height * const.CELL_SIZE - 1
+        ge.set_movement_angle(pid, move_angle)
+        ge.set_movement_speedx(pid, speedx)
+        ge.set_movement_speedy(pid, speedy)
+        for x in xrange(1,30): # Run 30 turns, so that the player tries to go through the wall
+            ge.step()
+        self.assertTrue(abs(p.posx-expected_posx) <= 0.01 and abs(p.posy-expected_posy) <= 0.01, 
+            "The player coordinates should have been closer to expected ones. \nExpected: " 
+            + str((expected_posx, expected_posy)) 
+            + "\nResult: " + str((p.posx, p.posy))
+        )
 
 if __name__ == '__main__':
     unittest.main()
