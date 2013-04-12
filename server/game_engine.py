@@ -191,6 +191,38 @@ class GameEngine(object):
             # Launch occlusion
             p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
+    def __move_player(self, player, dx, dy):
+        """
+
+        Moves the given player using the given dx nd dy deltas for x and y axis
+        taking into account collisions with obstacles 
+
+        :param player: Instance of Player class, the player we want to move
+        :param dx: float, the x coordinate difference we want to apply to the current player 
+            (may or may not be pplied depending on wether there are collisions)
+        :param dy: float, the y coordinate difference we want to apply to the current player 
+            (may or may not be pplied depending on wether there are collisions)
+        :return None
+        """
+
+        x_to_be, y_to_be = player.posx + dx, player.posy + dy
+        row, col = self.__norm_to_cell(player.posy), self.__norm_to_cell(player.posx)
+        row_to_be, col_to_be = self.__norm_to_cell(y_to_be), self.__norm_to_cell(x_to_be)
+        is_obs_by_dx = self.slmap.is_obstacle_from_cell_coords(row, col_to_be)
+        is_obs_by_dy = self.slmap.is_obstacle_from_cell_coords(row_to_be, col)
+        if is_obs_by_dx is False and is_obs_by_dy is False: # no collision
+            player.posx += dx
+            player.posy += dy
+        elif is_obs_by_dx is False: # no collision only for x displacement
+            player.posx += dx
+            player.posy = row_to_be * const.CELL_SIZE - 1 # maximum possible posy before colliding
+        elif is_obs_by_dy is False: # no collision only for y displacement
+            player.posy += dy
+            player.posx = col_to_be * const.CELL_SIZE - 1 # maximum possible posx before colliding
+        else:
+            player.posx = col_to_be * const.CELL_SIZE - 1 # maximum possible posx before colliding
+            player.posy = row_to_be * const.CELL_SIZE - 1 # maximum possible posy before colliding
+
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
 
