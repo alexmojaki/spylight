@@ -35,9 +35,11 @@ class Player(object):
         self.posx = 0
         self.posy = 0
         self.speedx = 0
-        self.max_speedx = 100 # TODO: Change that, pass as constructor value or any other thing
+        self.max_speedx = 100   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
+                                # TODO: Change that, pass as constructor value or any other thing
         self.speedy = 0
-        self.max_speedy = 100 # TODO: Change that, pass as constructor value or any other thing
+        self.max_speedy = 100   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
+                                # TODO: Change that, pass as constructor value or any other thing
         self.move_angle = 0
         self.hp = 100 # TODO: Change that, pass as constructor value or any other thing
         self.sight_range = 200 # TODO: Change that, pass as constructor value or any other thing
