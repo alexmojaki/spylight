@@ -177,8 +177,7 @@ class GameEngine(object):
         # Update player's positions
         for p in self.__players:
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
-            p.posx += normalized_array[0] * p.speedx
-            p.posy += normalized_array[1] * p.speedy
+            self.__move_player(p, normalized_array[0] * p.speedx, normalized_array[1] * p.speedy)
             p.obstacles_in_sight = []
             p.obstacles_in_sight_n = 0
             # ------- Update player's sight -------
@@ -206,20 +205,36 @@ class GameEngine(object):
         """
 
         x_to_be, y_to_be = player.posx + dx, player.posy + dy
+
+        # Do not go out of the map please :
+
+        if x_to_be > self.slmap.max_x:
+            x_to_be = self.slmap.max_x
+
+        if y_to_be > self.slmap.max_y:
+            y_to_be = self.slmap.max_y
+        
+        if x_to_be < 0:
+            x_to_be = 0
+
+        if y_to_be < 0:
+            y_to_be = 0
+
         row, col = self.__norm_to_cell(player.posy), self.__norm_to_cell(player.posx)
         row_to_be, col_to_be = self.__norm_to_cell(y_to_be), self.__norm_to_cell(x_to_be)
+
         is_obs_by_dx = self.slmap.is_obstacle_from_cell_coords(row, col_to_be)
         is_obs_by_dy = self.slmap.is_obstacle_from_cell_coords(row_to_be, col)
         if is_obs_by_dx is False and is_obs_by_dy is False: # no collision
-            player.posx += dx
-            player.posy += dy
+            player.posx = x_to_be
+            player.posy = y_to_be
         elif is_obs_by_dx is False: # no collision only for x displacement
-            player.posx += dx
+            player.posx = x_to_be
             player.posy = row_to_be * const.CELL_SIZE - 1 # maximum possible posy before colliding
         elif is_obs_by_dy is False: # no collision only for y displacement
-            player.posy += dy
+            player.posy = y_to_be
             player.posx = col_to_be * const.CELL_SIZE - 1 # maximum possible posx before colliding
-        else:
+        else: # collision along all axis
             player.posx = col_to_be * const.CELL_SIZE - 1 # maximum possible posx before colliding
             player.posy = row_to_be * const.CELL_SIZE - 1 # maximum possible posy before colliding
 
@@ -430,7 +445,7 @@ class GameEngine(object):
         return victim
 
     def __norm_to_cell(self, coord):
-        return (coord // const.CELL_SIZE)
+        return int(coord // const.CELL_SIZE)
 
     def __for_obstacle_in_range(self, vector, callback, **callback_args):
         """

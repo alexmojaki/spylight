@@ -61,9 +61,10 @@ class SpyLightMap(object):
         self.title = None
         self.size = (0, 0)
         self.height = 0
-        self.witdh = 0
+        self.width = 0
         self.map_tiles = None  # self.map_tiles[y][x] (1st array is the v-axis)
         self.nb_players = (0, 0)
+        self.max_x, self.max_y = 0, 0
 
         if filename:
             self.load_map(filename)
@@ -117,6 +118,7 @@ class SpyLightMap(object):
                             print 'Erreur de taille de la carte.'
                             sys.exit()
                         curMapLine = curMapLine - 1
+            self.max_x, self.max_y = self.width * const.CELL_SIZE - 1, self.height * const.CELL_SIZE - 1
 
     def print_legacy_map(self):
         output = self._to_legacy_format()
