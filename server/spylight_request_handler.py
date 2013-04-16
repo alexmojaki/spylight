@@ -26,6 +26,8 @@ class SpylightRequestHandler(StreamRequestHandler, object):
 
         super(SpylightRequestHandler, self).setup()
 
+        self._player_id = None
+
         self._sender_busy = Event()
         self._sender_interval = -1
         self._sender = None
@@ -152,22 +154,55 @@ invalid message field `type`'
             self.update_status(self.CONNECTION_STOP)
             return
 
-        player_id = GameEngine().connect_to_player(data['team'], data['nick'])
+        self._player_id = GameEngine().connect_to_player(data['team'],
+                                                         data['nick'])
 
-        if player_id is None:
+        if self._player_id is None:
             print 'Initialisation failed: team full'
             self.update_status(self.CONNECTION_STOP)
             return
 
-        player_state = GameEngine().get_player_state(player_id)
+        player_state = GameEngine().get_player_state(self._player_id)
         pos_x, pos_y, max_hp = (player_state[k] for k in ('x', 'y', 'hp'))
 
         GameEngine().all_players_connected.wait()
 
-        self.send({'type': 'init', 'id': player_id, 'pos': (pos_x, pos_y),
-                  'max_hp': max_hp, 'team': data['team'], 'map': GameEngine().
-                  get_map_name(), 'map_hash': GameEngine().get_map_hash(),
-                  'players': GameEngine().get_players_info()})
+        self.send({'type': 'init', 'id': self._player_id, 'pos': (pos_x,
+                  pos_y), 'max_hp': max_hp, 'team': data['team'], 'map':
+                  GameEngine().get_map_name(), 'map_hash': GameEngine().
+                  get_map_hash(), 'players': GameEngine().get_players_info()})
+        self.update_status(self.CONNECTION_RUN)
+
+    def handle_move(self, data):
+        try:
+            angle = data['d']
+            speed = data['s']
+            # TODO Remove the next six lines when the right type will be sent
+            #      by clients
+            if isinstance(angle, int):
+                angle = float(angle)
+            try:
+                speed = float(speed)
+            except ValueError:
+                pass
+            # TOTO -End-
+            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+                print 'Wrong input received: invalid message field `d`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+            elif not isinstance(speed, float) or speed < 0 or speed > 1:
+                print 'Wrong input received: invalid message field `s`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+        except KeyError:
+            print 'Wrong input received: missing field(s) in message of type \
+`move`'
+            self.update_status(self.CONNECTION_STOP)
+            return
+
+        GameEngine().set_movement_angle(self._player_id, angle)
+        GameEngine().set_movement_speedx(self._player_id, speed)
+        GameEngine().set_movement_speedy(self._player_id, speed)
 
     def handle_test(self, data):
         print 'Test message received:', data
