@@ -18,36 +18,52 @@ class RelativeWidget(Widget):
         self.y = value[1] + self.static_pos[1]
 
 
-class LightenedArea(Widget):
-    # Example string template
+# class LightenedArea(Widget):
+#     # Example string template
+#     kv_string_template = '''
+# {indent}Rectangle:
+# {indent}    pos: 100, 100
+# {indent}    size: 32, 32
+# '''
+
+#     def __init__(self, **kwargs):
+#         super(LightenedArea, self).__init__(**kwargs)
+
+#     def kv_string(self, instance='self', indent=8):
+#         return self.kv_string_template.format(instance=instance,
+#                                               indent=(' ' * indent))
+
+
+class KVStringAble(Widget):
+    kvid = 0  # Used to generate a unique id.
     kv_string_template = '''
-{indent}Rectangle:
-{indent}    pos: 100, 100
-{indent}    size: 32, 32
+{indent}{instance}
 '''
 
-    def __init__(self, **kwargs):
-        super(LightenedArea, self).__init__(**kwargs)
+    def __init__(self, kvprefix='obj_', **kwargs):
+        super(KVStringAble, self).__init__(**kwargs)
+        self.kvname = kvprefix + str(KVStringAble.kvid)
+        KVStringAble.kvid = KVStringAble.kvid + 1
 
     def kv_string(self, instance='self', indent=8):
         return self.kv_string_template.format(instance=instance,
                                               indent=(' ' * indent))
 
 
-class Camera(RelativeWidget, LightenedArea):
+class Camera(RelativeWidget, KVStringAble):
     sprite = utils.spritePath.format('camera')
-    camid = 0  # Used to generate a name for the camera instance
+    points = ListProperty([])
     kv_string_template = '''
 {indent}Triangle:
 {indent}    points: {instance}.points
 '''
 
-    points = ListProperty([])
-
     def __init__(self, **kwargs):
+        kwargs['kvprefix'] = 'cam_'
+        self.rotation = kwargs['dir']
+        self.pos_offset_x = 5
+        self.pos_offset_y = 5
         super(Camera, self).__init__(**kwargs)
-        self.camname = 'cam_' + str(Camera.camid)
-        Camera.camid = Camera.camid + 1
 
     def update_pos(self, parent, value):
         super(Camera, self).update_pos(parent, value)
