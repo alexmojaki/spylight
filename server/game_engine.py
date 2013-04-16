@@ -52,6 +52,7 @@ class Player(object):
         self.sight_vertices = []
         self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
         self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
+        self.sight_angle = 0
         self.sight_polygon_coords = []
 
     def take_damage(self, damage_amount):
@@ -347,7 +348,8 @@ class GameEngine(object):
         return self # allow chaining
 
     def set_sight_angle(self, pid, angle):
-        return self.set_movement_angle(pid, angle)
+        self.__players[pid].sight_angle = radians(angle)
+        return self # allow chaining
 
     def set_movement_angle(self, pid, angle):
         """
