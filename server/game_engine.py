@@ -51,10 +51,10 @@ class Player(object):
 
         # Occlusion related things
         self.sight_vertices = []
-        self.obstacles_in_sight = [] # List of obstacle to be taken into account for occlusion computation
-        self.obstacles_in_sight_n = 0 # basically, len(self.obstacles_in_sight)
-        self.sight_angle = 0
-        self.sight_polygon_coords = []
+        self.obstacles_in_sight = []    # List of obstacle to be taken into account for occlusion computation
+        self.obstacles_in_sight_n = 0   # basically, len(self.obstacles_in_sight)
+        self.sight_angle = 0            # the direction to wich the player is looking
+        self.sight_polygon_coords = []  # original polygon, the "raw" sight polygon, without occlusion
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
