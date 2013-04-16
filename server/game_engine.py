@@ -13,7 +13,7 @@ import common.utils as utils
 from math import sin, cos, sqrt, radians
 from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
-#from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
+from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
@@ -224,7 +224,7 @@ class GameEngine(object):
             # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
             p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
             # Launch occlusion
-#            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
     def __move_player(self, player, dx, dy):
         """
