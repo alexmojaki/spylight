@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from threading import Event, Lock
+from threading import Event, Lock, Timer
+from time import time
 
 from config_handler import ConfigHandler
 from config_helper import default_config, option_types
@@ -12,7 +13,7 @@ import common.utils as utils
 from math import sin, cos, sqrt, radians
 from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
-from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
+#from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
 from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
@@ -60,7 +61,9 @@ class Player(object):
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
     def get_state(self):
-        return {'hp': self.hp, 'x': self.posx, 'y': self.posy} # TODO: Actually put what we need here
+        return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
+                self.sight_angle, 's': self.status, 'v': self.sight_vertices,
+                'vp': [], 'vo': [], 'ao': []}
 
 
 class Weapon(object):
@@ -146,7 +149,11 @@ class GameEngine(object):
         self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
         self.__loop = Event()
         self.__curr_player_number = 0
-        self.__player_connection = Lock()
+        self.__lock = Lock()
+        self.__start_time = None
+        self.__stepper_busy = Event()
+        self.__stepper_interval = -1
+        self.__stepper = None
         self.all_players_connected = Event()
         self.load_config(config_file)
         if map_file is not None:
@@ -155,6 +162,32 @@ class GameEngine(object):
             self.load_map(self.config.map_file)
         # will look like this : {"x,y": [item1, item2, item3]} (yes, there could potentially be multiple objects at the exact same position...)
         return self # allow chaining
+
+    def acquire(self, blocking=1):
+        self.__lock.acquire(blocking)
+
+    def release(self):
+        self.__lock.release()
+
+    def setup_stepper(self, interval):
+        def _stepper_action():
+            self.__stepper = Timer(self.__stepper_interval, _stepper_action)
+            self.__stepper.start()
+
+            if not self.__stepper_busy.is_set():
+                self.__stepper_busy.set()
+                self.step()
+                self.__stepper_busy.clear()
+
+        if self.__stepper is not None:
+            self.__stepper.cancel()
+            self.__stepper_interval = -1
+            self.__stepper = None
+
+        if interval > 0:
+            self.__stepper_interval = interval
+            self.__stepper = Timer(interval, _stepper_action)
+            self.__stepper.start()
 
     # @function push_new_actionable_item will register a new ActionableItem on the current game's map
     # @param{ActionableItem} item
@@ -191,18 +224,18 @@ class GameEngine(object):
             # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
             p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
             # Launch occlusion
-            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+#            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
     def __move_player(self, player, dx, dy):
         """
 
         Moves the given player using the given dx nd dy deltas for x and y axis
-        taking into account collisions with obstacles 
+        taking into account collisions with obstacles
 
         :param player: Instance of Player class, the player we want to move
-        :param dx: float, the x coordinate difference we want to apply to the current player 
+        :param dx: float, the x coordinate difference we want to apply to the current player
             (may or may not be pplied depending on wether there are collisions)
-        :param dy: float, the y coordinate difference we want to apply to the current player 
+        :param dy: float, the y coordinate difference we want to apply to the current player
             (may or may not be pplied depending on wether there are collisions)
         :return None
         """
@@ -216,7 +249,7 @@ class GameEngine(object):
 
         if y_to_be > self.slmap.max_y:
             y_to_be = self.slmap.max_y
-        
+
         if x_to_be < 0:
             x_to_be = 0
 
@@ -290,6 +323,7 @@ class GameEngine(object):
                     terminal = TerminalAI(row, col)
                     self.push_new_actionable_item(terminal)
 
+        self.__total_time = 60  # TODO: Update with the real time read from the map file.
         self.__max_player_number = 4  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
@@ -302,9 +336,9 @@ class GameEngine(object):
         if self.all_players_connected.is_set():
             return None
 
-        self.__player_connection.acquire()
+        self.acquire()
 
-        players = [p for p in self.__players if not p.connected and p.team == \
+        players = [p for p in self.__players if not p.connected and p.team ==
             team]
 
         if len(players) > 1:
@@ -312,16 +346,16 @@ class GameEngine(object):
         elif len(players) == 1:
             player = players[0]
         else:
-            self.__player_connection.release()
+            self.release()
             return None
 
         player.connected = True
         player.nickname = nickname
         self.__curr_player_number += 1
         if self.__curr_player_number == self.__max_player_number:
-            self.all_players_connected.set()
+            self.start()
 
-        self.__player_connection.release()
+        self.release()
 
         return player.player_id
 
@@ -343,8 +377,14 @@ class GameEngine(object):
     def get_players_info(self):
         return [(p.nickname, p.player_id, p.team) for p in self.__players]
 
+    def get_remaining_time(self):
+        return int(round(self.__total_time - time() + self.__start_time))
+
     def start(self):
         self.__loop.clear()
+        self.setup_stepper(self.config.step_state_interval)
+        self.__start_time = time()
+        self.all_players_connected.set()
         return self # allow chaining
 
     def set_sight_angle(self, pid, angle):
@@ -367,7 +407,7 @@ class GameEngine(object):
         Set the speed of a given player, on the xy axis
 
         :param pid: Player id (int)
-        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis, 
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis,
         after taking into account the angular direction (this is like a speed modifier)
         """
         p = self.__players[pid]
@@ -510,4 +550,5 @@ class GameEngine(object):
 
     def shutdown(self, force=False):
         self.__loop.set()
+        self.setup_stepper(-1)  # Disable stepping
         return self # allow chaining

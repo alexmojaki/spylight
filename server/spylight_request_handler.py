@@ -126,14 +126,15 @@ invalid message field `type`; must be "init" during the\ninitialisation phase.'
                                                                CONNECTION_STOP)
                                         else:
                                             try:
-                                                getattr(self, handler_name)(
-                                                    data)
+                                                handler = getattr(self,
+                                                                  handler_name)
                                             except AttributeError:
                                                 print 'Wrong input received: \
 invalid message field `type`'
                                                 self.update_status(
                                                     self.CONNECTION_STOP)
                                             else:
+                                                handler(data)
                                                 self.update_status()
         except ThreadExit:
             self.update_status(self.CONNECTION_STOP)
@@ -171,6 +172,8 @@ invalid message field `type`'
                   pos_y), 'max_hp': max_hp, 'team': data['team'], 'map':
                   GameEngine().get_map_name(), 'map_hash': GameEngine().
                   get_map_hash(), 'players': GameEngine().get_players_info()})
+
+        self.setup_sender(GameEngine().config.send_state_interval)
         self.update_status(self.CONNECTION_RUN)
 
     def handle_move(self, data):
@@ -200,9 +203,11 @@ invalid message field `type`'
             self.update_status(self.CONNECTION_STOP)
             return
 
+        GameEngine().acquire()
         GameEngine().set_movement_angle(self._player_id, angle)
         GameEngine().set_movement_speedx(self._player_id, speed)
         GameEngine().set_movement_speedy(self._player_id, speed)
+        GameEngine().release()
 
     def handle_test(self, data):
         print 'Test message received:', data
@@ -222,7 +227,21 @@ invalid message field `type`'
                 self.wfile.flush()
 
     def send_game_state(self):
-        self.wfile.write('Plop!\n')
+        GameEngine().acquire()
+        s = GameEngine().get_player_state(self._player_id)
+        kills = []  # TODO: Call the right GameEngine method to get the new
+                    #       kills to display.
+        terminals = []  # TODO: Call the right GameEngine method to get the
+                        #       terminal pirating progressions.
+        events = []  # TODO: Call the right GameEngine method to get the new
+                     #       events.
+        time = GameEngine().get_remaining_time()
+        GameEngine().release()
+
+        self.send({'l': s['hp'], 'p': (s['x'], s['y']), 'd': s['d'], 's':
+                   s['s'], 'v': s['v'], 'k': kills, 'vp': s['vp'], 'pi':
+                   terminals, 'vo': s['vo'], 'ao': s['ao'], 'ev': events, 'ti':
+                   time})
 
     def finish(self):
         print 'Client disconnected:', self.client_address[0], \
