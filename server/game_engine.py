@@ -365,7 +365,8 @@ class GameEngine(object):
         Set the speed of a given player, on the xy axis
 
         :param pid: Player id (int)
-        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis, 
+        after taking into account the angular direction (this is like a speed modifier)
         """
         p = self.__players[pid]
         p.speedx = percentage * p.max_speedx
@@ -376,7 +377,8 @@ class GameEngine(object):
         Set the speed of a given player, on the y axis
 
         :param pid: Player id (int)
-        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis
+        :param percentage: (real) between 0 and 1, percentage of its maximum speed along this axis,
+        after taking into account the angular direction (this is like a speed modifier)
         """
         p = self.__players[pid]
         p.speedy = percentage * p.max_speedy
