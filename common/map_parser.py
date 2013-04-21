@@ -66,8 +66,8 @@ class SpyLightMap(object):
         self.witdh = 0
         self.map_tiles = None  # self.map_tiles[col][row]
         self.nb_players = (0, 0)
-        self.special_objects = {}  # Contains miscellanous info regarding specific tiles
-                                   # keys: '{0}-{1}'.format(row, col)
+        self.extra_info = {}  # Contains miscellanous info regarding specific tiles
+                              # keys: '{0}-{1}'.format(row, col)
 
         if filename:
             self.load_map(filename)
@@ -123,8 +123,6 @@ class SpyLightMap(object):
         m.update(str(file_str))
         self.hash = m.hexdigest()
 
-        print self.special_objects
-
     def _parse_map_line(self, line, curMapLine):
         mapLine = []
         for c in line:
@@ -143,7 +141,7 @@ class SpyLightMap(object):
             key, value = field.split('=')
             object_info[key] = ast.literal_eval(value)
         try:
-            self.special_objects[object_key] = object_info
+            self.extra_info[object_key] = object_info
         except KeyError:
             print 'Erreur de lecture de la carte: ', line
             sys.exit()
@@ -225,7 +223,7 @@ class SpyLightMap(object):
         Takes the position of a camera, returns its orientation based on the surrounding walls
         '''
         try:
-            return self.special_objects['{0}-{1}'.format(row, col)]['orientation']
+            return self.extra_info['{0}-{1}'.format(row, col)]['orientation']
         except KeyError:
             print 'No camera info registered for coordinates', row, col
             return 0
@@ -253,5 +251,5 @@ class SpyLightMap(object):
 
 if __name__ == '__main__':
     slm = SpyLightMap(sys.argv[1])
-    # slm.print_legacy_map()
-    print slm.get_cameras()
+    slm.print_legacy_map()
+    # print slm.get_cameras()

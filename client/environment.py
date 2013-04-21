@@ -1,3 +1,5 @@
+import math
+
 from kivy.properties import ListProperty
 from kivy.uix.widget import Widget
 from kivy.lang import Builder
@@ -59,10 +61,20 @@ class Camera(RelativeWidget, KVStringAble):
 '''
 
     def __init__(self, **kwargs):
+        sprite_offset = 5  # 32/2 - 11
+        x, y = kwargs['pos']
+        kwargs['pos'] = (x+sprite_offset, y+sprite_offset)
         kwargs['kvprefix'] = 'cam_'
         self.rotation = kwargs['dir']
-        self.pos_offset_x = 5
-        self.pos_offset_y = 5
+        print kwargs['pos']
+
+        # Extra offset to stick to the wall
+        # self.pos_offset_x = math.cos(self.rotation)
+        # if self.pos_offset_x != 0:
+        #     self.pos_offset_x = math.copysign(11, self.pos_offset_x)
+        # self.pos_offset_y = math.sin(self.rotation)
+        # if self.pos_offset_y != 0:
+        #     self.pos_offset_y = math.copysign(11, self.pos_offset_y)
         super(Camera, self).__init__(**kwargs)
 
     def update_pos(self, parent, value):
