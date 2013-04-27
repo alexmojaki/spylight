@@ -15,6 +15,7 @@ var
 sdist
 develop-eggs
 .installed.cfg
+td-shapely
 
 # Installer logs
 pip-log.txt
@@ -35,3 +36,6 @@ Thumbs.db
 
 # Virtualenv
 virtualenv/
+
+# Shapely
+shapely/

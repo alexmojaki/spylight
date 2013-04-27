@@ -10,7 +10,7 @@ from kivy.uix.widget import Widget
 
 from common.map_parser import SpyLightMap
 from client.network import NetworkInterface, MessageFactory
-from client.character import Character
+from client.character import Character, Replica
 from client.hud import SpylightHUD
 from client.map_view import MapView
 from client.input import KeyboardManager, TouchManager
@@ -48,7 +48,6 @@ class SpylightGame(Widget):
         # Parse server init message
         self.team = init_response['team']
         self.playerid = init_response['id']
-        self.players = init_response['players']
 
         # Init environment
         loaded_map = SpyLightMap(init_response['map'])
@@ -60,8 +59,7 @@ class SpylightGame(Widget):
                          loaded_map.get_hash())
             sys.exit()
 
-        self.init_game_view(loaded_map, init_response['pos'],
-                            init_response['id'], nick)
+        self.init_game_view(loaded_map, init_response)
 
         self.hud = SpylightHUD(self, max_hp=init_response['max_hp'])
         self.add_widget(self.hud)
@@ -73,19 +71,43 @@ class SpylightGame(Widget):
         self._ni.on_message_recieved = self.update
         self._ni.ready()
 
-    def init_game_view(self, loaded_map, charpos, playerid, nick):
-        self.char = Character(self.team, playerid, nick)
+    def init_game_view(self, loaded_map, init_response):
+        self.players = {}  # Player replicas.
+        for player in init_response['players']:
+            if player[1] == init_response['id']:  # Local player
+                self.char = Character(nick=player[0], playerid=player[1],
+                                      team=player[2])
+                self.players[player[1]] = self.char
+            else:
+                self.players[player[1]] = Replica(nick=player[0],
+                                                  playerid=player[1],
+                                                  team=player[2],
+                                                  pos=(200, 200))
 
-        self.mv = MapView(loaded_map, self.char)
+        self.mv = MapView(loaded_map, self.char, self.players)
         self.add_widget(self.mv)
 
-        # Init char replicas
-
-        self.add_widget(self.char)  # after the map to keep it visible!
+        # self.add_widget(self.char)  # after the map to keep it always visible!
         self.char.bind(offset=self.mv.update_pos)
-        self.char.set_game_pos(charpos)  # Also updates the map
+        self.char.set_game_pos(init_response['pos'])  # Also updates the map
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)
         self.char.update(data)
         self.hud.update(data)
+
+        player_updates = {}
+        for vp in data['vp']:
+            try:
+                player_updates[vp[0]] = vp
+            except (TypeError, IndexError):
+                pass
+
+        for i in self.players:
+            if i != self.char.playerid:
+                p = self.players[i]
+                try:
+                    p.visible = True
+                    p.update(player_updates[i])
+                except KeyError:
+                    p.visible = False

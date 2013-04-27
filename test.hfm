@@ -39,12 +39,19 @@ size: 100 46
 |                                    |     |                                                       |
 |                                    |     |                                                       |
 |                                    |     |                                                       |
-|                                    |     |                                                       |
-|                                    |     |                                                       |
-|                                    |     |                                                       |
+|                                   -+     |                                                       |
+|                                   C|     |                                                       |
+|C                                   |     |                                                       |
 |                                    |     |                                                       |
 |                                    |     |                                                       |
 |    S        S                      +     +                                                       |
-|                                                                                                  |
-| C      C                                                                                         |
+|                                    C                                                             |
+|C       C                                                                                         |
 +--------------------------------------------------------------------------------------------------+
+# Extra info. the type is not required, but helps to understand what we are talking about.
+info:1,1,type='C',orientation=315
+info:1,6,type='C',orientation=270
+info:9,1,type='C',orientation=0
+info:36,7,type='C',orientation=135
+info:37,2,type='C',orientation=180
+info:57,44,type='C',orientation=180

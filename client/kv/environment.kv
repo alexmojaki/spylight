@@ -27,6 +27,19 @@
             size: 16,16
             source: root.sprite
 
-<Shadow>:
-    size: -42, -42
-    pos: 100, 100
+<Camera>:
+    size: 32, 32
+    canvas:
+        PushMatrix:
+        Translate:
+            x: self.x + self.pos_offset_x
+            y: self.y + self.pos_offset_y
+        PushMatrix:
+        Rotate:
+            angle: self.rotation
+        Rectangle:
+            pos: -self.pos_offset_x, -self.pos_offset_y
+            size: 11,11
+            source: self.sprite
+        PopMatrix:
+        PopMatrix:
