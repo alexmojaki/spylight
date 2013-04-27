@@ -28,9 +28,6 @@ class SpyLightMap(object):
 
     OBSTACLES_TYPES = (WALL0, WALL1, WALL2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
 
-    SPAWN_MERC = 0
-    SPAWN_SPY = 1
-
     IT_TERMINAL = 0
     IT_BRIEFCASE = 1
     IT_CAMERA = 42
@@ -50,8 +47,8 @@ class SpyLightMap(object):
         '|': WALL2,
         '#': {'section': 'wa', 'value': WA_SPY_ONLY_DOOR},  # Spy-only door
         '@': {'section': 'wa', 'value': WA_MERC_ONLY_DOOR},  # Mercenary-only door
-        'M': {'section': 'sp', 'value': SPAWN_MERC},
-        'S': {'section': 'sp', 'value': SPAWN_SPY},
+        'M': {'section': 'sp', 'value': const.MERC_TEAM},
+        'S': {'section': 'sp', 'value': const.SPY_TEAM},
         TERMINAL_KEY: TERMINAL,  # Terminal
         'B': {'section': 'it', 'value': IT_BRIEFCASE},  # Briefcase
         'C': {'section': 'vi', 'value': IT_CAMERA},  # Camera
@@ -66,8 +63,14 @@ class SpyLightMap(object):
         self.witdh = 0
         self.map_tiles = None  # self.map_tiles[col][row]
         self.nb_players = (0, 0)
-        self.extra_info = {}  # Contains miscellanous info regarding specific tiles
+        self.extra_info = {}  # Contains misc. info regarding specific tiles
                               # keys: '{0}-{1}'.format(row, col)
+        self.spawns = [[], []]  # spawn points for both teams. The spawn a
+                                # particular player is
+                                # self.spawns[team_id][player_id]
+                                # (see get_spawn_point(team_id, player_id))
+                                # the lowest id will spawn at the most top left
+                                # position
         self.max_x, self.max_y = 0, 0
 
         if filename:
@@ -119,7 +122,12 @@ class SpyLightMap(object):
                         self._parse_map_line(line, curMapLine)
                         curMapLine = curMapLine - 1
                 file_str += line
-        self.max_x, self.max_y = self.width * const.CELL_SIZE - 1, self.height * const.CELL_SIZE - 1
+        self.max_x = self.width * const.CELL_SIZE - 1
+        self.max_y = self.height * const.CELL_SIZE - 1
+
+        print 'spawns:', self.spawns
+
+        # File hash
         m = hashlib.sha1()
         m.update(str(file_str))
         self.hash = m.hexdigest()
@@ -128,6 +136,11 @@ class SpyLightMap(object):
         mapLine = []
         for c in line:
             mapLine.append(c)
+
+            if c in 'SM':  # it's a spawn point
+                team = self.HFM_TO_MAP[c]['value']
+                self.spawns[team].append([len(mapLine)-1, curMapLine])
+
         try:
             self.map_tiles[curMapLine] = mapLine
         except IndexError:
@@ -221,7 +234,7 @@ class SpyLightMap(object):
 
     def get_camera_orientation(self, row, col):
         '''
-        Takes the position of a camera, returns its orientation based on the surrounding walls
+        Takes the position of a camera, returns its orientation
         '''
         try:
             return self.extra_info['{0}-{1}'.format(row, col)]['orientation']
@@ -248,6 +261,12 @@ class SpyLightMap(object):
             return (tmp['section'], tmp['value'])
         except KeyError:
             return (None, None)
+
+    def get_spawn_point(self, teamid, playerid):
+        '''
+        Returns the spawn tile for a player
+        '''
+        return self.spawns[teamid][playerid]
 
 
 if __name__ == '__main__':
