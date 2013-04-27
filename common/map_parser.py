@@ -68,6 +68,7 @@ class SpyLightMap(object):
         self.nb_players = (0, 0)
         self.extra_info = {}  # Contains miscellanous info regarding specific tiles
                               # keys: '{0}-{1}'.format(row, col)
+        self.max_x, self.max_y = 0, 0
 
         if filename:
             self.load_map(filename)
@@ -118,7 +119,7 @@ class SpyLightMap(object):
                         self._parse_map_line(line, curMapLine)
                         curMapLine = curMapLine - 1
                 file_str += line
-
+        self.max_x, self.max_y = self.width * const.CELL_SIZE - 1, self.height * const.CELL_SIZE - 1
         m = hashlib.sha1()
         m.update(str(file_str))
         self.hash = m.hexdigest()

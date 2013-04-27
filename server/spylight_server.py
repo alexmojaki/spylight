@@ -19,27 +19,23 @@ class SpylightServer(object):
 
     def init_tcp_server(self, host, port):
         self._tcp_server = ThreadingTCPServer((host, port),
-                                              SpylightRequestHandler)
+                                              SpylightRequestHandler, reuse_address=True)
         self._tcp_server.serve_forever(start=False)
 
     def start(self):
         print 'Starting server...'
 
-        GameEngine().start()
         self._tcp_server.handler_thread.start()
-
         self.run()
 
     def run(self):
         force = False
 
-        while GameEngine().loop:
-            try:
-                # We should do something clever here.
-                sleep(10)
-            except KeyboardInterrupt:
-                force = True
-                break
+        try:
+            while GameEngine().loop:
+                sleep(1)
+        except KeyboardInterrupt:
+            force = True
 
         self.shutdown(force)
 

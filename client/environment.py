@@ -16,8 +16,8 @@ class RelativeWidget(Widget):
         self.static_pos = kwargs['pos']
 
     def update_pos(self, parent, value):
-        self.x = value[0] + self.static_pos[0]
-        self.y = value[1] + self.static_pos[1]
+        self.pos = [value[0] + self.static_pos[0],
+                    value[1] + self.static_pos[1]]
 
 
 # class LightenedArea(Widget):
