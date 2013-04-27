@@ -327,8 +327,8 @@ class GameEngine(object):
         self.__max_player_number = 4  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
-        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, 2)] # TODO: replace that by the actual player loading
-        self.__players.extend([Player(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
+        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
+#        self.__players.extend([Player(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 

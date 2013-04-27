@@ -7,7 +7,8 @@ from stoppable_thread import StoppableThread
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer, object):
-    def __init__(self, address, request_handler):
+    def __init__(self, address, request_handler, reuse_address=False):
+        self.allow_reuse_address = reuse_address
         super(ThreadingTCPServer, self).__init__(address, request_handler)
         self.server_thread = None
 
