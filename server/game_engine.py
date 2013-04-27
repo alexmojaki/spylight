@@ -72,9 +72,10 @@ class SpyPlayer(Player):
         self.hp = const.MAX_SPY_HP
         self.sight_range = const.SPY_SIGHT_RANGE
         self.sight_polygon = Point(self.posx, self.posy).buffer(self.sight_range)
-        self.sight_polygon_coords = []
         self.__orig_posx = self.posx
         self.__orig_posy = self.posy
+        self.sight_polygon_coords = []
+        self.compute_sight_polygon_coords()
     
     def compute_sight_polygon_coords(self):
         # We are computing the translation of the circle from its creation to the current position
@@ -84,8 +85,7 @@ class SpyPlayer(Player):
         dx, dy = self.posx - self.__orig_posx, self.posy - self.__orig_posy 
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
-            self.sight_polygon_coords.append(x + dx)
-            self.sight_polygon_coords.append(y + dy)
+            self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
 
         
 class MercenaryPlayer(Player):
@@ -257,7 +257,9 @@ class GameEngine(object):
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
             # Launch occlusion
+            print "Plop:", len(p.sight_polygon_coords)
             p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+            print "Pouet"
 
     def __move_player(self, player, dx, dy):
         """
