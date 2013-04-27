@@ -67,19 +67,19 @@ class SpyPlayer(Player):
     """A Player that is a spy"""
     def __init__(self, player_id):
         super(SpyPlayer, self).__init__(player_id, const.SPY_TEAM)
-        self.max_speedx = MAX_SPY_SPEED
-        self.max_speedy = MAX_SPY_SPEED
-        self.hp = MAX_SPY_HP
-        self.sight_range = SPY_SIGHT_RANGE
+        self.max_speedx = const.MAX_SPY_SPEED
+        self.max_speedy = const.MAX_SPY_SPEED
+        self.hp = const.MAX_SPY_HP
+        self.sight_range = const.SPY_SIGHT_RANGE
         
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
     def __init__(self, player_id):
         super(MercenaryPlayer, self).__init__(player_id, const.MERC_TEAM)
-        self.max_speedx = MAX_MERC_SPEED
-        self.max_speedy = MAX_MERC_SPEED
-        self.hp = MAX_MERC_HP
-        self.sight_range = MERC_SIGHT_RANGE
+        self.max_speedx = const.MAX_MERC_SPEED
+        self.max_speedy = const.MAX_MERC_SPEED
+        self.hp = const.MAX_MERC_HP
+        self.sight_range = const.MERC_SIGHT_RANGE
         
 
 class Weapon(object):
@@ -342,8 +342,8 @@ class GameEngine(object):
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
-        self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
-#        self.__players.extend([Player(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
+        self.__players = [SpyPlayer(i) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
+#        self.__players.extend([MercenaryPlayer(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 
