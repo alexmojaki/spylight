@@ -35,14 +35,12 @@ class Player(object):
         self.posx = 0
         self.posy = 0
         self.speedx = 0
-        self.max_speedx = 100   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
-                                # TODO: Change that, pass as constructor value or any other thing
+        self.max_speedx = 0   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
         self.speedy = 0
-        self.max_speedy = 100   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
-                                # TODO: Change that, pass as constructor value or any other thing
+        self.max_speedy = 0   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
         self.move_angle = 0
-        self.hp = 100 # TODO: Change that, pass as constructor value or any other thing
-        self.sight_range = 200 # TODO: Change that, pass as constructor value or any other thing
+        self.hp = 0
+        self.sight_range = 0
         self.status = Player.STATUS_ALIVE
         self.weapon = None
         self.nickname = None  # Updated when a client connects to the server
@@ -62,6 +60,24 @@ class Player(object):
     def get_state(self):
         return {'hp': self.hp, 'x': self.posx, 'y': self.posy} # TODO: Actually put what we need here
 
+class SpyPlayer(Player):
+    """A Player that is a spy"""
+    def __init__(self, player_id):
+        super(SpyPlayer, self).__init__(player_id, const.SPY_TEAM)
+        self.max_speedx = MAX_SPY_SPEED
+        self.max_speedy = MAX_SPY_SPEED
+        self.hp = MAX_SPY_HP
+        self.sight_range = SPY_SIGHT_RANGE
+        
+class MercenaryPlayer(Player):
+    """A Player that is a Mercenary"""
+    def __init__(self, player_id):
+        super(MercenaryPlayer, self).__init__(player_id, const.MERC_TEAM)
+        self.max_speedx = MAX_MERC_SPEED
+        self.max_speedy = MAX_MERC_SPEED
+        self.hp = MAX_MERC_HP
+        self.sight_range = MERC_SIGHT_RANGE
+        
 
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
@@ -90,7 +106,6 @@ class MineWeapon(Weapon):
     def __init__(self):
         super(MineWeapon, self).__init__()
         self.dps = 50
-
 
 
 class ActionableItem(object):
