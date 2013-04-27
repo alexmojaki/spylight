@@ -19,7 +19,7 @@ class SpylightServer(object):
 
     def init_tcp_server(self, host, port):
         self._tcp_server = ThreadingTCPServer((host, port),
-                                              SpylightRequestHandler)
+                                              SpylightRequestHandler, reuse_address=True)
         self._tcp_server.serve_forever(start=False)
 
     def start(self):

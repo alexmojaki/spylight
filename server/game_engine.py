@@ -324,7 +324,7 @@ class GameEngine(object):
                     self.push_new_actionable_item(terminal)
 
         self.__total_time = 60  # TODO: Update with the real time read from the map file.
-        self.__max_player_number = 4  # TODO: Update with the true player number
+        self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
         self.__players = [Player(i, Player.SPY_TEAM) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
