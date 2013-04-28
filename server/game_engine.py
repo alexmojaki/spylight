@@ -315,6 +315,7 @@ class GameEngine(object):
         self.__stepper = None
         self.all_players_connected = Event()
         self.load_config(config_file)
+        self.auto_mode = False
         if map_file is not None:
             self.load_map(map_file)
         else:
@@ -368,7 +369,7 @@ class GameEngine(object):
         return self # allow chaining
 
     def end_of_game(self):
-        self.__loop.shutdown()
+        self.__loop.stop_auto_mode()
 
     @property
     def loop(self):
@@ -377,8 +378,8 @@ class GameEngine(object):
     def step(self):
         # TODO: Maybe re-write the following lines, for a better handling of
         #       game termination.
-        if self.__game_finished():
-            self.shutdown()
+        if self.auto_mode is True and self.__game_finished():
+            self.stop_auto_mode()
             return
 
         # Update players' positions and visions
@@ -581,7 +582,7 @@ class GameEngine(object):
         player.nickname = nickname
         self.__curr_player_number += 1
         if self.__curr_player_number == self.__max_player_number:
-            self.start()
+            self.start_auto_mode()
 
         self.release()
 
@@ -613,7 +614,16 @@ class GameEngine(object):
         return {'winners': SPY_TEAM, 'ttime': int(round(self.__start_time -
                 time()))}
 
-    def start(self):
+    def start_auto_mode(self):
+
+        """
+            This method will enable the "auto_mode"
+            When auto_mode is enabled, the GameEngine will execute a step() every once a while
+            This interval is controlled by self.config.step_state_interval
+
+        :return: Nothing
+        """
+        self.auto_mode = True
         self.__loop.clear()
         self.setup_stepper(self.config.step_state_interval)
         self.__start_time = time()
@@ -778,7 +788,12 @@ class GameEngine(object):
             return True # Yes!
         return None
 
-    def shutdown(self, force=False):
+    def stop_auto_mode(self, force=False):
+        """
+        Will disable auto_mode.
+        :param force:
+        :return:
+        """
         self.__loop.set()
         self.setup_stepper(-1)  # Disable stepping
         return self # allow chaining
