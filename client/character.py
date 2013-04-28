@@ -1,5 +1,5 @@
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty, AliasProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -33,11 +33,13 @@ teams = None
 
 
 class PlayerVision(KVStringAble):
+    dummy_toggle = BooleanProperty(False)
+
     def __init__(self, char):
         super(PlayerVision, self).__init__()
         self.char = char
-        self.vertices = []
-        self.indices = []
+        self._v = []
+        self._i = []
         self.kv_string_template = '''
 {indent}Mesh:
 {indent}    vertices: {instance}.vertices
@@ -45,11 +47,30 @@ class PlayerVision(KVStringAble):
 {indent}    mode: 'triangle_fan'
 '''
 
+    def get_v(self):
+        print 'get_v'
+        return self._v
+
+    def set_v(self, val):
+        print 'set_v'
+        self._v = val
+
+    def get_i(self):
+        print 'get_i'
+        return self._i
+
+    def set_i(self, val):
+        print 'set_i'
+        self._i = val
+
+    vertices = AliasProperty(get_v, set_v, bind=('dummy_toggle',))
+    indices = AliasProperty(get_i, set_i, bind=('dummy_toggle',))
+
     def update(self, vision_data):
-        tmp_i = range(0, len(vision_data)/4)
-        self.vertices, self.indices = vision_data, tmp_i
-        print 'vertices:', self.vertices
-        print 'indices:', self.indices
+        self._i = range(0, len(vision_data)/4)
+        self._v = vision_data
+        # Tell kivy to update the mesh
+        self.dummy_toggle = not self.dummy_toggle
 
 
 class Character(Widget):

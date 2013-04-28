@@ -104,10 +104,7 @@ class SpylightGame(Widget):
 
             player_updates = {}
             for vp in data['vp']:
-                try:
-                    player_updates[vp[0]] = vp
-                except (TypeError, IndexError):
-                    pass
+                player_updates[vp[0]] = vp
 
             for i in self.players:
                 if i != self.char.playerid:
@@ -120,7 +117,8 @@ class SpylightGame(Widget):
 
             self.am.notify_orientation()
 
+        elif data['type'] == 'end':
+            self.screenMgr.goToPostGameScreen(data)
+
         else:
             Logger.warn('SL|Game: frame type not recognized: %s', data['type'])
-            # End here?
-            # self.screenMgr.goToPostGameScreen(data)
