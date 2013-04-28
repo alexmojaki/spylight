@@ -71,6 +71,22 @@ class SpyPlayer(Player):
         self.max_speedy = const.MAX_SPY_SPEED
         self.hp = const.MAX_SPY_HP
         self.sight_range = const.SPY_SIGHT_RANGE
+        self.sight_polygon = Point(self.posx, self.posy).buffer(self.sight_range)
+        self.__orig_posx = self.posx
+        self.__orig_posy = self.posy
+        self.sight_polygon_coords = []
+        self.compute_sight_polygon_coords()
+    
+    def compute_sight_polygon_coords(self):
+        # We are computing the translation of the circle from its creation to the current position
+        # dx, dy are the delta between original position and current one
+        # and we apply those delta to every circle's point
+        # This is a circle, no rotation!
+        dx, dy = self.posx - self.__orig_posx, self.posy - self.__orig_posy 
+        self.sight_polygon_coords = []
+        for x,y in self.sight_polygon.exterior.coords:
+            self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
+
         
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
@@ -80,7 +96,10 @@ class MercenaryPlayer(Player):
         self.max_speedy = const.MAX_MERC_SPEED
         self.hp = const.MAX_MERC_HP
         self.sight_range = const.MERC_SIGHT_RANGE
-        
+
+    def compute_sight_polygon_coords(self):
+        # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
+        self.sight_polygon_coords = [[self.posx, self.posy], [self.posx - self.sight_range/2, self.posy + self.sight_range], [self.posx + self.sight_range/2, self.posy + self.sight_range]]
 
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
@@ -236,10 +255,11 @@ class GameEngine(object):
             sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
             vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
-            # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
-            p.sight_polygon_coords = [[p.posx, p.posy], [p.posx - p.sight_range/2, p.posy + p.sight_range], [p.posx + p.sight_range/2, p.posy + p.sight_range]]
+            p.compute_sight_polygon_coords()
             # Launch occlusion
+            print "Plop:", len(p.sight_polygon_coords)
             p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+            print "Pouet"
 
     def __move_player(self, player, dx, dy):
         """
