@@ -263,9 +263,7 @@ class GameEngine(object):
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
             # Launch occlusion
-            print "Plop:", len(p.sight_polygon_coords)
             p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
-            print "Pouet"
 
     def __move_player(self, player, dx, dy):
         """
