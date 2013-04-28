@@ -4,6 +4,7 @@ from kivy.logger import Logger
 
 from client.config import config
 from client.network import MessageFactory
+from kivy.core.window import Window
 
 
 class ActionManager(object):
@@ -58,3 +59,8 @@ class ActionManager(object):
         dy = other_point[1] - self.game.char.offsety - cur_pos[1]
         # atan2 returns an angle between -pi and +pi (-180 and + 180)
         return math.degrees(math.atan2(dx, -dy)) + 180  # now 0 - 360
+
+    def notify_orientation(self):
+        # self._ni.send(MessageFactory.turn(
+        #     self._get_angle_with_char(Window.mouse_pos)))
+        pass
