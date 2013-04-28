@@ -399,6 +399,7 @@ class GameEngine(object):
 
     def load_map(self, map_file):
         self.__map_file = map_file
+        print "load_map: Loading map_file" + str(map_file)
         self.slmap = SpyLightMap()
         self.slmap.load_map(map_file)
         # Go through the whole map to find for special things to register, like actionable items...
@@ -412,8 +413,12 @@ class GameEngine(object):
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
-        self.__players = [SpyPlayer(i) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
-#        self.__players.extend([MercenaryPlayer(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
+        start_merc_pids = 0 # firt merc pid to be assigned
+        end_merc_pids = self.slmap.nb_players[0]-1 # Last mercernary pid to be assigned
+        start_spy_pids = end_merc_pids+1 # firt spy pid to be assigned
+        end_spy_pids = start_spy_pids + self.slmap.nb_players[1]-1 # Last spy pid to be assigned
+        self.__players = [SpyPlayer(i) for i in xrange(start_merc_pids, end_merc_pids+1)] # TODO: replace that by the actual player loading
+        self.__players.extend([MercenaryPlayer(i) for i in xrange(start_spy_pids, end_spy_pids+1)]) # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 
