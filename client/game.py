@@ -118,7 +118,6 @@ class SpylightGame(Widget):
                     except KeyError:
                         p.visible = False
 
-            ### <= UNCOMMENT IN THAT METHOD TO SEND TURN NOTIFICATIONS
             self.am.notify_orientation()
 
         else:
