@@ -1,5 +1,6 @@
 #Human friendlier map
 title: uber map
+# The following line means 2 mercenary and 0 spy
 players: 2 0
 size: 9 9
 +-----+-+

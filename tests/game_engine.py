@@ -7,7 +7,7 @@ sys.path.append("../")
 
 import common.game_constants as const
 from common.utils import mt
-from server.game_engine import Player
+from server.game_engine import SpyPlayer, MercenaryPlayer
 from server.game_engine import GunWeapon
 
 from server.game_engine import GameEngine
@@ -34,7 +34,26 @@ class GameEngineTest(unittest.TestCase):
     # name that would not document it
     def __gp(self, o, n):
         return self.__get_private(o, n)
-        
+
+    def __setup_players(self, ge, positions):
+        players = self.__gp(ge, "__players")
+        # Empty all previously automatically loaded players
+        del players[:]
+        # And load our ones:
+        n = len(positions) # the number of players
+        players[:] = [None] * n
+        middle = n/2+1
+        _range, angle_error, dps = 10000, 0.0, 10
+        for pid in xrange(0, n):
+            if (pid // middle) == const.SPY_TEAM :
+                player = SpyPlayer(pid)
+            else:
+                player = MercenaryPlayer(pid)
+            player.weapon = GunWeapon(_range, angle_error, dps)
+            (player.posx, player.posy) = mt(positions[pid], const.CELL_SIZE)
+            players[pid] = player
+        return players
+
     def test_instanciate(self):
         self.getGE()
 
@@ -46,9 +65,9 @@ class GameEngineTest(unittest.TestCase):
         ge = self.getGE()
         self.assertTrue(ge.config.send_state_interval == 0.02)
 
-    def test___actionable_item_key_from_row_col(self):
+    def test___map_item_key_from_row_col(self):
         ge = self.getGE()
-        result = self.__gp(ge, "__actionable_item_key_from_row_col")(1, 2)
+        result = self.__gp(ge, "__map_item_key_from_row_col")(1, 2)
         expected = "1,2"
         self.assertTrue(result == expected)
 
@@ -61,126 +80,88 @@ class GameEngineTest(unittest.TestCase):
     def test_easy_straight_horizontal_line_shoot(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 2), (7, 2)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((7, 2), const.CELL_SIZE)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_harmed(p2, original_health)
 
     def test_obstructed_straight_horizontal_line_shoot(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 2), (7, 2)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((7, 2), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_not_harmed(p2, original_health)
 
     def test_obstructed_straight_diagonal_line_shoot(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 2), (7, 3)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 270 # shoot to the right of him
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 2), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((7, 3), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_not_harmed(p2, original_health)
 
     def test_shot_in_hole_in_the_wall(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 6), (7, 6)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((7, 6), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_harmed(p2, original_health)
 
     def test_shot_in_hole_in_the_wall_2(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 6), (6, 6)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((6, 6), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_harmed(p2, original_health)
 
     def test_shot_in_hole_in_the_wall_3(self):# TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 6), (5, 6)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
-        (p1.posx, p1.posy) = mt((2, 6), const.CELL_SIZE)
-        (p2.posx, p2.posy) = mt((5, 6), const.CELL_SIZE)
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_harmed(p2, original_health)
 
     def test_shot_not_aiming(self): # TODO: Refactor using __setup_two_players new method
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
-        players = self.__gp(ge, "__players")
-        id_p1, id_p2 = 0, 1
-        p1, p2 = Player(id_p1, 0), Player(id_p2, 1)
+        p1, p2 = self.__setup_players(ge, [(2, 6), (7, 6)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 0
         p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
@@ -190,22 +171,8 @@ class GameEngineTest(unittest.TestCase):
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
             print "Player2 pos=", (p2.posx, p2.posy)
-        players[id_p1] = p1
-        players[id_p2] = p2
-        ge.shoot(id_p1, shoot_angle)
+        ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_not_harmed(p2, original_health)
-
-    def __setup_players(self, ge, positions):
-        players = self.__gp(ge, "__players")
-        n = len(positions) # the number of players
-        middle = n/2+1
-        _range, angle_error, dps = 10000, 0.0, 10
-        for pid in xrange(0, n):
-            player = Player(pid, pid // middle)
-            player.weapon = GunWeapon(_range, angle_error, dps)
-            (player.posx, player.posy) = mt(positions[pid], const.CELL_SIZE)
-            players[pid] = player
-        return players
 
     def test_simplistic_action_does_not_crash(self):
         self.map_file = "map_test_action.hfm"
@@ -313,9 +280,9 @@ class GameEngineTest(unittest.TestCase):
         mpos_x, mpos_y = 0, 0
         sight_triangle_width, sight_triangle_height = 100, 100
         sight_polygon_coords = [[mpos_x, mpos_y], [mpos_x - sight_triangle_width/2, mpos_y + sight_triangle_height], [mpos_x + sight_triangle_width/2, mpos_y + sight_triangle_height]]
-        res1 = occlusion(0, 0, sight_polygon_coords, [0, 10, 0, 18, 8, 18, 8, 10], 8)
-        res2 = occlusion(0, 0, sight_polygon_coords, [], 0)
-        res3 = occlusion(0, 0, sight_polygon_coords, [12, 0, 12, 8, 20, 8, 20, 0], 8)
+        res1, _useless = occlusion(0, 0, sight_polygon_coords, [0, 10, 0, 18, 8, 18, 8, 10], 8)
+        res2, _useless = occlusion(0, 0, sight_polygon_coords, [], 0)
+        res3, _useless = occlusion(0, 0, sight_polygon_coords, [12, 0, 12, 8, 20, 8, 20, 0], 8)
         self.assertTrue(res1 != res2 and res1 != res3 and res2 == res3, "Those three executions of occlusion() should have returned different results for res1 and res2 but same for res2 and res3")
 
     def test_simplistic_move_with_collision(self):
