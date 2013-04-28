@@ -10,7 +10,7 @@ from common.map_parser import SpyLightMap
 
 import common.game_constants as const
 import common.utils as utils
-from math import sin, cos, sqrt, radians
+from math import sin, cos, sqrt, radians, degrees
 from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
 from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
@@ -75,7 +75,7 @@ class Player(object):
 
     def get_state(self):
         return {'l': self.lifes, 'hp': self.hp, 'x': self.posx, 'y': self.posy,
-                'd': self.sight_angle, 's': self.status, 'v': self.
+                'd': degrees(self.sight_angle), 's': self.status, 'v': self.
                 sight_vertices, 'vp': self.visible_players, 'vo': self.
                 visible_objects, 'ao': []}
 
