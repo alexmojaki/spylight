@@ -264,7 +264,7 @@ class SpyLightMap(object):
 
     def get_spawn_point(self, teamid, playerid):
         '''
-        Returns the spawn tile (row,col) for a player
+        Returns the spawn tile (row, col) for a player
         '''
         # number of players in the other teams
         offset = sum(self.nb_players[:teamid])
