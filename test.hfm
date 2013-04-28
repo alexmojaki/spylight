@@ -45,7 +45,7 @@ size: 100 46
 |                                    |     |                                                       |
 |             S                      |     |                                                       |
 |    S                               +     +                                                       |
-|                                    C                                                             |
+|  T                                 C                                                             |
 |C       C                                                                                         |
 +--------------------------------------------------------------------------------------------------+
 # Extra info. the type is not required, but helps to understand what we are talking about.

@@ -24,11 +24,11 @@ class MessageFactory(object):
 
     @staticmethod
     def shoot(angle):
-        return {'type': 'shoot', 'v': angle, 'sh': True}
+        return {'type': 'shoot', 'v': angle}
 
     @staticmethod
     def action(keydown):
-        return {'type': 'action', 'e': True}
+        return {'type': 'action'}
 
     @staticmethod
     def update(team, nick):

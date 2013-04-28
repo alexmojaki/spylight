@@ -124,7 +124,6 @@ class SpyPlayer(Player):
     def __repr__(self):
         return str(self)
 
-
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
     def __init__(self, player_id):

@@ -62,7 +62,7 @@ class SpyLightMap(object):
         self.height = 0
         self.witdh = 0
         self.map_tiles = None  # self.map_tiles[col][row]
-        self.nb_players = (0, 0)
+        self.nb_players = [0, 0]  # nb players in team 0, nb players in team 1
         self.extra_info = {}  # Contains misc. info regarding specific tiles
                               # keys: '{0}-{1}'.format(row, col)
         self.spawns = [[], []]  # spawn points for both teams. The spawn a
@@ -264,9 +264,15 @@ class SpyLightMap(object):
 
     def get_spawn_point(self, teamid, playerid):
         '''
-        Returns the spawn tile for a player
+        Returns the spawn tile (row,col) for a player
         '''
-        return self.spawns[teamid][playerid]
+        # number of players in the other teams
+        offset = sum(self.nb_players[:teamid])
+        try:
+            return self.spawns[teamid][playerid - offset]
+        except IndexError:
+            msg = 'Error retrieving the spawn point     for player {} in team {}'
+            print msg.format(playerid, teamid)
 
 
 if __name__ == '__main__':
