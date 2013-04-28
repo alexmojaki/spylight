@@ -49,9 +49,9 @@ class GameEngineTest(unittest.TestCase):
                 player = SpyPlayer(pid)
             else:
                 player = MercenaryPlayer(pid)
-            player.weapon = GunWeapon(_range, angle_error, dps)
             (player.posx, player.posy) = mt(positions[pid], const.CELL_SIZE)
             players[pid] = player
+            player.compute_hitbox()
         return players
 
     def test_instanciate(self):
@@ -116,13 +116,12 @@ class GameEngineTest(unittest.TestCase):
         ge.shoot(p1.player_id, shoot_angle)
         self.__check_is_not_harmed(p2, original_health)
 
-    def test_shot_in_hole_in_the_wall(self):# TODO: Refactor using __setup_two_players new method
+    def test_shot_in_hole_in_the_wall(self):
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
         p1, p2 = self.__setup_players(ge, [(2, 6), (7, 6)])
         _range, angle_error, dps = 10000, 0.0, 10
         shoot_angle = 271 # shoot to the right of him, BUT NOT EXACTLY 90 degrees to the right, as with angle errors we might shoot the cell on top of us because we are placed at the very limit of ou current cell
-        p1.weapon, p2.weapon = GunWeapon(_range, angle_error, dps), GunWeapon(_range, angle_error, dps)
         original_health = p2.hp
         if DBG:
             print "Player1 pos=", (p1.posx, p1.posy)
@@ -331,6 +330,42 @@ class GameEngineTest(unittest.TestCase):
             "The player coordinates should have been closer to expected ones. \nExpected: " 
             + str((expected_posx, expected_posy)) 
             + "\nResult: " + str((p.posx, p.posy))
+        )
+
+    def test_visible_players_see_noone(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (4, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(len(p1.visible_players) == 0,
+            "The player " + str(p1) + " should see noone. But it is seeing: " + str(p1.visible_players)
+        )
+
+    def test_visible_players_see_someone(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (2, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(len(p1.visible_players) == 1,
+            "The player (" + str(p1) + ") should see someone. But it is seeing: " + str(p1.visible_players)
+        )
+
+    def test_visible_players_see_someone_with_right_information(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (2, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(p1.visible_players[0][0] == p2.player_id
+            and p1.visible_players[0][1] == p2.posx
+            and p1.visible_players[0][2] == p2.posy
+            and p1.visible_players[0][3] == p2.move_angle,
+            "The player (" + str(p1) + ") should see someone. But it is seeing: " + str(p1.visible_players)
         )
 
 if __name__ == '__main__':

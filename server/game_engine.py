@@ -25,7 +25,7 @@ _logger.setLevel(logging.INFO)
 # ----------------- players related ---------------
 
 class Player(object):
-    """Player class, mainly POCO object"""
+    """Player class"""
     PLAYER_RADIUS = 5
     STATUS_ALIVE = 1
     STATUS_DEAD = 0
@@ -57,7 +57,15 @@ class Player(object):
         self.sight_angle = 0            # the direction to wich the player is looking
         self.sight_polygon_coords = []  # original polygon, the "raw" sight polygon, without occlusion
         self.visible_objects = []       # objects that this player can see (after applying occlusion)
+        self.visible_players = []       # other players that this player can see (after applying occlusion)
         self.occlusion_polygon = None   # The shapely polygon computed by the occlusion. Will be used to compute intersections with various objects
+
+        # Occlusion and collisions related
+        self.hitbox = None
+
+        # Some other things needed to initialize our object
+        self.compute_hitbox()
+
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -67,11 +75,23 @@ class Player(object):
     def get_state(self):
         return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
                 self.sight_angle, 's': self.status, 'v': self.sight_vertices,
-                'vp': [], 'vo': self.visible_objects, 'ao': []}
+                'vp': self.visible_players, 'vo': self.visible_objects, 'ao': []}
 
     def add_new_visible_object(self, obj):
         if isinstance(obj, ActionableItem) is True:
             self.visible_objects.append((obj.type, obj.posx, obj.posy))
+
+    def compute_hitbox(self):
+        """This methods recomputes the hitbox attribute (Shapely Polygon) used by occlusion and collisions/shoots"""
+        self.hitbox = Point(self.posx, self.posy).buffer(Player.PLAYER_RADIUS)
+
+    def __str__(self):
+        res = "Player of team=" + str(self.team) + ", id=" + str(self.player_id) + " at position (" + str(self.posx) + ", " + str(self.posy) + ")"
+        res += ", hp=" + str(self.hp)
+        return res
+
+    def __repr__(self):
+        return str(self)
 
 class SpyPlayer(Player):
     """A Player that is a spy"""
@@ -86,6 +106,7 @@ class SpyPlayer(Player):
         self.__orig_posy = self.posy
         self.sight_polygon_coords = []
         self.compute_sight_polygon_coords()
+        self.weapon = SpyGunWeapon()
 
     def compute_sight_polygon_coords(self):
         # We are computing the translation of the circle from its creation to the current position
@@ -96,6 +117,11 @@ class SpyPlayer(Player):
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
+    def __str__(self):
+        return super(MercenaryPlayer, self).__str__()
+
+    def __repr__(self):
+        return str(self)
 
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
@@ -105,11 +131,18 @@ class MercenaryPlayer(Player):
         self.max_speedy = const.MAX_MERC_SPEED
         self.hp = const.MAX_MERC_HP
         self.sight_range = const.MERC_SIGHT_RANGE
+        self.weapon = MercGunWeapon()
 
     def compute_sight_polygon_coords(self):
         r = radians(self.sight_angle)
         cos_r, sin_r = cos(r), sin(r)
         self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]]) * matrix([[self.posx, self.posx - self.sight_range/2, self.posx + self.sight_range/2], [self.posy, self.posy + self.sight_range, self.posy + self.sight_range]])).transpose().tolist()
+
+    def __str__(self):
+        return super(MercenaryPlayer, self).__str__()
+
+    def __repr__(self):
+        return str(self)
 
 # ----------------- weapons related ---------------
 
@@ -133,6 +166,20 @@ class GunWeapon(Weapon):
 
     def draw_random_error(self):
         return rand(-self.angle_error, self.angle_error)
+
+class SpyGunWeapon(GunWeapon):
+    """Gun for the Spy"""
+    def __init__(self):
+        super(SpyGunWeapon, self).__init__(const.SPY_GUN_RANGE,
+            const.SPY_GUN_ANGLE_ERROR,
+            const.SPY_GUN_DPS)
+
+class MercGunWeapon(GunWeapon):
+    """Gun for the Merc"""
+    def __init__(self):
+        super(MercGunWeapon, self).__init__(const.MERC_GUN_RANGE,
+            const.MERC_GUN_ANGLE_ERROR,
+            const.MERC_GUN_DPS)
 
 class MineWeapon(Weapon):
     """Simplistic Mine Weapon implementation"""
@@ -270,7 +317,7 @@ class GameEngine(object):
         return not self.__loop.is_set()
 
     def step(self):
-        # Update player's positions and visions
+        # Update players' positions and visions
         for p in self.__players:
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
             self.__move_player(p, normalized_array[0] * p.speedx, normalized_array[1] * p.speedy)
@@ -285,8 +332,11 @@ class GameEngine(object):
             # Launch occlusion
             p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
-        # Update player's visible objects' list
         for p in self.__players:
+
+            # ---------- Update player's visible objects list ----------
+            del p.visible_objects[:] # Empty the list
+
             # A bite bruteforce here, let's use a circle instead of the real shaped vision
             # Just because there won't be many items to go through anyway
             # and for simplicity's and implementation speed's sakes
@@ -309,7 +359,15 @@ class GameEngine(object):
                                 p.add_new_visible_object(item)
                     except KeyError:
                         pass # There was nothing at this (row,col) position...
-            # TODO: Do the same things with ennemy players (and teammates?)
+
+            # ---------- Update player's visible players list ----------
+            del p.visible_players[:] # Empty the list
+            # Re-populate it
+            for p2 in self.__players:
+                if p2 is p:
+                    continue # Do not include ourself in visible objects
+                if p.occlusion_polygon.intersects(p2.hitbox):
+                    p.visible_players.append((p2.player_id, p2.posx, p2.posy, p2.move_angle))
 
 
     def __move_player(self, player, dx, dy):
@@ -359,6 +417,8 @@ class GameEngine(object):
         else: # collision along all axis
             player.posx = col_to_be * const.CELL_SIZE - 1 # maximum possible posx before colliding
             player.posy = row_to_be * const.CELL_SIZE - 1 # maximum possible posy before colliding
+
+        player.compute_hitbox()
 
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
@@ -550,7 +610,7 @@ class GameEngine(object):
                 continue # you cannot shoot yourself
             # Yes, we do compute the player's hitbox on shoot. It is in fact lighter that storing it in the player, because storing it in the player's object would mean
             # updating it on every player's move. Here we do computation only on shoots, we are going to be many times less frequent that movements!
-            hitbox = Point(p.posx, p.posy).buffer(Player.PLAYER_RADIUS)
+            hitbox = p.hitbox
             if line.intersects(hitbox): # hit!
                 victims.append(p)
 
