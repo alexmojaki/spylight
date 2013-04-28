@@ -419,6 +419,8 @@ class GameEngine(object):
 
         player.compute_hitbox()
 
+        return player # allow chaining
+
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
 
@@ -479,6 +481,12 @@ class GameEngine(object):
         end_spy_pids = start_spy_pids + self.slmap.nb_players[1]-1 # Last spy pid to be assigned
         self.__players = [SpyPlayer(i) for i in xrange(start_merc_pids, end_merc_pids+1)] # TODO: replace that by the actual player loading
         self.__players.extend([MercenaryPlayer(i) for i in xrange(start_spy_pids, end_spy_pids+1)]) # TODO: replace that by the actual player loading
+
+        # Move players to their respective spawn location
+        for p in self.__players:
+            spawn = self.slmap.get_spawn_point(p.team, p.player_id)
+            dx, dy = spawn[1] * const.CELL_SIZE, spawn[0] * const.CELL_SIZE
+            self.__move_player(p, dx, dy)
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 
