@@ -43,6 +43,7 @@ class Player(object):
         self.speedy = 0
         self.max_speedy = 0   # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
         self.move_angle = 0
+        self.lifes = 0
         self.hp = 0
         self.sight_range = 0
         self.status = Player.STATUS_ALIVE
@@ -73,9 +74,10 @@ class Player(object):
             self.status = Player.STATUS_DEAD
 
     def get_state(self):
-        return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
-                self.sight_angle, 's': self.status, 'v': self.sight_vertices,
-                'vp': self.visible_players, 'vo': self.visible_objects, 'ao': []}
+        return {'l': self.lifes, 'hp': self.hp, 'x': self.posx, 'y': self.posy,
+                'd': self.sight_angle, 's': self.status, 'v': self.
+                sight_vertices, 'vp': self.visible_players, 'vo': self.
+                visible_objects, 'ao': []}
 
     def add_new_visible_object(self, obj):
         if isinstance(obj, ActionableItem) is True:
@@ -117,6 +119,12 @@ class SpyPlayer(Player):
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
+
+    def game_state(self):
+        gs = super(SpyPlayer, self).game_state()
+        gs['recap'] = []
+        return gs
+
     def __str__(self):
         return super(MercenaryPlayer, self).__str__()
 
@@ -137,6 +145,11 @@ class MercenaryPlayer(Player):
         r = radians(self.sight_angle)
         cos_r, sin_r = cos(r), sin(r)
         self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]]) * matrix([[self.posx, self.posx - self.sight_range/2, self.posx + self.sight_range/2], [self.posy, self.posy + self.sight_range, self.posy + self.sight_range]])).transpose().tolist()
+
+    def game_state(self):
+        gs = super(MercenaryPlayer, self).game_state()
+        gs['kills'] = []
+        return gs
 
     def __str__(self):
         return super(MercenaryPlayer, self).__str__()
@@ -317,6 +330,12 @@ class GameEngine(object):
         return not self.__loop.is_set()
 
     def step(self):
+        # TODO: Maybe re-write the following lines, for a better handling of
+        #       game termination.
+        if self.__game_finished():
+            self.shutdown()
+            return
+
         # Update players' positions and visions
         for p in self.__players:
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
@@ -369,6 +388,11 @@ class GameEngine(object):
                 if p.occlusion_polygon.intersects(p2.hitbox):
                     p.visible_players.append((p2.player_id, p2.posx, p2.posy, p2.move_angle))
 
+
+    def __game_finished(self):
+        # TODO: The end of the time is obviously not the only cause of game
+        #       termination. Other causes should be handled too.
+        return self.get_remaining_time() <= 0
 
     def __move_player(self, player, dx, dy):
         """
@@ -530,6 +554,11 @@ class GameEngine(object):
 
     def get_remaining_time(self):
         return int(round(self.__total_time - time() + self.__start_time))
+
+    def get_game_statistics(self):
+        # TODO: Return the game statistics useful to build the `end` frame.
+        return {'winners': SPY_TEAM, 'ttime': int(round(self.__start_time -
+                time()))}
 
     def start(self):
         self.__loop.clear()

@@ -125,7 +125,7 @@ class SpyLightMap(object):
         self.max_x = self.width * const.CELL_SIZE - 1
         self.max_y = self.height * const.CELL_SIZE - 1
 
-        print 'spawns:', self.spawns
+#        print 'spawns:', self.spawns
 
         # File hash
         m = hashlib.sha1()
