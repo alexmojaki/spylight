@@ -25,7 +25,7 @@ _logger.setLevel(logging.INFO)
 # ----------------- players related ---------------
 
 class Player(object):
-    """Player class, mainly POCO object"""
+    """Player class"""
     PLAYER_RADIUS = 5
     STATUS_ALIVE = 1
     STATUS_DEAD = 0
@@ -106,6 +106,7 @@ class SpyPlayer(Player):
         self.__orig_posy = self.posy
         self.sight_polygon_coords = []
         self.compute_sight_polygon_coords()
+        self.weapon = SpyGunWeapon()
     
     def compute_sight_polygon_coords(self):
         # We are computing the translation of the circle from its creation to the current position
@@ -130,6 +131,7 @@ class MercenaryPlayer(Player):
         self.max_speedy = const.MAX_MERC_SPEED
         self.hp = const.MAX_MERC_HP
         self.sight_range = const.MERC_SIGHT_RANGE
+        self.weapon = MercGunWeapon()
 
     def compute_sight_polygon_coords(self):
         # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
@@ -163,6 +165,20 @@ class GunWeapon(Weapon):
 
     def draw_random_error(self):
         return rand(-self.angle_error, self.angle_error)
+
+class SpyGunWeapon(GunWeapon):
+    """Gun for the Spy"""
+    def __init__(self):
+        super(SpyGunWeapon, self).__init__(const.SPY_GUN_RANGE, 
+            const.SPY_GUN_ANGLE_ERROR, 
+            const.SPY_GUN_DPS)
+
+class MercGunWeapon(GunWeapon):
+    """Gun for the Merc"""
+    def __init__(self):
+        super(MercGunWeapon, self).__init__(const.MERC_GUN_RANGE, 
+            const.MERC_GUN_ANGLE_ERROR, 
+            const.MERC_GUN_DPS)
 
 class MineWeapon(Weapon):
     """Simplistic Mine Weapon implementation"""
