@@ -354,6 +354,19 @@ class GameEngineTest(unittest.TestCase):
             "The player (" + str(p1) + ") should see someone. But it is seeing: " + str(p1.visible_players)
         )
 
+    def test_visible_players_see_someone_with_right_information(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (2, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(p1.visible_players[0][0] == p2.player_id
+            and p1.visible_players[0][1] == p2.posx
+            and p1.visible_players[0][2] == p2.posy
+            and p1.visible_players[0][3] == p2.move_angle,
+            "The player (" + str(p1) + ") should see someone. But it is seeing: " + str(p1.visible_players)
+        )
 
 if __name__ == '__main__':
     unittest.main()
