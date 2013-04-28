@@ -85,8 +85,8 @@ class Character(Widget):
         self.update_offset()
 
     def update_offset(self):
-        self.offsetx = self.screenpos[0] - self.gamepos[0]
-        self.offsety = self.screenpos[1] - self.gamepos[1]
+        self.offset = [self.screenpos[0] - self.gamepos[0],
+                       self.screenpos[1] - self.gamepos[1]]
 
     def get_vision(self):
         return teams[self.team]['vision_class'](self)

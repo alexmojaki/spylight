@@ -32,13 +32,13 @@
     canvas:
         PushMatrix:
         Translate:
-            x: self.x + self.pos_offset_x
-            y: self.y + self.pos_offset_y
+            x: self.x
+            y: self.y
         PushMatrix:
         Rotate:
             angle: self.rotation
         Rectangle:
-            pos: -self.pos_offset_x, -self.pos_offset_y
+            pos: 0, 0
             size: 11,11
             source: self.sprite
         PopMatrix:
