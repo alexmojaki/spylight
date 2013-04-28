@@ -16,9 +16,10 @@ printable_chars = set(printable_chars)
 
 
 class SpylightRequestHandler(StreamRequestHandler, object):
-    CONNECTION_INIT = 'CONNECTION_INIT'
-    CONNECTION_RUN = 'CONNECTION_RUN'
-    CONNECTION_STOP = 'CONNECTION_STOP'
+    CONNECTION_INIT = 'CONNECTION_INIT'  # Waiting for `init` frame
+    CONNECTION_RUN = 'CONNECTION_RUN'    # Waiting for all the other frames
+    CONNECTION_END = 'CONNECTION_END'    # Not waiting, will send `end` frame
+    CONNECTION_STOP = 'CONNECTION_STOP'  # Not waiting, will close connection
 
     def setup(self):
         print 'New client connected:', self.client_address[0], \
@@ -27,6 +28,7 @@ class SpylightRequestHandler(StreamRequestHandler, object):
         super(SpylightRequestHandler, self).setup()
 
         self._player_id = None
+        self._player_team = None
 
         self._sender_busy = Event()
         self._sender_interval = -1
@@ -60,13 +62,17 @@ teams are full)'
             self._sender.start()
 
     def update_status(self, status=None):
-        if self.server.handler_thread.is_stopped():
-            self._status = self.CONNECTION_STOP
+        if status == self.CONNECTION_STOP:
+            self._status = status
+        elif self.server.handler_thread.is_stopped():
+            self._status = self.CONNECTION_END
         elif status is not None:
             self._status = status
 
-        if self._status == self.CONNECTION_STOP:
+        if self._status in (self.CONNECTION_END, self.CONNECTION_STOP):
             self.setup_sender(-1)
+            if self._status == self.CONNECTION_END:
+                self.send_end_stats()
 
     def handle(self):
         try:
@@ -162,6 +168,8 @@ invalid message field `type`'
             print 'Initialisation failed: team full'
             self.update_status(self.CONNECTION_STOP)
             return
+
+        self._player_team = data['team']
 
         player_state = GameEngine().get_player_state(self._player_id)
         pos_x, pos_y, max_hp = (player_state[k] for k in ('x', 'y', 'hp'))
@@ -280,10 +288,24 @@ invalid message field `type`'
         time = GameEngine().get_remaining_time()
         GameEngine().release()
 
-        self.send({'l': s['hp'], 'p': (s['x'], s['y']), 'd': s['d'], 's':
-                   s['s'], 'v': s['v'], 'k': kills, 'vp': s['vp'], 'pi':
-                   terminals, 'vo': s['vo'], 'ao': s['ao'], 'ev': events, 'ti':
-                   time})
+        self.send({'type': 'update', 'l': s['hp'], 'p': (s['x'], s['y']), 'd':
+                   s['d'], 's': s['s'], 'v': s['v'], 'k': kills, 'vp': s['vp'],
+                   'pi': terminals, 'vo': s['vo'], 'ao': s['ao'], 'ev': events,
+                   'ti': time})
+
+    def send_end_stats(self):
+        GameEngine().acquire()
+        gs = GameEngine().get_game_statistics()
+        ps = GameEngine().get_player_state(self._player_id)
+        GameEngine().release()
+
+        data = {'type': 'end', 'winners': gs['winners'], 'ttime': gs['ttime'],
+                'lifes': ps['l']}
+        if self._player_team == MERC_TEAM:
+            data['kills'] = ps['kills']
+        elif self._player_team == SPY_TEAM:
+            data['recap'] = ps['recap']
+        self.send(data)
 
     def finish(self):
         print 'Client disconnected:', self.client_address[0], \

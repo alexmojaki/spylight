@@ -125,7 +125,7 @@ class SpyLightMap(object):
         self.max_x = self.width * const.CELL_SIZE - 1
         self.max_y = self.height * const.CELL_SIZE - 1
 
-        print 'spawns:', self.spawns
+#        print 'spawns:', self.spawns
 
         # File hash
         m = hashlib.sha1()
@@ -269,7 +269,9 @@ class SpyLightMap(object):
         # number of players in the other teams
         offset = sum(self.nb_players[:teamid])
         try:
-            return self.spawns[teamid][playerid - offset]
+            if offset <= playerid:
+                return self.spawns[teamid][playerid - offset]
+            print 'Wrong player ({}) or team ({}) id'.format(playerid, teamid)
         except IndexError:
             msg = 'Error retrieving the spawn point     for player {} in team {}'
             print msg.format(playerid, teamid)
