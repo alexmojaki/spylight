@@ -62,7 +62,7 @@ class SpyLightMap(object):
         self.height = 0
         self.witdh = 0
         self.map_tiles = None  # self.map_tiles[col][row]
-        self.nb_players = (0, 0)
+        self.nb_players = (0, 0)  # nb players in team 0, nb players in team 1
         self.extra_info = {}  # Contains misc. info regarding specific tiles
                               # keys: '{0}-{1}'.format(row, col)
         self.spawns = [[], []]  # spawn points for both teams. The spawn a
