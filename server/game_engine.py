@@ -21,6 +21,9 @@ _logger = logging.getLogger("ge.log")
 _logger.addHandler(logging.FileHandler("ge.log"))
 _logger.setLevel(logging.INFO)
 
+
+# ----------------- players related ---------------
+
 class Player(object):
     """Player class, mainly POCO object"""
     PLAYER_RADIUS = 5
@@ -53,15 +56,22 @@ class Player(object):
         self.obstacles_in_sight_n = 0   # basically, len(self.obstacles_in_sight)
         self.sight_angle = 0            # the direction to wich the player is looking
         self.sight_polygon_coords = []  # original polygon, the "raw" sight polygon, without occlusion
+        self.visible_objects = []       # objects that this player can see (after applying occlusion)
+        self.occlusion_polygon = None   # The shapely polygon computed by the occlusion. Will be used to compute intersections with various objects
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
+    
     def get_state(self):
         return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
                 self.sight_angle, 's': self.status, 'v': self.sight_vertices,
-                'vp': [], 'vo': [], 'ao': []}
+                'vp': [], 'vo': self.visible_objects, 'ao': []}
+
+    def add_new_visible_object(self, obj):
+        if isinstance(obj, ActionableItem) is True:
+            self.visible_objects.append((obj.type, obj.posx, obj.posy))
 
 class SpyPlayer(Player):
     """A Player that is a spy"""
@@ -86,7 +96,6 @@ class SpyPlayer(Player):
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
-
         
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
@@ -101,6 +110,8 @@ class MercenaryPlayer(Player):
         # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
         self.sight_polygon_coords = [[self.posx, self.posy], [self.posx - self.sight_range/2, self.posy + self.sight_range], [self.posx + self.sight_range/2, self.posy + self.sight_range]]
 
+# ----------------- weapons related ---------------
+
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
     def __init__(self):
@@ -110,7 +121,6 @@ class Weapon(object):
     # @param{Player} victim: Victim to damage using this weapon
     def damage(self, victim):
         victim.take_damage(self.dps)
-
 
 class GunWeapon(Weapon):
     """Simplistic Gun Weapon implementation"""
@@ -129,13 +139,15 @@ class MineWeapon(Weapon):
         super(MineWeapon, self).__init__()
         self.dps = 50
 
+# ----------------- actionable items related ---------------
 
 class ActionableItem(object):
     """Simplistic ActionableItem implementation"""
-    def __init__(self, row, col):
+    def __init__(self, x, y):
         super(ActionableItem, self).__init__()
-        self.pos_row = row
-        self.pos_col = col
+        self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
+        self.posx, self.posy = x, y
+        self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
 
     def act(self, originPlayer):
         pass # Todo implement that
@@ -150,26 +162,32 @@ class MineAI(ActionableItem):
             # Deactivate the current mine
             GameEngine().remove_new_actionable_item(self) # Example of acting back with the GameEngine
 
+class TerminalAI(ActionableItem):
+    def __init(self, **kwargs):
+        """
+            TerminalAI class: Terminal ActionableItem. Terminal are piratable by spies only.
+        """
+        super(TerminalAI, self).__init__(kwargs)
+
+# ----------------- proximity objects related ---------------
+
 class ProximityObject(object):
     """docstring for ProximityObject"""
-    def __init__(self, _range_of_action):
+    def __init__(self, _range_of_action, x, y):
         super(ProximityObject, self).__init__()
+        self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
+        self.posx, self.posy = x, y
+        self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
         self.range_of_action = _range_of_action
 
 class MinePO(ProximityObject):
     """docstring for MineProxObj"""
-    def __init__(self, _range):
-        super(MinePO, self).__init__(_range)
+    def __init__(self, **kwargs):
+        super(MinePO, self).__init__(kwargs)
         self.weapon = MineWeapon()
 
 
-class TerminalAI(ActionableItem):
-    def __init(self, **args):
-        """
-            TerminalAI class: Terminal ActionableItem. Terminal are piratable by spies only.
-        """
-        super(TerminalAI, self).__init__(args)
-
+# ----------------- ! GAME ENGINE ! ---------------
 
 class GameEngine(object):
     _instances = {}
@@ -181,6 +199,7 @@ class GameEngine(object):
 
     def init(self, config_file, map_file=None):
         self.__actionable_items = {} # Will contain the ActionableItem objects on the map that can do something when a player does 'action' on them (action = press the action key)
+        self.__proximity_objects = {} # Will contain the ProximityObject objects on the map that can do something when a player is in a given range of them
         self.__loop = Event()
         self.__curr_player_number = 0
         self.__lock = Lock()
@@ -223,14 +242,20 @@ class GameEngine(object):
             self.__stepper = Timer(interval, _stepper_action)
             self.__stepper.start()
 
-    # @function push_new_actionable_item will register a new ActionableItem on the current game's map
-    # @param{ActionableItem} item
-    def push_new_actionable_item(self, item):
-        key = self.__actionable_item_key_from_row_col(item.pos_row, item.pos_col)
+    # @function push_new_item will register a new ActionableItem on the current game's map
+    # @param item
+    def push_new_item(self, item):
+        key = self.__map_item_key_from_row_col(item.pos_row, item.pos_col)
+        if isinstance(item, ActionableItem):
+            dict_ = self.__actionable_items
+        elif isinstance(item, ProximityObject):
+            dict_ = self.__proximity_objects
+        else:
+            return self # allow chaining
         try:
-            self.__actionable_items[key].append(item)
+            dict_[key].append(item)
         except KeyError:
-            self.__actionable_items[key] = [item]
+            dict_[key] = [item]
         return self # allow chaining
 
     def remove_new_actionable_item(self, item):# TODO implementation of that
@@ -244,7 +269,7 @@ class GameEngine(object):
         return not self.__loop.is_set()
 
     def step(self):
-        # Update player's positions
+        # Update player's positions and visions
         for p in self.__players:
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
             self.__move_player(p, normalized_array[0] * p.speedx, normalized_array[1] * p.speedy)
@@ -257,9 +282,34 @@ class GameEngine(object):
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
             # Launch occlusion
-            print "Plop:", len(p.sight_polygon_coords)
-            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
-            print "Pouet"
+            p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+
+        # Update player's visible objects' list
+        for p in self.__players:
+            # A bite bruteforce here, let's use a circle instead of the real shaped vision
+            # Just because there won't be many items to go through anyway
+            # and for simplicity's and implementation speed's sakes
+            row_start   = utils.norm_to_cell(max(0, p.posy - p.sight_range))
+            row_end     = utils.norm_to_cell(min(self.slmap.max_y, p.posy + p.sight_range))
+            col_start   = utils.norm_to_cell(max(0, p.posx - p.sight_range))
+            col_end     = utils.norm_to_cell(min(self.slmap.max_x, p.posx + p.sight_range))
+                
+            for row in xrange(row_start, row_end+1):
+                for col in xrange(col_start, col_end+1):
+                    try:
+                        for item in self.__actionable_items[self.__map_item_key_from_row_col(row, col)]:
+                            if p.occlusion_polygon.intersects(item.geometric_point):
+                                p.add_new_visible_object(item)
+                    except KeyError:
+                        pass # There was nothing at this (row,col) position... 
+                    try:
+                        for item in self.__proximity_objects[self.__map_item_key_from_row_col(row, col)]:
+                            if p.occlusion_polygon.intersects(item.geometric_point):
+                                p.add_new_visible_object(item)
+                    except KeyError:
+                        pass # There was nothing at this (row,col) position... 
+            # TODO: Do the same things with ennemy players (and teammates?)
+
 
     def __move_player(self, player, dx, dy):
         """
@@ -291,8 +341,8 @@ class GameEngine(object):
         if y_to_be < 0:
             y_to_be = 0
 
-        row, col = self.__norm_to_cell(player.posy), self.__norm_to_cell(player.posx)
-        row_to_be, col_to_be = self.__norm_to_cell(y_to_be), self.__norm_to_cell(x_to_be)
+        row, col = utils.norm_to_cell(player.posy), utils.norm_to_cell(player.posx)
+        row_to_be, col_to_be = utils.norm_to_cell(y_to_be), utils.norm_to_cell(x_to_be)
 
         is_obs_by_dx = self.slmap.is_obstacle_from_cell_coords(row, col_to_be)
         is_obs_by_dy = self.slmap.is_obstacle_from_cell_coords(row_to_be, col)
@@ -321,7 +371,7 @@ class GameEngine(object):
         return None # just to explicitely tell the calling function to continue (I hate implicit things)
 
 
-    def __actionable_item_key_from_row_col(self, row, col):
+    def __map_item_key_from_row_col(self, row, col):
         return str(row) + "," + str(col)
 
     def get_player_sight(self, pid):
@@ -334,7 +384,7 @@ class GameEngine(object):
         :return: True of there was something to do, False else
         """
         actioner = self.__players[pid]
-        key = self.__actionable_item_key_from_row_col(actioner.posx // const.CELL_SIZE, actioner.posy // const.CELL_SIZE)
+        key = self.__map_item_key_from_row_col(actioner.posx // const.CELL_SIZE, actioner.posy // const.CELL_SIZE)
         try:
             objs = self.__actionable_items[key]
         except KeyError:
@@ -349,21 +399,26 @@ class GameEngine(object):
 
     def load_map(self, map_file):
         self.__map_file = map_file
+        print "load_map: Loading map_file" + str(map_file)
         self.slmap = SpyLightMap()
         self.slmap.load_map(map_file)
         # Go through the whole map to find for special things to register, like actionable items...
         for row in xrange(0, self.slmap.height):
             for col in xrange(0, self.slmap.width):
                 if self.slmap.map_tiles[row][col] == self.slmap.TERMINAL_KEY:
-                    terminal = TerminalAI(row, col)
-                    self.push_new_actionable_item(terminal)
+                    terminal = TerminalAI(row * const.CELL_SIZE, col * const.CELL_SIZE)
+                    self.push_new_item(terminal)
 
         self.__total_time = 60  # TODO: Update with the real time read from the map file.
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
-        self.__players = [SpyPlayer(i) for i in xrange(0, 1)] # TODO: replace that by the actual player loading
-#        self.__players.extend([MercenaryPlayer(i, Player.MERC_TEAM) for i in xrange(2, 4)]) # TODO: replace that by the actual player loading
+        start_merc_pids = 0 # firt merc pid to be assigned
+        end_merc_pids = self.slmap.nb_players[0]-1 # Last mercernary pid to be assigned
+        start_spy_pids = end_merc_pids+1 # firt spy pid to be assigned
+        end_spy_pids = start_spy_pids + self.slmap.nb_players[1]-1 # Last spy pid to be assigned
+        self.__players = [SpyPlayer(i) for i in xrange(start_merc_pids, end_merc_pids+1)] # TODO: replace that by the actual player loading
+        self.__players.extend([MercenaryPlayer(i) for i in xrange(start_spy_pids, end_spy_pids+1)]) # TODO: replace that by the actual player loading
         # Do some things like settings the weapon for each player...
         return self # allow chaining
 
@@ -525,9 +580,6 @@ class GameEngine(object):
         shooter.weapon.damage(victim)
         return victim
 
-    def __norm_to_cell(self, coord):
-        return int(coord // const.CELL_SIZE)
-
     def __for_obstacle_in_range(self, vector, callback, **callback_args):
         """
             Finds the obstacle in the given range (range = a distance range + an angle (factorized in the "vector" argument))
@@ -541,12 +593,12 @@ class GameEngine(object):
                 - None either if the callback was never called or if it never returned anything else than None
                 - the callback value, if a callback call returns anything that is not None
         """
-        col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
+        col_orig = utils.norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         _logger.info("__shoot_collide_with_obstacle(): x=" + str(col_orig))
-        row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
+        row = utils.norm_to_cell(vector[0][1]) # y origin, same process as for x
         _logger.info("__shoot_collide_with_obstacle(): y=" + str(row))
-        col_end = int(self.__norm_to_cell(vector[1][0]))
-        row_end = int(self.__norm_to_cell(vector[1][1]))
+        col_end = int(utils.norm_to_cell(vector[1][0]))
+        row_end = int(utils.norm_to_cell(vector[1][1]))
         # The following variables will be used to increment in the "right direction" (negative if the end if lower
         # than the origin, etc....
         col_increment_sign = 1 if (col_end-col_orig) > 0 else -1
