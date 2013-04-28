@@ -253,7 +253,7 @@ class SpyLightMap(object):
 
     def get_tile(self, row, col):
         '''
-        Returns the section and the value of a tile.
+        Returns the section and the value of a tile.p
         If it's empty, (None, None) is returned
         '''
         try:
@@ -277,5 +277,6 @@ class SpyLightMap(object):
 
 if __name__ == '__main__':
     slm = SpyLightMap(sys.argv[1])
-    slm.print_legacy_map()
+    # slm.print_legacy_map()
+    print slm.get_spawn_point(input('team:'), input('player:'))
     # print slm.get_cameras()
