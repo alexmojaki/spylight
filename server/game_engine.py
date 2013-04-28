@@ -366,7 +366,7 @@ class GameEngine(object):
                 if p2 is p:
                     continue # Do not include ourself in visible objects
                 if p.occlusion_polygon.intersects(p2.hitbox):
-                    p.visible_players.append(p2)
+                    p.visible_players.append((p2.player_id, p2.posx, p2.posy, p2.move_angle))
 
 
     def __move_player(self, player, dx, dy):
