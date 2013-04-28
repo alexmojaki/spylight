@@ -280,10 +280,10 @@ invalid message field `type`'
         time = GameEngine().get_remaining_time()
         GameEngine().release()
 
-        self.send({'l': s['hp'], 'p': (s['x'], s['y']), 'd': s['d'], 's':
-                   s['s'], 'v': s['v'], 'k': kills, 'vp': s['vp'], 'pi':
-                   terminals, 'vo': s['vo'], 'ao': s['ao'], 'ev': events, 'ti':
-                   time})
+        self.send({'type': 'update', 'l': s['hp'], 'p': (s['x'], s['y']), 'd':
+                   s['d'], 's': s['s'], 'v': s['v'], 'k': kills, 'vp': s['vp'],
+                   'pi': terminals, 'vo': s['vo'], 'ao': s['ao'], 'ev': events,
+                   'ti': time})
 
     def finish(self):
         print 'Client disconnected:', self.client_address[0], \
