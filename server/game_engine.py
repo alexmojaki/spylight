@@ -21,6 +21,9 @@ _logger = logging.getLogger("ge.log")
 _logger.addHandler(logging.FileHandler("ge.log"))
 _logger.setLevel(logging.INFO)
 
+
+# ----------------- players related ---------------
+
 class Player(object):
     """Player class, mainly POCO object"""
     PLAYER_RADIUS = 5
@@ -53,15 +56,17 @@ class Player(object):
         self.obstacles_in_sight_n = 0   # basically, len(self.obstacles_in_sight)
         self.sight_angle = 0            # the direction to wich the player is looking
         self.sight_polygon_coords = []  # original polygon, the "raw" sight polygon, without occlusion
+        self.visible_objects = []       # objects that this player can see (after applying occlusion)
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
+    
     def get_state(self):
         return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
                 self.sight_angle, 's': self.status, 'v': self.sight_vertices,
-                'vp': [], 'vo': [], 'ao': []}
+                'vp': [], 'vo': self.visible_objects, 'ao': []}
 
 class SpyPlayer(Player):
     """A Player that is a spy"""
@@ -86,7 +91,6 @@ class SpyPlayer(Player):
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
-
         
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
@@ -101,6 +105,8 @@ class MercenaryPlayer(Player):
         # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
         self.sight_polygon_coords = [[self.posx, self.posy], [self.posx - self.sight_range/2, self.posy + self.sight_range], [self.posx + self.sight_range/2, self.posy + self.sight_range]]
 
+# ----------------- weapons related ---------------
+
 class Weapon(object):
     """Weapong class, mainly a POCO object"""
     def __init__(self):
@@ -110,7 +116,6 @@ class Weapon(object):
     # @param{Player} victim: Victim to damage using this weapon
     def damage(self, victim):
         victim.take_damage(self.dps)
-
 
 class GunWeapon(Weapon):
     """Simplistic Gun Weapon implementation"""
@@ -129,6 +134,7 @@ class MineWeapon(Weapon):
         super(MineWeapon, self).__init__()
         self.dps = 50
 
+# ----------------- actionable items related ---------------
 
 class ActionableItem(object):
     """Simplistic ActionableItem implementation"""
@@ -162,7 +168,6 @@ class MinePO(ProximityObject):
         super(MinePO, self).__init__(_range)
         self.weapon = MineWeapon()
 
-
 class TerminalAI(ActionableItem):
     def __init(self, **args):
         """
@@ -170,6 +175,7 @@ class TerminalAI(ActionableItem):
         """
         super(TerminalAI, self).__init__(args)
 
+# ----------------- ! GAME ENGINE ! ---------------
 
 class GameEngine(object):
     _instances = {}
