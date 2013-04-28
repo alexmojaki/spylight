@@ -185,55 +185,100 @@ class MineWeapon(Weapon):
     """Simplistic Mine Weapon implementation"""
     def __init__(self):
         super(MineWeapon, self).__init__()
-        self.dps = 50
+        self.dps = const.MINE_DPS
+
+# ----------------- visible objects related ---------------
+
+class VisibleObject(object):
+    """An object that can be viewed by a player"""
+    def __init__(self, x, y):
+        super(VisibleObject, self).__init__()
+        self.posx = x
+        self.posy = y
+        self.type = const.ITEMS_TYPE_IDS['unkown'] # has to be overwritten by children
 
 # ----------------- actionable items related ---------------
 
-class ActionableItem(object):
+class ActionableItem(VisibleObject):
     """Simplistic ActionableItem implementation"""
-    def __init__(self, x, y):
-        super(ActionableItem, self).__init__()
+    def __init__(self, *args):
+        x, y = args
+        super(ActionableItem, self).__init__(x, y)
         self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
-        self.posx, self.posy = x, y
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
 
     def act(self, originPlayer):
-        pass # Todo implement that?
+        """
+        Acts on the ActionableItem. If no action is available for the current player
+        it will return False.
+        Else, if there is an action to be done
+        and this action has just been done
+        if will return True
+        """
+        return False
 
 class TerminalAI(ActionableItem):
-    def __init(self, **kwargs):
+    def __init(self, *args):
         """
             TerminalAI class: Terminal ActionableItem. Terminal are piratable by spies only.
         """
-        super(TerminalAI, self).__init__(kwargs)
+        super(TerminalAI, self).__init__(*args)
         self.type = const.ITEMS_TYPE_IDS['terminal']
 
 # ----------------- proximity objects related ---------------
 
-class ProximityObject(object):
-    """docstring for ProximityObject"""
-    def __init__(self, _range_of_action, x, y):
-        super(ProximityObject, self).__init__()
+class ProximityObject(VisibleObject):
+    """
+    A ProximityObject is a VisibleObject that does something when 
+    a given player is in a gien range of it
+    range is in real coordinates (not related to map cells size)
+    """
+    def __init__(self, *args):
+        _range_of_action, x, y = args
+        super(ProximityObject, self).__init__(x, y)
         self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
-        self.posx, self.posy = x, y
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
         self.range_of_action = _range_of_action
+        self.weapon = None # has to be overwritten by children
+
+    def activate(self, player):
+        """
+        Activates/Enables on the ProximityObject. 
+        If no action is available for the current player (because it is too far or anything else)
+        it will return False.
+        Else, if there is an action to be done
+        and this action has just been done
+        if will return True
+        """ 
+        return False
 
 # ----------------- Mixed ones ----------------- 
 
 class MineAIPO(ActionableItem, ProximityObject):
     """simplistic Mine implementation"""
-    def __init__(self, **kwargs):
-        super(MineAI, self).__init__(kwargs)
+    def __init__(self, *args):
+        new_args = [const.MINE_BOMB_ACTIVATION_RANGE]
+        new_args.extends(args)
+        super(MineAI, self).__init__(*new_args)
         self.type = const.ITEMS_TYPE_IDS['mine']
         # ProximityObject's related
         self.weapon = MineWeapon()
 
     # ActionableItem's related
     def act(self, originPlayer):
-        if originPlayer.team == Player.SPY_TEAM:
+        if originPlayer.team == Player.SPY_TEAM: # and utils.distance((originPlayer.posx, originPlayer.posy), (self.posx, self.posy)): <-- was in the idea of having a range in which we can activate this thing, for later maybe
             # Deactivate the current mine
             GameEngine().remove_new_actionable_item(self) # Example of acting back with the GameEngine
+            return True
+        else:
+            return False
+
+    def activate(self, player):
+        if type(player) is SpyPlayer: # If a spy is in range for bombing him
+            self.weapon.damage(player) # Then, bomb him
+            return True # TODO: Catch this return value in the GameEngine to send the bomb event to clients
+        else:
+            return False
 
 # ----------------- ! GAME ENGINE ! ---------------
 
@@ -477,11 +522,11 @@ class GameEngine(object):
                                       #       read from the map file.
         # Loading players
         start_merc_pids = 0 # firt merc pid to be assigned
-        end_merc_pids = self.slmap.nb_players[0]-1 # Last mercernary pid to be assigned
+        end_merc_pids = max(0, self.slmap.nb_players[0]-1) # Last mercernary pid to be assigned
         start_spy_pids = end_merc_pids+1 # firt spy pid to be assigned
-        end_spy_pids = start_spy_pids + self.slmap.nb_players[1]-1 # Last spy pid to be assigned
-        self.__players = [SpyPlayer(i) for i in xrange(start_merc_pids, end_merc_pids+1)] # TODO: replace that by the actual player loading
-        self.__players.extend([MercenaryPlayer(i) for i in xrange(start_spy_pids, end_spy_pids+1)]) # TODO: replace that by the actual player loading
+        end_spy_pids = max(start_merc_pids, start_spy_pids + self.slmap.nb_players[1]-1) # Last spy pid to be assigned
+        self.__players = [MercenaryPlayer(i) for i in xrange(start_merc_pids, end_merc_pids+1)] # TODO: replace that by the actual player loading
+        self.__players.extend([SpyPlayer(i) for i in xrange(start_spy_pids, end_spy_pids+1)]) # TODO: replace that by the actual player loading
 
         # Move players to their respective spawn location
         for p in self.__players:
