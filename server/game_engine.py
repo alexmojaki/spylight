@@ -57,6 +57,7 @@ class Player(object):
         self.sight_angle = 0            # the direction to wich the player is looking
         self.sight_polygon_coords = []  # original polygon, the "raw" sight polygon, without occlusion
         self.visible_objects = []       # objects that this player can see (after applying occlusion)
+        self.occlusion_polygon = None   # The shapely polygon computed by the occlusion. Will be used to compute intersections with various objects
 
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
@@ -144,7 +145,7 @@ class ActionableItem(object):
     """Simplistic ActionableItem implementation"""
     def __init__(self, x, y):
         super(ActionableItem, self).__init__()
-        self.pos_row, self.pos_col = self.__norm_to_cell(x), self.__norm_to_cell(y)
+        self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
         self.posx, self.posy = x, y
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
 
@@ -174,7 +175,7 @@ class ProximityObject(object):
     """docstring for ProximityObject"""
     def __init__(self, _range_of_action, x, y):
         super(ProximityObject, self).__init__()
-        self.pos_row, self.pos_col = self.__norm_to_cell(x), self.__norm_to_cell(y)
+        self.pos_row, self.pos_col = utils.norm_to_cell(x), utils.norm_to_cell(y)
         self.posx, self.posy = x, y
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
         self.range_of_action = _range_of_action
@@ -281,26 +282,32 @@ class GameEngine(object):
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
             # Launch occlusion
-            p.sight_vertices = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
+            p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
         # Update player's visible objects' list
         for p in self.__players:
             # A bite bruteforce here, let's use a circle instead of the real shaped vision
             # Just because there won't be many items to go through anyway
             # and for simplicity's and implementation speed's sakes
-            row_start   = self.__norm_to_cell(max(0, p.posy - p.sight_range))
-            row_end     = self.__norm_to_cell(min(self.slmap.max_y, p.posy + p.sight_range))
-            col_start   = self.__norm_to_cell(max(0, p.posx - p.sight_range))
-            col_end     = self.__norm_to_cell(min(self.slmap.max_x, p.posx + p.sight_range))
+            row_start   = utils.norm_to_cell(max(0, p.posy - p.sight_range))
+            row_end     = utils.norm_to_cell(min(self.slmap.max_y, p.posy + p.sight_range))
+            col_start   = utils.norm_to_cell(max(0, p.posx - p.sight_range))
+            col_end     = utils.norm_to_cell(min(self.slmap.max_x, p.posx + p.sight_range))
                 
             for row in xrange(row_start, row_end+1):
                 for col in xrange(col_start, col_end+1):
-                    for item in self.__actionable_items[self.__map_item_key_from_row_col(row, col)]:
-                        if p.occlusion_polygon.intersects(item.geometric_point):
-                            p.add_new_visible_object(item)
-                    for item in self.__proximity_objects[self.__map_item_key_from_row_col(row, col)]:
-                        if p.occlusion_polygon.intersects(item.geometric_point):
-                            p.add_new_visible_object(item)
+                    try:
+                        for item in self.__actionable_items[self.__map_item_key_from_row_col(row, col)]:
+                            if p.occlusion_polygon.intersects(item.geometric_point):
+                                p.add_new_visible_object(item)
+                    except KeyError:
+                        pass # There was nothing at this (row,col) position... 
+                    try:
+                        for item in self.__proximity_objects[self.__map_item_key_from_row_col(row, col)]:
+                            if p.occlusion_polygon.intersects(item.geometric_point):
+                                p.add_new_visible_object(item)
+                    except KeyError:
+                        pass # There was nothing at this (row,col) position... 
             # TODO: Do the same things with ennemy players (and teammates?)
 
 
@@ -334,8 +341,8 @@ class GameEngine(object):
         if y_to_be < 0:
             y_to_be = 0
 
-        row, col = self.__norm_to_cell(player.posy), self.__norm_to_cell(player.posx)
-        row_to_be, col_to_be = self.__norm_to_cell(y_to_be), self.__norm_to_cell(x_to_be)
+        row, col = utils.norm_to_cell(player.posy), utils.norm_to_cell(player.posx)
+        row_to_be, col_to_be = utils.norm_to_cell(y_to_be), utils.norm_to_cell(x_to_be)
 
         is_obs_by_dx = self.slmap.is_obstacle_from_cell_coords(row, col_to_be)
         is_obs_by_dy = self.slmap.is_obstacle_from_cell_coords(row_to_be, col)
@@ -568,9 +575,6 @@ class GameEngine(object):
         shooter.weapon.damage(victim)
         return victim
 
-    def __norm_to_cell(self, coord):
-        return int(coord // const.CELL_SIZE)
-
     def __for_obstacle_in_range(self, vector, callback, **callback_args):
         """
             Finds the obstacle in the given range (range = a distance range + an angle (factorized in the "vector" argument))
@@ -584,12 +588,12 @@ class GameEngine(object):
                 - None either if the callback was never called or if it never returned anything else than None
                 - the callback value, if a callback call returns anything that is not None
         """
-        col_orig = self.__norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
+        col_orig = utils.norm_to_cell(vector[0][0]) # x origin, discretize to respect map's tiles (as, we will needs the true coordinates of the obstacle, when we'll find one)
         _logger.info("__shoot_collide_with_obstacle(): x=" + str(col_orig))
-        row = self.__norm_to_cell(vector[0][1]) # y origin, same process as for x
+        row = utils.norm_to_cell(vector[0][1]) # y origin, same process as for x
         _logger.info("__shoot_collide_with_obstacle(): y=" + str(row))
-        col_end = int(self.__norm_to_cell(vector[1][0]))
-        row_end = int(self.__norm_to_cell(vector[1][1]))
+        col_end = int(utils.norm_to_cell(vector[1][0]))
+        row_end = int(utils.norm_to_cell(vector[1][1]))
         # The following variables will be used to increment in the "right direction" (negative if the end if lower
         # than the origin, etc....
         col_increment_sign = 1 if (col_end-col_orig) > 0 else -1
