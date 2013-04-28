@@ -370,7 +370,7 @@ class GameEngine(object):
             p.obstacles_in_sight_n = 0
             # ------- Update player's sight -------
             # Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
-            sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
+            sight_direction = self.__get_normalized_direction_vector_from_angle(p.sight_angle) * p.sight_range
             vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
