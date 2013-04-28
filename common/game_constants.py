@@ -21,3 +21,8 @@ SPY_GUN_DPS = 30
 MERC_GUN_ANGLE_ERROR = 0.00
 MERC_GUN_RANGE  = 1000
 MERC_GUN_DPS = 30
+
+ITEMS_TYPE_IDS = {
+	"terminal": 10,
+	"mine": 20,
+}

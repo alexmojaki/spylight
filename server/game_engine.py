@@ -197,17 +197,7 @@ class ActionableItem(object):
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
 
     def act(self, originPlayer):
-        pass # Todo implement that
-
-class MineAI(ActionableItem):
-    """simplistic Mine implementation"""
-    def __init__(self, **kwargs):
-        super(MineAI, self).__init__(kwargs)
-
-    def act(self, originPlayer):
-        if originPlayer.team == Player.SPY_TEAM:
-            # Deactivate the current mine
-            GameEngine().remove_new_actionable_item(self) # Example of acting back with the GameEngine
+        pass # Todo implement that?
 
 class TerminalAI(ActionableItem):
     def __init(self, **kwargs):
@@ -215,6 +205,7 @@ class TerminalAI(ActionableItem):
             TerminalAI class: Terminal ActionableItem. Terminal are piratable by spies only.
         """
         super(TerminalAI, self).__init__(kwargs)
+        self.type = const.ITEMS_TYPE_IDS['terminal']
 
 # ----------------- proximity objects related ---------------
 
@@ -227,12 +218,21 @@ class ProximityObject(object):
         self.geometric_point = Point(x, y) # This will be used to compute intersections with the players' vision polygon
         self.range_of_action = _range_of_action
 
-class MinePO(ProximityObject):
-    """docstring for MineProxObj"""
+# ----------------- Mixed ones ----------------- 
+
+class MineAIPO(ActionableItem, ProximityObject):
+    """simplistic Mine implementation"""
     def __init__(self, **kwargs):
-        super(MinePO, self).__init__(kwargs)
+        super(MineAI, self).__init__(kwargs)
+        self.type = const.ITEMS_TYPE_IDS['mine']
+        # ProximityObject's related
         self.weapon = MineWeapon()
 
+    # ActionableItem's related
+    def act(self, originPlayer):
+        if originPlayer.team == Player.SPY_TEAM:
+            # Deactivate the current mine
+            GameEngine().remove_new_actionable_item(self) # Example of acting back with the GameEngine
 
 # ----------------- ! GAME ENGINE ! ---------------
 
