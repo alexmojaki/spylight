@@ -23,23 +23,22 @@ class GameScreen(Screen):
         Builder.load_file(utils.kvPath.format('game_screen'))
         super(GameScreen, self).__init__(**kwargs)  # init with the name
 
-        # Declared here to be able to handle screen changes
-        self.km = KeyboardManager()
-        self.km.bind(quit=self.goToPauseScreen)
-        self.tm = TouchManager()
-
-        game = SpylightGame(serverip, serverport, team, nick, self.km, self.tm)
+        game = SpylightGame(serverip, serverport, team, nick, self)
         self.add_widget(game)
 
     def goToPauseScreen(self, instance, value):
         if not value:  # False means key up event
             Logger.info('SL|GameScreen: TODO: Pause Screen')
 
+    def goToPostGameScreen(self, data):
+        Logger.info('SL|GameScreen: TODO: Post Game Screen')
+
 
 class SpylightGame(Widget):
 
-    def __init__(self, serverip, serverport, team, nick, keyboardMgr, touchMgr):
+    def __init__(self, serverip, serverport, team, nick, screenMgr):
         super(SpylightGame, self).__init__()
+        self.screenMgr = screenMgr
 
         # Register to the server
         self._ni = NetworkInterface(serverip, serverport)
@@ -65,7 +64,11 @@ class SpylightGame(Widget):
         self.add_widget(self.hud)
 
         # Register input listeners
-        self.am = ActionManager(self._ni, keyboardMgr, touchMgr, self)
+        kbMgr = KeyboardManager()
+        kbMgr.bind(quit=screenMgr.goToPauseScreen)
+        touchMgr = TouchManager()
+
+        self.am = ActionManager(self._ni, kbMgr, touchMgr, self)
 
         # Game client ready
         self._ni.on_message_recieved = self.update
@@ -93,24 +96,32 @@ class SpylightGame(Widget):
 
     def update(self, data):
         Logger.debug('SL|SLGame: update parameter: %s', data)
-        self.char.update(data)
-        self.hud.update(data)
 
-        player_updates = {}
-        for vp in data['vp']:
-            try:
-                player_updates[vp[0]] = vp
-            except (TypeError, IndexError):
-                pass
+        if data['type'] == 'update':
+            self.char.update(data)
+            self.hud.update(data)
+            self.mv.update(data)
 
-        for i in self.players:
-            if i != self.char.playerid:
-                p = self.players[i]
+            player_updates = {}
+            for vp in data['vp']:
                 try:
-                    p.visible = True
-                    p.update(player_updates[i])
-                except KeyError:
-                    p.visible = False
+                    player_updates[vp[0]] = vp
+                except (TypeError, IndexError):
+                    pass
 
-        ### <= UNCOMMENT IN THAT METHOD TO SEND TURN NOTIFICATIONS
-        self.am.notify_orientation()
+            for i in self.players:
+                if i != self.char.playerid:
+                    p = self.players[i]
+                    try:
+                        p.visible = True
+                        p.update(player_updates[i])
+                    except KeyError:
+                        p.visible = False
+
+            ### <= UNCOMMENT IN THAT METHOD TO SEND TURN NOTIFICATIONS
+            self.am.notify_orientation()
+
+        else:
+            Logger.warn('SL|Game: frame type not recognized: %s', data['type'])
+            # End here?
+            # self.screenMgr.goToPostGameScreen(data)

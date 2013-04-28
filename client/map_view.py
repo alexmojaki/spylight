@@ -36,6 +36,7 @@ class MapView(RelativeWidget):
         self.lightened_areas = []  # holes in the stencil
         self.always_visible = []  # displayed on top of the stencil
         self.hidden = []  # hidden by the stencil
+        self.visible_objects = {}  # vo, grouped by type id and then coord.
 
         # We have to sort the various items to display depending on the layer
         # where we want to put them
@@ -103,3 +104,10 @@ class MapView(RelativeWidget):
     def _to_pixel(self, coord):
         return (coord[0] * c.CELL_SIZE,
                 coord[1] * c.CELL_SIZE)
+
+    def update(self, data):
+        self._update_visible_objects(data['vo'])
+
+    def _update_visible_objects(self, vo):
+        self.visible_objects
+        pass

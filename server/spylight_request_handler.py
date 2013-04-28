@@ -209,6 +209,48 @@ invalid message field `type`'
         GameEngine().set_movement_speedy(self._player_id, speed)
         GameEngine().release()
 
+    def handle_turn(self, data):
+        print "You entered the `handle_turn` method!"
+        try:
+            angle = data['v']
+            # TODO Remove the next six lines when the right type will be sent
+            #      by clients
+            # TOTO -End-
+            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+                print 'Wrong input received: invalid message field `v`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+        except KeyError:
+            print 'Wrong input received: missing field(s) in message of type \
+`turn`'
+            self.update_status(self.CONNECTION_STOP)
+            return
+
+        GameEngine().acquire()
+        GameEngine().set_sight_angle(self._player_id, angle)
+        GameEngine().release()
+
+    def handle_shoot(self, data):
+        print "You entered the `handle_shoot` method!"
+        try:
+            angle = data['v']
+            # TODO Remove the next six lines when the right type will be sent
+            #      by clients
+            # TOTO -End-
+            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+                print 'Wrong input received: invalid message field `v`'
+                self.update_status(self.CONNECTION_STOP)
+                return
+        except KeyError:
+            print 'Wrong input received: missing field(s) in message of type \
+`shoot`'
+            self.update_status(self.CONNECTION_STOP)
+            return
+
+        GameEngine().acquire()
+        GameEngine().shoot(self._player_id, angle)
+        GameEngine().release()
+
     def handle_test(self, data):
         print 'Test message received:', data
 
