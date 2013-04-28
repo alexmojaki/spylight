@@ -14,7 +14,7 @@ from math import sin, cos, sqrt, radians
 from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
 from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
-from numpy import array # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
+from numpy import array, matrix # Will replace tuples for vectors operations (as (1, 1) * 2 = (1, 1, 1, 1) instead of (2, 2))
 import logging
 
 _logger = logging.getLogger("ge.log")
@@ -63,7 +63,7 @@ class Player(object):
         self.hp -= damage_amount # TODO change simplistic approach?
         if self.hp <= 0:
             self.status = Player.STATUS_DEAD
-    
+
     def get_state(self):
         return {'hp': self.hp, 'x': self.posx, 'y': self.posy, 'd':
                 self.sight_angle, 's': self.status, 'v': self.sight_vertices,
@@ -86,17 +86,17 @@ class SpyPlayer(Player):
         self.__orig_posy = self.posy
         self.sight_polygon_coords = []
         self.compute_sight_polygon_coords()
-    
+
     def compute_sight_polygon_coords(self):
         # We are computing the translation of the circle from its creation to the current position
         # dx, dy are the delta between original position and current one
         # and we apply those delta to every circle's point
         # This is a circle, no rotation!
-        dx, dy = self.posx - self.__orig_posx, self.posy - self.__orig_posy 
+        dx, dy = self.posx - self.__orig_posx, self.posy - self.__orig_posy
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
-        
+
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
     def __init__(self, player_id):
@@ -107,8 +107,9 @@ class MercenaryPlayer(Player):
         self.sight_range = const.MERC_SIGHT_RANGE
 
     def compute_sight_polygon_coords(self):
-        # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
-        self.sight_polygon_coords = [[self.posx, self.posy], [self.posx - self.sight_range/2, self.posy + self.sight_range], [self.posx + self.sight_range/2, self.posy + self.sight_range]]
+        r = radians(self.sight_angle)
+        cos_r, sin_r = cos(r), sin(r)
+        self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]]) * matrix([[self.posx, self.posx - self.sight_range/2, self.posx + self.sight_range/2], [self.posy, self.posy + self.sight_range, self.posy + self.sight_range]])).transpose().tolist()
 
 # ----------------- weapons related ---------------
 
@@ -293,7 +294,7 @@ class GameEngine(object):
             row_end     = utils.norm_to_cell(min(self.slmap.max_y, p.posy + p.sight_range))
             col_start   = utils.norm_to_cell(max(0, p.posx - p.sight_range))
             col_end     = utils.norm_to_cell(min(self.slmap.max_x, p.posx + p.sight_range))
-                
+
             for row in xrange(row_start, row_end+1):
                 for col in xrange(col_start, col_end+1):
                     try:
@@ -301,13 +302,13 @@ class GameEngine(object):
                             if p.occlusion_polygon.intersects(item.geometric_point):
                                 p.add_new_visible_object(item)
                     except KeyError:
-                        pass # There was nothing at this (row,col) position... 
+                        pass # There was nothing at this (row,col) position...
                     try:
                         for item in self.__proximity_objects[self.__map_item_key_from_row_col(row, col)]:
                             if p.occlusion_polygon.intersects(item.geometric_point):
                                 p.add_new_visible_object(item)
                     except KeyError:
-                        pass # There was nothing at this (row,col) position... 
+                        pass # There was nothing at this (row,col) position...
             # TODO: Do the same things with ennemy players (and teammates?)
 
 
