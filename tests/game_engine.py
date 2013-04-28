@@ -333,5 +333,28 @@ class GameEngineTest(unittest.TestCase):
             + "\nResult: " + str((p.posx, p.posy))
         )
 
+    def test_visible_players_see_noone(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (4, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(len(p1.visible_players) == 0,
+            "The player " + str(p1) + " should see noone. But it is seeing: " + str(p1.visible_players)
+        )
+
+    def test_visible_players_see_someone(self):
+        self.map_file = "map_test_scinded.hfm"
+        ge = self.getGE()
+        p1, p2 = self.__setup_players(ge, [(2, 4), (2, 7)])
+        move_angle = 270 # "->
+        ge.set_movement_angle(p1.player_id, move_angle)
+        ge.step()
+        self.assertTrue(len(p1.visible_players) == 1,
+            "The player (" + str(p1) + ") should see someone. But it is seeing: " + str(p1.visible_players)
+        )
+
+
 if __name__ == '__main__':
     unittest.main()

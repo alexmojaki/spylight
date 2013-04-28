@@ -63,6 +63,10 @@ class Player(object):
         # Occlusion and collisions related
         self.hitbox = None
 
+        # Some other things needed to initialize our object
+        self.compute_hitbox()
+
+
     def take_damage(self, damage_amount):
         self.hp -= damage_amount # TODO change simplistic approach?
         if self.hp <= 0:
@@ -80,6 +84,14 @@ class Player(object):
     def compute_hitbox(self):
         """This methods recomputes the hitbox attribute (Shapely Polygon) used by occlusion and collisions/shoots"""
         self.hitbox = Point(self.posx, self.posy).buffer(Player.PLAYER_RADIUS)
+
+    def __str__(self):
+        res = "Player of team=" + str(self.team) + ", id=" + str(self.player_id) + " at position (" + str(self.posx) + ", " + str(self.posy) + ")"
+        res += ", hp=" + str(self.hp) 
+        return res
+
+    def __repr__(self):
+        return str(self)
 
 class SpyPlayer(Player):
     """A Player that is a spy"""
@@ -104,6 +116,11 @@ class SpyPlayer(Player):
         self.sight_polygon_coords = []
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
+    def __str__(self):
+        return super(MercenaryPlayer, self).__str__()
+    
+    def __repr__(self):
+        return str(self)
         
 class MercenaryPlayer(Player):
     """A Player that is a Mercenary"""
@@ -117,6 +134,12 @@ class MercenaryPlayer(Player):
     def compute_sight_polygon_coords(self):
         # TODO: Someone with actual geometry skill to put triangle rotation by taking into account the angle, here
         self.sight_polygon_coords = [[self.posx, self.posy], [self.posx - self.sight_range/2, self.posy + self.sight_range], [self.posx + self.sight_range/2, self.posy + self.sight_range]]
+
+    def __str__(self):
+        return super(MercenaryPlayer, self).__str__()
+    
+    def __repr__(self):
+        return str(self)
 
 # ----------------- weapons related ---------------
 
@@ -277,7 +300,7 @@ class GameEngine(object):
         return not self.__loop.is_set()
 
     def step(self):
-        # Update player's positions and visions
+        # Update players' positions and visions
         for p in self.__players:
             normalized_array = self.__get_normalized_direction_vector_from_angle(p.move_angle)
             self.__move_player(p, normalized_array[0] * p.speedx, normalized_array[1] * p.speedy)
@@ -293,6 +316,7 @@ class GameEngine(object):
             p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
         for p in self.__players:
+
             # ---------- Update player's visible objects list ---------- 
             del p.visible_objects[:] # Empty the list
 
@@ -323,6 +347,8 @@ class GameEngine(object):
             del p.visible_players[:] # Empty the list
             # Re-populate it
             for p2 in self.__players:
+                if p2 is p:
+                    continue # Do not include ourself in visible objects
                 if p.occlusion_polygon.intersects(p2.hitbox):
                     p.visible_players.append(p2)
 
