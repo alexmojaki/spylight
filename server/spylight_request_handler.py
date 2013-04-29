@@ -71,13 +71,19 @@ teams are full)'
 
         if self._status in (self.CONNECTION_END, self.CONNECTION_STOP):
             self.setup_sender(-1)
-            if self._status == self.CONNECTION_END:
-                self.send_end_stats()
 
     def handle(self):
         try:
-            while self._status != self.CONNECTION_STOP:
+            while self._status not in (self.CONNECTION_END,
+                                       self.CONNECTION_STOP):
                 data_size = self.rfile.read(4)
+
+                # In case we have been waiting for a very long time, we should
+                # check the connection status.
+                self.update_status()
+                if self._status in (self.CONNECTION_END, self.CONNECTION_STOP):
+                    break
+
                 if len(data_size) < 4:
                     print 'Wrong input received: EOF while waiting for \
 message length (4 bytes long)'
@@ -140,8 +146,14 @@ invalid message field `type`'
                                                 self.update_status(
                                                     self.CONNECTION_STOP)
                                             else:
+                                                self.handle_test(data)
                                                 handler(data)
                                                 self.update_status()
+
+            if self._status == self.CONNECTION_END:
+                self.send_end_stats()
+                self.update_status(self.CONNECTION_STOP)
+
         except ThreadExit:
             self.update_status(self.CONNECTION_STOP)
 
@@ -218,7 +230,6 @@ invalid message field `type`'
         GameEngine().release()
 
     def handle_turn(self, data):
-        print "You entered the `handle_turn` method!"
         try:
             angle = data['v']
             # TODO Remove the next six lines when the right type will be sent
@@ -260,9 +271,11 @@ invalid message field `type`'
         GameEngine().release()
 
     def handle_test(self, data):
-        print 'Test message received:', data
+        print self.client_address[0], self.client_address[1], 'sent', data
 
     def send(self, message):
+        # Times to times, it is good to update status
+        self.update_status()
         try:
             data = m_pack(message)
         except Exception as exception:
@@ -275,6 +288,8 @@ invalid message field `type`'
                 data_size = s_pack('!I', data_size)
                 self.wfile.write(data_size + data)
                 self.wfile.flush()
+        # Times to times, it is good to update status
+        self.update_status()
 
     def send_game_state(self):
         GameEngine().acquire()
