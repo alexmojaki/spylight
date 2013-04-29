@@ -8,7 +8,7 @@ from kivy.core.window import Window
 
 
 class ActionManager(object):
-    _WALK_SPEED = config.get('KeyConfig', 'walkSpeed')
+    _WALK_SPEED = float(config.get('KeyConfig', 'walkSpeed'))
 
     def __init__(self, networkInterface, keyboardMgr, touchMgr, game):
         self._ni = networkInterface
@@ -46,6 +46,7 @@ class ActionManager(object):
 
         # Send direction, run state
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
+        Logger.debug("SL|Action: Vars types=%s, %s, %s", type(direction), type(speed), type(self._WALK_SPEED))
         self._ni.send(MessageFactory.move(direction, speed))
 
     def notify_touch_event(self, mgr, data):  # data is [[x,y], bool_down]
