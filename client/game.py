@@ -66,7 +66,7 @@ class SpylightGame(Widget):
         # Register input listeners
         kbMgr = KeyboardManager()
         kbMgr.bind(quit=screenMgr.goToPauseScreen)
-        self.am = ActionManager(self._ni, kbMgr, self)
+        self._am = ActionManager(self._ni, kbMgr, self)
 
         # Game client ready
         self._ni.on_message_recieved = self.update
@@ -113,9 +113,9 @@ class SpylightGame(Widget):
                     except KeyError:
                         p.visible = False
 
-            self.am.notify_orientation()
-
         elif data['type'] == 'end':
+            self._am.unbind()
+            self._ni.disconnect()
             self.screenMgr.goToPostGameScreen(data)
 
         else:

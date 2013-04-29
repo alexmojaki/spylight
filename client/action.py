@@ -15,11 +15,21 @@ class ActionManager(object):
     def __init__(self, networkInterface, keyboardMgr, game):
         self._ni = networkInterface
         self.game = game
-        keyboardMgr.bind(movement=self.notify_movement_event)
-        keyboardMgr.bind(action=self.notify_action)
+        self._km = keyboardMgr
+        self.last_turn_notification = datetime.now()
+        self.bind()
+
+    def bind(self):
+        self._km.bind(movement=self.notify_movement_event)
+        self._km.bind(action=self.notify_action)
         Window.bind(on_touch_down=self.notify_shoot)
         Window.bind(mouse_pos=self.notify_orientation)
-        self.last_turn_notification = datetime.now()
+
+    def unbind(self):
+        self._km.unbind(movement=self.notify_movement_event)
+        self._km.unbind(action=self.notify_action)
+        Window.unbind(on_touch_down=self.notify_shoot)
+        Window.unbind(mouse_pos=self.notify_orientation)
 
     def notify_action(self, mgr, data):
         if data:
@@ -50,7 +60,6 @@ class ActionManager(object):
 
         # Send direction, run state
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
-        Logger.debug("SL|Action: Vars types=%s, %s, %s", type(direction), type(speed), type(self._WALK_SPEED))
         self._ni.send(MessageFactory.move(direction, speed))
 
     def notify_shoot(self, window, mouseevent):
@@ -70,7 +79,7 @@ class ActionManager(object):
         The maximum send frequency is the same as the server step frequency
         '''
         delta = datetime.now() - self.last_turn_notification
-        if delta.microseconds * 1000000 >= const.STEP_STATE_INTERVAL:
+        if delta.microseconds / 1000000. >= const.STEP_STATE_INTERVAL:
             self._ni.send(MessageFactory.turn(
                 self._get_angle_with_char(Window.mouse_pos)))
             self.last_turn_notification = datetime.now()

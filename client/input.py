@@ -1,4 +1,4 @@
-from kivy.properties import BooleanProperty, NumericProperty, ReferenceListProperty
+from kivy.properties import BooleanProperty, ReferenceListProperty
 from kivy.core.window import Window
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
