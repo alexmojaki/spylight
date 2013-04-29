@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from msgpack import packb as m_pack, unpackb as m_unpack
-from socket import timeout
+from socket import SHUT_RDWR, timeout
 from SocketServer import StreamRequestHandler
 from string import printable as printable_chars
 from struct import pack as s_pack, unpack as s_unpack
@@ -67,9 +67,12 @@ teams are full)'
         if self.status == self.CONNECTION_STOP:
             return
         elif status == self.CONNECTION_STOP:
-            self.status = status
-        elif self.server.handler_thread.is_stopped():
-            self.status = self.CONNECTION_END
+            self.status = self.CONNECTION_STOP
+        elif self.server.is_stopped():
+            if self.status == self.CONNECTION_INIT:
+                self.status = self.CONNECTION_STOP
+            else:
+                self.status = self.CONNECTION_END
         elif status is not None:
             self.status = status
 
@@ -86,6 +89,7 @@ teams are full)'
                     data_size = self.rfile.read(4)
                 except timeout:
                     self.update_status()
+                    print self.status
                 else:
                     break
 
@@ -292,6 +296,9 @@ received: invalid message field `type`'
         GameEngine().acquire()
         GameEngine().shoot(self._player_id, angle)
         GameEngine().release()
+
+    def handle_action(self, data):
+        pass
 
     def handle_test(self, data):
         print self.client_address[0], self.client_address[1], 'sent', data
