@@ -1,21 +1,25 @@
 import math
+from datetime import datetime
 
 from kivy.logger import Logger
+from kivy.core.window import Window
 
 from client.config import config
 from client.network import MessageFactory
-from kivy.core.window import Window
+from common import game_constants as const
 
 
 class ActionManager(object):
-    _WALK_SPEED = config.get('KeyConfig', 'walkSpeed')
+    _WALK_SPEED = float(config.get('KeyConfig', 'walkSpeed'))
 
-    def __init__(self, networkInterface, keyboardMgr, touchMgr, game):
+    def __init__(self, networkInterface, keyboardMgr, game):
         self._ni = networkInterface
         self.game = game
         keyboardMgr.bind(movement=self.notify_movement_event)
         keyboardMgr.bind(action=self.notify_action)
-        touchMgr.bind(click_state=self.notify_touch_event)
+        Window.bind(on_touch_down=self.notify_shoot)
+        Window.bind(mouse_pos=self.notify_orientation)
+        self.last_turn_notification = datetime.now()
 
     def notify_action(self, mgr, data):
         if data:
@@ -48,9 +52,9 @@ class ActionManager(object):
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
         self._ni.send(MessageFactory.move(direction, speed))
 
-    def notify_touch_event(self, mgr, data):  # data is [[x,y], bool_down]
-        if data[1]:  # on mouse down only
-            self._ni.send(MessageFactory.shoot(self._get_angle_with_char(data[0])))
+    def notify_shoot(self, window, mouseevent):
+        self._ni.send(MessageFactory.shoot(
+            self._get_angle_with_char(Window.mouse_pos)))
 
     def _get_angle_with_char(self, other_point):
         cur_pos = self.game.char.gamepos
@@ -60,6 +64,12 @@ class ActionManager(object):
         # atan2 returns an angle between -pi and +pi (-180 and + 180)
         return math.degrees(math.atan2(dx, -dy)) + 180  # now 0 - 360
 
-    def notify_orientation(self):
-        self._ni.send(MessageFactory.turn(
-            self._get_angle_with_char(Window.mouse_pos)))
+    def notify_orientation(self, *param):
+        '''
+        The maximum send frequency is the same as the server step frequency
+        '''
+        delta = datetime.now() - self.last_turn_notification
+        if delta.microseconds * 1000000 >= const.STEP_STATE_INTERVAL:
+            self._ni.send(MessageFactory.turn(
+                self._get_angle_with_char(Window.mouse_pos)))
+            self.last_turn_notification = datetime.now()

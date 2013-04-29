@@ -13,7 +13,7 @@ from client.network import NetworkInterface, MessageFactory
 from client.character import Character, Replica
 from client.hud import SpylightHUD
 from client.map_view import MapView
-from client.input import KeyboardManager, TouchManager
+from client.input import KeyboardManager
 from client.action import ActionManager
 from client import utils
 
@@ -66,9 +66,7 @@ class SpylightGame(Widget):
         # Register input listeners
         kbMgr = KeyboardManager()
         kbMgr.bind(quit=screenMgr.goToPauseScreen)
-        touchMgr = TouchManager()
-
-        self.am = ActionManager(self._ni, kbMgr, touchMgr, self)
+        self.am = ActionManager(self._ni, kbMgr, self)
 
         # Game client ready
         self._ni.on_message_recieved = self.update
