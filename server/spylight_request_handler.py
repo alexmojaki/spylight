@@ -280,7 +280,6 @@ received: invalid message field `type`'
         GameEngine().release()
 
     def handle_shoot(self, data):
-        print "You entered the `handle_shoot` method!"
         try:
             angle = data['v']
             if not isinstance(angle, float) or angle < 0 or angle > 360:
