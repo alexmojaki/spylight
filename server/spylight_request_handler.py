@@ -110,7 +110,6 @@ message length (4 bytes long)'
                             print 'Wrong input received: timeout'
                             self.update_status(self.CONNECTION_STOP)
                         else:
-                            self.handle_test(data)
                             if len(data) < data_size:
                                 print 'Wrong input received: EOF while \
 waiting message content (' + str(data_size) + '\nbytes long)'
@@ -122,6 +121,7 @@ waiting message content (' + str(data_size) + '\nbytes long)'
                                     print 'Wrong input received:', exception
                                     self.update_status(self.CONNECTION_STOP)
                                 else:
+                                    self.handle_test(data)
                                     try:
                                         handler_suffix = data['type']
                                     except TypeError:
