@@ -50,6 +50,7 @@ class ActionManager(object):
 
         # Send direction, run state
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
+        Logger.debug("SL|Action: Vars types=%s, %s, %s", type(direction), type(speed), type(self._WALK_SPEED))
         self._ni.send(MessageFactory.move(direction, speed))
 
     def notify_shoot(self, window, mouseevent):
