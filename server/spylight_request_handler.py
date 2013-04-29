@@ -110,6 +110,7 @@ message length (4 bytes long)'
                             print 'Wrong input received: timeout'
                             self.update_status(self.CONNECTION_STOP)
                         else:
+                            self.handle_test(data)
                             if len(data) < data_size:
                                 print 'Wrong input received: EOF while \
 waiting message content (' + str(data_size) + '\nbytes long)'
@@ -162,7 +163,6 @@ received: invalid message field `type`'
                                                     self.update_status(
                                                         self.CONNECTION_STOP)
                                                 else:
-                                                    self.handle_test(data)
                                                     handler(data)
                                                     while self.status not in (
                                                             self.
