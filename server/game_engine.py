@@ -553,7 +553,7 @@ class GameEngine(object):
                     terminal = TerminalAI(row * const.CELL_SIZE, col * const.CELL_SIZE)
                     self.push_new_item(terminal)
 
-        self.__total_time = 10  # TODO: Update with the real time read from the map file.
+        self.__total_time = 60  # TODO: Update with the real time read from the map file.
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players

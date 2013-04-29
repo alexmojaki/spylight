@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from msgpack import packb as m_pack, unpackb as m_unpack
+from socket import timeout
 from SocketServer import StreamRequestHandler
 from string import printable as printable_chars
 from struct import pack as s_pack, unpack as s_unpack
 from threading import Event, Timer
+from time import sleep
 
 from common.game_constants import MERC_TEAM, SPY_TEAM
 from game_engine import GameEngine
@@ -34,7 +36,7 @@ class SpylightRequestHandler(StreamRequestHandler, object):
         self._sender_interval = -1
         self._sender = None
 
-        self._status = self.CONNECTION_INIT
+        self.status = self.CONNECTION_INIT
 
         if GameEngine().all_players_connected.is_set():
             print 'Connection will be closed: game already launched (both \
@@ -48,7 +50,7 @@ teams are full)'
 
             if not self._sender_busy.is_set():
                 self._sender_busy.set()
-                self.send_game_state()
+                self.sender()
                 self._sender_busy.clear()
 
         if self._sender is not None:
@@ -62,28 +64,35 @@ teams are full)'
             self._sender.start()
 
     def update_status(self, status=None):
-        if status == self.CONNECTION_STOP:
-            self._status = status
+        if self.status == self.CONNECTION_STOP:
+            return
+        elif status == self.CONNECTION_STOP:
+            self.status = status
         elif self.server.handler_thread.is_stopped():
-            self._status = self.CONNECTION_END
+            self.status = self.CONNECTION_END
         elif status is not None:
-            self._status = status
+            self.status = status
 
-        if self._status in (self.CONNECTION_END, self.CONNECTION_STOP):
+        if self.status in (self.CONNECTION_END, self.CONNECTION_STOP):
             self.setup_sender(-1)
 
     def handle(self):
         try:
-            while self._status not in (self.CONNECTION_END,
-                                       self.CONNECTION_STOP):
-                data_size = self.rfile.read(4)
+            self.update_status()
 
-                # In case we have been waiting for a very long time, we should
-                # check the connection status.
-                self.update_status()
-                if self._status in (self.CONNECTION_END, self.CONNECTION_STOP):
+            while self.status not in (self.CONNECTION_END,
+                                      self.CONNECTION_STOP):
+                try:
+                    data_size = self.rfile.read(4)
+                except timeout:
+                    self.update_status()
+                else:
                     break
 
+            self.update_status()
+
+            while self.status not in (self.CONNECTION_END,
+                                      self.CONNECTION_STOP):
                 if len(data_size) < 4:
                     print 'Wrong input received: EOF while waiting for \
 message length (4 bytes long)'
@@ -95,64 +104,84 @@ message length (4 bytes long)'
 4096 bytes'
                         self.update_status(self.CONNECTION_STOP)
                     else:
-                        data = self.rfile.read(data_size)
-                        if len(data) < data_size:
-                            print 'Wrong input received: EOF while waiting \
-message content (' + str(data_size) + '\nbytes long)'
+                        try:
+                            data = self.rfile.read(data_size)
+                        except timeout:
+                            print 'Wrong input received: timeout'
                             self.update_status(self.CONNECTION_STOP)
                         else:
-                            try:
-                                data = m_unpack(data, use_list=False)
-                            except Exception as exception:
-                                print 'Wrong input received:', exception
+                            if len(data) < data_size:
+                                print 'Wrong input received: EOF while \
+waiting message content (' + str(data_size) + '\nbytes long)'
                                 self.update_status(self.CONNECTION_STOP)
                             else:
                                 try:
-                                    handler_suffix = data['type']
-                                except TypeError:
-                                    print "Wrong input received: invalid \
-message's type"
-                                    self.update_status(self.CONNECTION_STOP)
-                                except KeyError:
-                                    print 'Wrong input received: no `type` \
-field in message'
+                                    data = m_unpack(data, use_list=False)
+                                except Exception as exception:
+                                    print 'Wrong input received:', exception
                                     self.update_status(self.CONNECTION_STOP)
                                 else:
-                                    # We must ensure that `type` field contains
-                                    # a string type object
-                                    if not isinstance(handler_suffix,
-                                                      basestring):
-                                        print 'Wrong input received: invalid \
-message field `type`'
+                                    try:
+                                        handler_suffix = data['type']
+                                    except TypeError:
+                                        print "Wrong input received: invalid \
+message's type"
+                                        self.update_status(self.
+                                                           CONNECTION_STOP)
+                                    except KeyError:
+                                        print 'Wrong input received: no \
+`type` field in message'
                                         self.update_status(self.
                                                            CONNECTION_STOP)
                                     else:
-                                        handler_name = 'handle_' + \
-                                            handler_suffix
-                                        if self._status == \
-                                                self.CONNECTION_INIT and \
-                                                handler_suffix != 'init':
+                                        # We must ensure that `type` field
+                                        # contains a string type object
+                                        if not isinstance(handler_suffix,
+                                                          basestring):
                                             print 'Wrong input received: \
-invalid message field `type`; must be "init" during the\ninitialisation phase.'
+invalid message field `type`'
                                             self.update_status(self.
                                                                CONNECTION_STOP)
                                         else:
-                                            try:
-                                                handler = getattr(self,
-                                                                  handler_name)
-                                            except AttributeError:
+                                            handler_name = 'handle_' + \
+                                                handler_suffix
+                                            if self.status == \
+                                                    self.CONNECTION_INIT and \
+                                                    handler_suffix != 'init':
                                                 print 'Wrong input received: \
-invalid message field `type`'
-                                                self.update_status(
-                                                    self.CONNECTION_STOP)
+invalid message field `type`; must be "init" during the\ninitialisation phase.'
+                                                self.update_status(self.
+                                                    CONNECTION_STOP)
                                             else:
-                                                self.handle_test(data)
-                                                handler(data)
-                                                self.update_status()
+                                                try:
+                                                    handler = getattr(self,
+                                                        handler_name)
+                                                except AttributeError:
+                                                    print 'Wrong input \
+received: invalid message field `type`'
+                                                    self.update_status(
+                                                        self.CONNECTION_STOP)
+                                                else:
+                                                    self.handle_test(data)
+                                                    handler(data)
+                                                    while self.status not in (
+                                                            self.
+                                                            CONNECTION_END,
+                                                            self.
+                                                            CONNECTION_STOP):
+                                                        try:
+                                                            data_size = self.\
+                                                                rfile.\
+                                                                read(4)
+                                                        except timeout:
+                                                            self.\
+                                                                update_status()
+                                                        else:
+                                                            break
+                                                    self.update_status()
 
-            if self._status == self.CONNECTION_END:
-                self.send_end_stats()
-                self.update_status(self.CONNECTION_STOP)
+            while self.status == self.CONNECTION_END:
+                sleep(1)
 
         except ThreadExit:
             self.update_status(self.CONNECTION_STOP)
@@ -209,7 +238,7 @@ invalid message field `type`'
             except ValueError:
                 pass
             # TOTO -End-
-            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+            if not isinstance(angle, float) or angle < 0 or angle > 360:
                 print 'Wrong input received: invalid message field `d`'
                 self.update_status(self.CONNECTION_STOP)
                 return
@@ -232,10 +261,7 @@ invalid message field `type`'
     def handle_turn(self, data):
         try:
             angle = data['v']
-            # TODO Remove the next six lines when the right type will be sent
-            #      by clients
-            # TOTO -End-
-            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+            if not isinstance(angle, float) or angle < 0 or angle > 360:
                 print 'Wrong input received: invalid message field `v`'
                 self.update_status(self.CONNECTION_STOP)
                 return
@@ -253,10 +279,7 @@ invalid message field `type`'
         print "You entered the `handle_shoot` method!"
         try:
             angle = data['v']
-            # TODO Remove the next six lines when the right type will be sent
-            #      by clients
-            # TOTO -End-
-            if not isinstance(angle, float) or angle < 0 or angle >= 360:
+            if not isinstance(angle, float) or angle < 0 or angle > 360:
                 print 'Wrong input received: invalid message field `v`'
                 self.update_status(self.CONNECTION_STOP)
                 return
@@ -274,8 +297,6 @@ invalid message field `type`'
         print self.client_address[0], self.client_address[1], 'sent', data
 
     def send(self, message):
-        # Times to times, it is good to update status
-        self.update_status()
         try:
             data = m_pack(message)
         except Exception as exception:
@@ -288,8 +309,16 @@ invalid message field `type`'
                 data_size = s_pack('!I', data_size)
                 self.wfile.write(data_size + data)
                 self.wfile.flush()
-        # Times to times, it is good to update status
+
+    def sender(self):
         self.update_status()
+        if self.status == self.CONNECTION_STOP:
+            return
+        elif self.status == self.CONNECTION_END:
+            self.send_end_stats()
+            self.update_status(self.CONNECTION_STOP)
+        elif self.status == self.CONNECTION_RUN:
+            self.send_game_state()
 
     def send_game_state(self):
         GameEngine().acquire()
