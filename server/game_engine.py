@@ -120,8 +120,8 @@ class SpyPlayer(Player):
         for x,y in self.sight_polygon.exterior.coords:
             self.sight_polygon_coords.append((int(x + dx), int(y + dy)))
 
-    def game_state(self):
-        gs = super(SpyPlayer, self).game_state()
+    def get_state(self):
+        gs = super(SpyPlayer, self).get_state()
         gs['recap'] = []
         return gs
 
@@ -146,8 +146,8 @@ class MercenaryPlayer(Player):
         cos_r, sin_r = cos(r), sin(r)
         self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]]) * matrix([[self.posx, self.posx - self.sight_range/2, self.posx + self.sight_range/2], [self.posy, self.posy + self.sight_range, self.posy + self.sight_range]])).transpose().tolist()
 
-    def game_state(self):
-        gs = super(MercenaryPlayer, self).game_state()
+    def get_state(self):
+        gs = super(MercenaryPlayer, self).get_state()
         gs['kills'] = []
         return gs
 
@@ -242,7 +242,7 @@ class TerminalAI(ActionableItem):
 
 class ProximityObject(VisibleObject):
     """
-    A ProximityObject is a VisibleObject that does something when 
+    A ProximityObject is a VisibleObject that does something when
     a given player is in a gien range of it
     range is in real coordinates (not related to map cells size)
     """
@@ -256,16 +256,16 @@ class ProximityObject(VisibleObject):
 
     def activate(self, player):
         """
-        Activates/Enables on the ProximityObject. 
+        Activates/Enables on the ProximityObject.
         If no action is available for the current player (because it is too far or anything else)
         it will return False.
         Else, if there is an action to be done
         and this action has just been done
         if will return True
-        """ 
+        """
         return False
 
-# ----------------- Mixed ones ----------------- 
+# ----------------- Mixed ones -----------------
 
 class MineAIPO(ActionableItem, ProximityObject):
     """simplistic Mine implementation"""
@@ -313,6 +313,7 @@ class GameEngine(object):
         self.__stepper_busy = Event()
         self.__stepper_interval = -1
         self.__stepper = None
+        self.__end_time = -1
         self.all_players_connected = Event()
         self.load_config(config_file)
         if map_file is not None:
@@ -368,7 +369,7 @@ class GameEngine(object):
         return self # allow chaining
 
     def end_of_game(self):
-        self.__loop.shutdown()
+        self.__loop.set()
 
     @property
     def loop(self):
@@ -378,7 +379,7 @@ class GameEngine(object):
         # TODO: Maybe re-write the following lines, for a better handling of
         #       game termination.
         if self.__game_finished():
-            self.shutdown()
+            self.end_of_game()
             return
 
         # Update players' positions and visions
@@ -435,9 +436,19 @@ class GameEngine(object):
 
 
     def __game_finished(self):
+        # Note: This function is the right place to set end time of the
+        #       game, because it knows the cause of the termination. If time is
+        #       over, we must adapt the end time calculation to ensure it is
+        #       accurate (i.e. we cannot trust time()). In all the other cases,
+        #       end time is current time (i.e. time() value).
+
         # TODO: The end of the time is obviously not the only cause of game
         #       termination. Other causes should be handled too.
-        return self.get_remaining_time() <= 0
+        if self.get_remaining_time() <= 0:
+            self.__end_time = self.__start_time + self.__total_time
+            return True
+        else:
+            return False
 
     def __move_player(self, player, dx, dy):
         """
@@ -541,7 +552,7 @@ class GameEngine(object):
                     terminal = TerminalAI(row * const.CELL_SIZE, col * const.CELL_SIZE)
                     self.push_new_item(terminal)
 
-        self.__total_time = 60  # TODO: Update with the real time read from the map file.
+        self.__total_time = 10  # TODO: Update with the real time read from the map file.
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
@@ -606,12 +617,23 @@ class GameEngine(object):
         return [(p.nickname, p.player_id, p.team) for p in self.__players]
 
     def get_remaining_time(self):
-        return int(round(self.__total_time - time() + self.__start_time))
+        if self.__end_time > 0:
+            return 0
+        else:
+            return max(int(round(self.__total_time - time() + self.
+                                 __start_time)), 0)
+
+    def get_current_time(self):
+        if self.__end_time > 0:
+            return int(round(self.__end_time - self.__start_time))
+        else:
+            return min(int(round(time() - self.__start_time)), self.
+                                 __total_time)
 
     def get_game_statistics(self):
         # TODO: Return the game statistics useful to build the `end` frame.
-        return {'winners': SPY_TEAM, 'ttime': int(round(self.__start_time -
-                time()))}
+        return {'winners': Player.SPY_TEAM, 'ttime': int(round(self.
+                __start_time - time()))}
 
     def start(self):
         self.__loop.clear()
@@ -779,6 +801,7 @@ class GameEngine(object):
         return None
 
     def shutdown(self, force=False):
-        self.__loop.set()
+        if self.loop:
+            self.end_of_game()
         self.setup_stepper(-1)  # Disable stepping
         return self # allow chaining
