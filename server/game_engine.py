@@ -10,7 +10,7 @@ from common.map_parser import SpyLightMap
 
 import common.game_constants as const
 import common.utils as utils
-from math import sin, cos, sqrt, radians
+from math import sin, cos, sqrt, radians, degrees
 from random import choice, uniform as rand
 from shapely.geometry import Point, LineString
 from shapely.occlusion import occlusion # Specific shapely version, here: https://github.com/tdubourg/Shapely/
@@ -75,7 +75,7 @@ class Player(object):
 
     def get_state(self):
         return {'l': self.lifes, 'hp': self.hp, 'x': self.posx, 'y': self.posy,
-                'd': self.sight_angle, 's': self.status, 'v': self.
+                'd': degrees(self.sight_angle), 's': self.status, 'v': self.
                 sight_vertices, 'vp': self.visible_players, 'vo': self.
                 visible_objects, 'ao': []}
 
@@ -316,6 +316,7 @@ class GameEngine(object):
         self.__end_time = -1
         self.all_players_connected = Event()
         self.load_config(config_file)
+        self.auto_mode = False
         if map_file is not None:
             self.load_map(map_file)
         else:
@@ -378,7 +379,7 @@ class GameEngine(object):
     def step(self):
         # TODO: Maybe re-write the following lines, for a better handling of
         #       game termination.
-        if self.__game_finished():
+        if self.auto_mode and self.__game_finished():
             self.end_of_game()
             return
 
@@ -390,7 +391,7 @@ class GameEngine(object):
             p.obstacles_in_sight_n = 0
             # ------- Update player's sight -------
             # Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
-            sight_direction = self.__get_normalized_direction_vector_from_angle(p.move_angle) * p.sight_range
+            sight_direction = self.__get_normalized_direction_vector_from_angle(p.sight_angle) * p.sight_range
             vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
@@ -592,7 +593,7 @@ class GameEngine(object):
         player.nickname = nickname
         self.__curr_player_number += 1
         if self.__curr_player_number == self.__max_player_number:
-            self.start()
+            self.start_auto_mode()
 
         self.release()
 
@@ -635,7 +636,15 @@ class GameEngine(object):
         return {'winners': Player.SPY_TEAM, 'ttime': int(round(self.
                 __start_time - time()))}
 
-    def start(self):
+    def start_auto_mode(self):
+        """
+            This method will enable the "auto_mode"
+            When auto_mode is enabled, the GameEngine will execute a step() every once a while
+            This interval is controlled by self.config.step_state_interval
+
+        :return: Nothing
+        """
+        self.auto_mode = True
         self.__loop.clear()
         self.setup_stepper(self.config.step_state_interval)
         self.__start_time = time()
@@ -800,7 +809,12 @@ class GameEngine(object):
             return True # Yes!
         return None
 
-    def shutdown(self, force=False):
+    def stop_auto_mode(self, force=False):
+        """
+        Will disable auto_mode.
+        :param force:
+        :return:
+        """
         if self.loop:
             self.end_of_game()
         self.setup_stepper(-1)  # Disable stepping

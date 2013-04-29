@@ -61,6 +61,5 @@ class ActionManager(object):
         return math.degrees(math.atan2(dx, -dy)) + 180  # now 0 - 360
 
     def notify_orientation(self):
-        # self._ni.send(MessageFactory.turn(
-        #     self._get_angle_with_char(Window.mouse_pos)))
-        pass
+        self._ni.send(MessageFactory.turn(
+            self._get_angle_with_char(Window.mouse_pos)))

@@ -1,5 +1,5 @@
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty, AliasProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -32,33 +32,45 @@ Builder.load_string('''
 teams = None
 
 
-class SpyVision(KVStringAble):
-    def __init__(self, char):
-        super(SpyVision, self).__init__()
-        self.char = char
-        d = 200  # diameter
-        self.size = 200, 200
-        self.pos = (self.char.screenpos[0] - d/2, self.char.screenpos[1] - d/2)
-        self.kv_string_template = '''
-{indent}Ellipse:
-{indent}    pos: {instance}.pos
-{indent}    size: {instance}.size
-'''
-
-
-class MercVision(KVStringAble):
-    points = ListProperty([])
+class PlayerVision(KVStringAble):
+    dummy_toggle = BooleanProperty(False)
 
     def __init__(self, char):
-        super(MercVision, self).__init__()
+        super(PlayerVision, self).__init__()
         self.char = char
-        self.points = [self.char.screenpos[0], self.char.screenpos[1],
-                       self.char.screenpos[0] - 100, self.char.screenpos[1] + 100,
-                       self.char.screenpos[0] + 100, self.char.screenpos[1] + 100]
+        self._v = []
+        self._i = []
         self.kv_string_template = '''
-{indent}Triangle:
-{indent}    points: {instance}.points
+{indent}Mesh:
+{indent}    vertices: {instance}.vertices
+{indent}    indices: {instance}.indices
+{indent}    mode: 'triangle_fan'
 '''
+
+    def get_v(self):
+        print 'get_v'
+        return self._v
+
+    def set_v(self, val):
+        print 'set_v'
+        self._v = val
+
+    def get_i(self):
+        print 'get_i'
+        return self._i
+
+    def set_i(self, val):
+        print 'set_i'
+        self._i = val
+
+    vertices = AliasProperty(get_v, set_v, bind=('dummy_toggle',))
+    indices = AliasProperty(get_i, set_i, bind=('dummy_toggle',))
+
+    def update(self, vision_data):
+        self._i = range(0, len(vision_data)/4)
+        self._v = vision_data
+        # Tell kivy to update the mesh
+        self.dummy_toggle = not self.dummy_toggle
 
 
 class Character(Widget):
@@ -74,11 +86,13 @@ class Character(Widget):
         self.nick = nick
         self.sprite = teams[team]['sprite']
         self.gamepos = (0, 0)
+        self._vision = None
         super(Character, self).__init__(**kwargs)
 
     def update(self, data):
         self.set_game_pos(data['p'])
         self.rotation = data['d']
+        self.get_vision().update(data['v'])
 
     def set_game_pos(self, pos):
         self.gamepos = pos
@@ -89,7 +103,9 @@ class Character(Widget):
                        self.screenpos[1] - self.gamepos[1]]
 
     def get_vision(self):
-        return teams[self.team]['vision_class'](self)
+        if not self._vision:
+            self._vision = PlayerVision(self)
+        return self._vision
 
 
 class Replica(RelativeWidget, KVStringAble):
@@ -129,6 +145,6 @@ class Replica(RelativeWidget, KVStringAble):
 
 # The order of the entries must be coherent with the value of the team ids in common.game_constants
 teams = [
-    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary'), 'vision_class': MercVision},
-    {'name': '\'espion', 'sprite': utils.spritePath.format('spy'), 'vision_class': SpyVision}
+    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary')},
+    {'name': '\'espion', 'sprite': utils.spritePath.format('spy')}
 ]

@@ -260,7 +260,7 @@ class GameEngineTest(unittest.TestCase):
         self.map_file = "map_test_scinded.hfm"
         ge = self.getGE()
         row, col = 0, 0
-        posx, posy, speedx, speedy, move_angle = row * const.CELL_SIZE, col * const.CELL_SIZE, 1.0, 1.0, 270
+        posx, posy, speedx, speedy, move_angle, sight_angle = row * const.CELL_SIZE, col * const.CELL_SIZE, 1.0, 1.0, 270, 270
         players = self.__setup_players(ge, [(col, row)])
         p = players[0]
         pid = players[0].player_id
@@ -268,6 +268,7 @@ class GameEngineTest(unittest.TestCase):
         p.max_speedy = 0.9*const.CELL_SIZE
         expected_posx, expected_posy = posx + speedx * p.max_speedx, posy
         ge.set_movement_angle(pid, move_angle)
+        ge.set_sight_angle(pid, sight_angle)
         ge.set_movement_speedx(pid, speedx)
         ge.set_movement_speedy(pid, speedy)
         ge.step()

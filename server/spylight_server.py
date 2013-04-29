@@ -47,7 +47,7 @@ class SpylightServer(object):
         self._tcp_server.shutdown()
         self._tcp_server.handler_thread.stop(force)
         self._tcp_server.handler_thread.join()
-        GameEngine().shutdown(force)
+        GameEngine().stop_auto_mode(force)
 
 if __name__ == '__main__':
     SpylightServer().start()
