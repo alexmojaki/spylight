@@ -91,18 +91,25 @@ class TouchManager(Widget):
     mouse_pos = ReferenceListProperty(mouse_x, mouse_y)
     left_click = BooleanProperty(False)
     click_state = ReferenceListProperty(mouse_pos, left_click)
+    s = None
 
     def __init__(self):
-        Window.bind(on_touch_down=self._on_touch_down)
-        Window.bind(on_touch_up=self._on_touch_up)
-
-    def _on_touch_down(self, window, event):
+        Window.bind(on_touch_down=TouchManager._on_touch_down)
+        Window.bind(on_touch_up=TouchManager._on_touch_up)
+        TouchManager.s = self
+    @staticmethod
+    def _on_touch_down(window, event):
+        print "Touch down"
         # event.mouse_pos is not reliable, it sometimes is (0, 0)
-        self.mouse_pos = Window.mouse_pos
+        TouchManager.mouse_pos = Window.mouse_pos
         if event.button == 'left':
-            self.left_click = True
+            print "Hey"
+            TouchManager.s.left_click = True
 
-    def _on_touch_up(self, window, event):
-        self.mouse_pos = Window.mouse_pos
+    @staticmethod
+    def _on_touch_up(window, event):
+        print "Touch up"
+        TouchManager.mouse_pos = Window.mouse_pos
         if event.button == 'left':
-            self.left_click = False
+            print "Ho"
+            TouchManager.s.left_click = False

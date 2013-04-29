@@ -9,13 +9,13 @@ from kivy.core.window import Window
 
 class ActionManager(object):
     _WALK_SPEED = float(config.get('KeyConfig', 'walkSpeed'))
-
     def __init__(self, networkInterface, keyboardMgr, touchMgr, game):
         self._ni = networkInterface
         self.game = game
+        ActionManager.s = self
         keyboardMgr.bind(movement=self.notify_movement_event)
         keyboardMgr.bind(action=self.notify_action)
-        touchMgr.bind(click_state=self.notify_touch_event)
+        touchMgr.bind(click_state=ActionManager.notify_touch_event)
 
     def notify_action(self, mgr, data):
         if data:
@@ -49,9 +49,11 @@ class ActionManager(object):
         Logger.debug("SL|Action: Vars types=%s, %s, %s", type(direction), type(speed), type(self._WALK_SPEED))
         self._ni.send(MessageFactory.move(direction, speed))
 
-    def notify_touch_event(self, mgr, data):  # data is [[x,y], bool_down]
+    @staticmethod
+    def notify_touch_event(mgr, data):  # data is [[x,y], bool_down]
+        print "Blorg"
         if data[1]:  # on mouse down only
-            self._ni.send(MessageFactory.shoot(self._get_angle_with_char(data[0])))
+            ActionManager.s._ni.send(MessageFactory.shoot(ActionManager.s._get_angle_with_char(data[0])))
 
     def _get_angle_with_char(self, other_point):
         cur_pos = self.game.char.gamepos
