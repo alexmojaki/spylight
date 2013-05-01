@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty, AliasProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, BooleanProperty, AliasProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -145,6 +147,13 @@ class Replica(RelativeWidget, KVStringAble):
 
 # The order of the entries must be coherent with the value of the team ids in common.game_constants
 teams = [
-    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary')},
-    {'name': '\'espion', 'sprite': utils.spritePath.format('spy')}
+    {
+        'name': 'e mercenaire',
+        'sprite': utils.spritePath.format('mercenary'),
+        'win_msg': 'Les mercenaires ont défendu avec succès le complexe!'
+    }, {
+        'name': '\'espion',
+        'sprite': utils.spritePath.format('spy'),
+        'win_msg': 'Les objectifs des espions ont été accomplis avec succès.'
+    }
 ]
