@@ -1,0 +1,35 @@
+#:kivy 1.5.1
+<PostGameScreen>:
+
+    BoxLayout:
+        orientation: 'vertical'
+        spacing: 50
+        padding: 50
+
+        Label:
+            size_hint: (1, 0.2)
+            text: 'Fin de la partie'
+            halign: 'center'
+        Label:
+            size_hint: (1, 0.2)
+            text: root.win_msg
+            halign: 'center'
+
+        StackLayout:
+            orientation: 'lr-tb'
+            Label:
+                size_hint: (0.3, None)
+                text: 'Durée'
+                height: 30
+            Label:
+                size_hint: (0.3, None)
+                text: root.game_duration
+                height: 30
+
+
+        Button:
+            text: 'Quitter'
+            size_hint: (0.5, None)
+            height: 50
+            pos_hint: {'center_x': 0.5}
+            on_press: root.quit()
