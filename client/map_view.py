@@ -91,7 +91,8 @@ class MapView(RelativeWidget):
         la = []
         for l_area in self.lightened_areas:
             la.append(l_area.kv_string('self.' + l_area.kvname))
-        la.append(self.char.get_vision().kv_string('self.char.get_vision()'))
+        self.char_vision = self.char.get_vision()
+        la.append(self.char.get_vision().kv_string('self.char_vision'))
 
         h = []
         for hidden_obj in self.hidden:
