@@ -32,4 +32,4 @@ ITEMS_TYPE_IDS = {
 }
 
 STEP_STATE_INTERVAL = 1/100.  # 20 times per second
-SEND_STATE_INTERVAL = 1/30.  # 10 times per second
+SEND_STATE_INTERVAL = 1/50.  # 10 times per second

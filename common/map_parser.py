@@ -16,15 +16,15 @@ class SpyLightMap(object):
     It doesn't know anything about pixels.
     """
 
-    WA_WA0 = 1  # TODO: Rename that constant to something meaningful
-    WA_WA1 = 2  # TODO: Rename that constant to something meaningful
-    WA_WA2 = 3  # TODO: Rename that constant to something meaningful
+    WA_BLOCK = 1  # TODO: Rename that constant to something meaningful
+    WA_HORIZ = 2  # TODO: Rename that constant to something meaningful
+    WA_VERT = 3  # TODO: Rename that constant to something meaningful
     WA_SPY_ONLY_DOOR = 4
     WA_MERC_ONLY_DOOR = 5  # TODO: Rename that constant to something meaningful
 
-    WALL0 = {'section': 'wa', 'value': WA_WA0}
-    WALL1 = {'section': 'wa', 'value': WA_WA1}
-    WALL2 = {'section': 'wa', 'value': WA_WA2}
+    WALL0 = {'section': 'wa', 'value': WA_BLOCK}
+    WALL1 = {'section': 'wa', 'value': WA_HORIZ}
+    WALL2 = {'section': 'wa', 'value': WA_VERT}
 
     OBSTACLES_TYPES = (WALL0, WALL1, WALL2)  # Wall types that are "obstacles" (static impenetrable rigid bodies)
 

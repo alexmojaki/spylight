@@ -3,8 +3,9 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 
 import common.game_constants as c
+from common.map_parser import SpyLightMap
 from client import utils
-from client.environment import RelativeWidget, Camera, Wall, Terminal
+from client.environment import RelativeWidget, Camera, VertWall, HorizWall, BlockWall, Terminal
 
 
 _MAP_VIEW_KV_TEMPLATE = '''
@@ -39,6 +40,9 @@ class MapView(RelativeWidget):
         self.hidden = []  # hidden by the stencil
         self.visible_objects = {}  # vo, grouped by type id and then coord.
 
+        self.tmp_walls = {}  # Used to build the walls, will be deleted and
+                             # the walls will only be available through __dict__
+
         # We have to sort the various items to display depending on the layer
         # where we want to put them
 
@@ -48,8 +52,7 @@ class MapView(RelativeWidget):
                 section, value = cellMap.get_tile(x, y)
                 obj = None
                 if section == 'wa':
-                    obj = Wall(pos=self._to_pixel((x, y)))
-                    self.always_visible.append(obj)
+                    self._build_wall(x, y, value)
                 elif section == 'it':
                     if value == cellMap.IT_TERMINAL:
                         obj = Terminal(pos=self._to_pixel((x, y)))
@@ -97,7 +100,6 @@ class MapView(RelativeWidget):
         h = []
         for hidden_obj in self.hidden:
             h.append(hidden_obj.kv_string('self.' + hidden_obj.kvname))
-        print h
 
         av = []
         for visible in self.always_visible:
@@ -112,8 +114,56 @@ class MapView(RelativeWidget):
                 coord[1] * c.CELL_SIZE)
 
     def update(self, data):
-        self._update_visible_objects(data['vo'])
+        #self._update_visible_objects(data['vo'])
+        # TODO?
+        pass
 
     def _update_visible_objects(self, vo):
-        self.visible_objects
         pass
+
+    def _build_wall(self, x, y, wall_type):
+        previous_wall = None
+        # Look for an existing wall to which the current tile is a section
+        try:
+            if wall_type == SpyLightMap.WA_HORIZ:  # -
+                previous_wall = self.tmp_walls[x-1][y]
+            elif wall_type == SpyLightMap.WA_VERT:  # |
+                previous_wall = self.tmp_walls[x][y-1]
+            #elif wall_type == SpyLightMap.WA_BLOCK:  # +
+            #   previous_wall = None
+        except KeyError:
+            previous_wall = None
+
+        # Add or update the wall
+        if previous_wall and previous_wall.type == wall_type:
+            previous_wall.add_section(*self._to_pixel((x, y)))
+            self._set_tmp_wall(x, y, previous_wall)
+        else:
+            self._create_wall(x, y, wall_type)
+
+    def _set_tmp_wall(self, x, y, obj):
+        if not x in self.tmp_walls:
+            self.tmp_walls[x] = {}
+
+        assert y not in self.tmp_walls[x]
+        if y in self.tmp_walls[x]:  # Something is wrong
+            raise KeyError('The tile ({}, {}) is already occupied: {}'
+                           .format(x, y, self.tmp_walls[x][y]))
+        else:
+            self.tmp_walls[x][y] = obj
+
+    def _create_wall(self, x, y, wall_type):
+        wall = None
+        if wall_type == SpyLightMap.WA_VERT:  # |
+            wall = VertWall(pos=self._to_pixel((x, y)), type=wall_type)
+        elif wall_type == SpyLightMap.WA_HORIZ:  # -
+            wall = HorizWall(pos=self._to_pixel((x, y)), type=wall_type)
+        elif wall_type == SpyLightMap.WA_BLOCK:  # +
+            wall = BlockWall(pos=self._to_pixel((x, y)), type=wall_type)
+        else:
+            raise AttributeError('Unknown wall type: {}'.format(wall_type))
+
+        self._set_tmp_wall(x, y, wall)
+        self.always_visible.append(wall)
+        self.bind(pos=wall.update_pos)
+        self.__dict__[wall.kvname] = wall

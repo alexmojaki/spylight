@@ -4,6 +4,7 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 
 from client import utils
+from common import game_constants as const
 
 Builder.load_file(utils.kvPath.format('environment'))
 
@@ -84,18 +85,61 @@ class Camera(RelativeWidget, KVStringAble):
 
 class Wall(RelativeWidget, KVStringAble):
     sprite = utils.spritePath.format('wall')
+    texture = utils.getTexture('wall')
+    SECTION_SIZE = (const.CELL_SIZE, const.CELL_SIZE)
     kv_string_template = '''
 {indent}Rectangle:
 {indent}    pos: {instance}.pos
-{indent}    size: 32, 32
-{indent}    source: {instance}.sprite
+{indent}    size: {instance}.size
+{indent}    texture: {instance}.texture
 '''
 
 
-class Shadow(Widget):
-    def __init__(self, sprite, **kwargs):
-        self.sprite = sprite
-        super(Shadow, self).__init__(**kwargs)
+class HorizWall(Wall):
+    def __init__(self, type, **kwargs):
+        self.type = type
+        self.size = self.SECTION_SIZE
+        super(HorizWall, self).__init__(**kwargs)
+
+    def add_section(self, x, y):
+        if y != self.y:
+            raise AttributeError('the y must be the same to be in this wall')
+        elif x <= self.x:
+            raise AttributeError('the wall must be built from left to right')
+        else:
+            print 'before', self.size
+            self.size = (self.size[0] + self.SECTION_SIZE[0], self.size[1])
+            print 'after', self.size
+        print self.pos, x, y, self.size
+
+
+class VertWall(Wall):
+    def __init__(self, type, **kwargs):
+        self.type = type
+        self.size = self.SECTION_SIZE
+        super(VertWall, self).__init__(**kwargs)
+
+    def add_section(self, x, y):
+        if x != self.x:
+            raise AttributeError('the y must be the same to be in this wall')
+        elif y <= self.y:
+            raise AttributeError('the wall must be built from top to bottom')
+        else:
+            print 'before', self.size
+            self.size = (self.size[0], self.size[1] + self.SECTION_SIZE[1])
+            self.y -= self.SECTION_SIZE[1]
+            print 'after', self.size
+        print self.pos, x, y, self.size
+
+
+class BlockWall(Wall):
+    def __init__(self, type, **kwargs):
+        self.type = type
+        self.size = self.SECTION_SIZE
+        super(BlockWall, self).__init__(**kwargs)
+
+    def add_section(self, x, y):
+        raise AttributeError('Block walls can\'t be expanded.')
 
 
 class Terminal(RelativeWidget, KVStringAble):
