@@ -82,8 +82,14 @@ class Camera(RelativeWidget, KVStringAble):
                        self.x + 100, self.y + 100]
 
 
-class Wall(RelativeWidget):
+class Wall(RelativeWidget, KVStringAble):
     sprite = utils.spritePath.format('wall')
+    kv_string_template = '''
+{indent}Rectangle:
+{indent}    pos: {instance}.pos
+{indent}    size: 32, 32
+{indent}    source: {instance}.sprite
+'''
 
 
 class Shadow(Widget):
@@ -92,8 +98,14 @@ class Shadow(Widget):
         super(Shadow, self).__init__(**kwargs)
 
 
-class Terminal(RelativeWidget):
+class Terminal(RelativeWidget, KVStringAble):
     sprite = utils.spritePath.format('terminal')
+    kv_string_template = '''
+{indent}Rectangle:
+{indent}    pos: {instance}.pos[0] + 8, {instance}.pos[1] + 8
+{indent}    size: 16, 16
+{indent}    source: {instance}.sprite
+'''
 
 
 class Mine(Widget):

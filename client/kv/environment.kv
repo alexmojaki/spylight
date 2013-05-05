@@ -1,15 +1,15 @@
 #:kivy 1.5.1
 
 
-<Wall>:
-    size: 32, 32
-    size_hint: None, None
-    pos_hint: {"x":0, "y":0}
-    canvas:
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            source: root.sprite
+#<Wall>:
+#    size: 32, 32
+#    size_hint: None, None
+#    pos_hint: {"x":0, "y":0}
+#    canvas:
+#        Rectangle:
+#            pos: self.pos
+#            size: self.size
+#            source: root.sprite
 
 <Mine>
     size: 10,10
@@ -19,13 +19,13 @@
             size: self.size
             source: root.sprite
 
-<Terminal>:
-    size: 32, 32
-    canvas:
-        Rectangle:
-            pos: self.pos[0]+8, self.pos[1] + 8
-            size: 16,16
-            source: root.sprite
+#<Terminal>:
+#    size: 32, 32
+#    canvas:
+#        Rectangle:
+#            pos: self.pos[0]+8, self.pos[1] + 8
+#            size: 16,16
+#            source: root.sprite
 
 <Camera>:
     size: 32, 32

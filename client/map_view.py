@@ -23,6 +23,7 @@ _MAP_VIEW_KV_TEMPLATE = '''
         StencilUnUse
 {lightened_areas}
         StencilPop
+{always_visible}
 '''
 
 
@@ -45,22 +46,25 @@ class MapView(RelativeWidget):
         for x in xrange(cellMap.width):
             for y in xrange(cellMap.height):
                 section, value = cellMap.get_tile(x, y)
+                obj = None
                 if section == 'wa':
-                    self.always_visible.append(Wall(pos=self._to_pixel((x, y))))
+                    obj = Wall(pos=self._to_pixel((x, y)))
+                    self.always_visible.append(obj)
                 elif section == 'it':
                     if value == cellMap.IT_TERMINAL:
-                        self.always_visible.append(
-                            Terminal(pos=self._to_pixel((x, y))))
+                        obj = Terminal(pos=self._to_pixel((x, y)))
+                        self.always_visible.append(obj)
                 elif section == 'vi':
                     if value == cellMap.IT_CAMERA:
-                        # Somehow, Kivy doesn't update the view when the
-                        # objects are in a list. Putting them as properties
-                        # does the trick. Hence the __dict__ hack.
-                        cam = Camera(pos=self._to_pixel((x, y)),
+                        obj = Camera(pos=self._to_pixel((x, y)),
                                      dir=cellMap.get_camera_orientation(x, y))
-                        self.bind(pos=cam.update_pos)
-                        self.lightened_areas.append(cam)
-                        self.__dict__[cam.kvname] = cam
+                        self.lightened_areas.append(obj)
+                if obj:
+                    self.bind(pos=obj.update_pos)
+                    # Somehow, Kivy doesn't update the view when the
+                    # objects are in a list. Putting them as properties
+                    # does the trick. Hence the __dict__ hack.
+                    self.__dict__[obj.kvname] = obj
 
         # Sorting the players
         for i in players:
@@ -78,10 +82,6 @@ class MapView(RelativeWidget):
         super(MapView, self).__init__(size=self._to_pixel(cellMap.size),
                                       pos=(0, 0))
 
-        for obj in self.always_visible:
-            self.add_widget(obj)
-            self.bind(pos=obj.update_pos)
-
         for obj in self.lightened_areas:  # To add the object's sprite
             self.add_widget(obj)
 
@@ -96,10 +96,15 @@ class MapView(RelativeWidget):
 
         h = []
         for hidden_obj in self.hidden:
-            print 'pos', hidden_obj.pos
             h.append(hidden_obj.kv_string('self.' + hidden_obj.kvname))
+        print h
+
+        av = []
+        for visible in self.always_visible:
+            av.append(visible.kv_string('self.' + visible.kvname))
 
         return _MAP_VIEW_KV_TEMPLATE.format(lightened_areas=''.join(la),
+                                            always_visible=''.join(av),
                                             hidden=''.join(h))
 
     def _to_pixel(self, coord):

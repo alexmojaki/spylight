@@ -31,5 +31,5 @@ ITEMS_TYPE_IDS = {
     "unkown": 42
 }
 
-STEP_STATE_INTERVAL = 1/4.  # 4 times per second
-SEND_STATE_INTERVAL = 1/2.  # 2 times per second
+STEP_STATE_INTERVAL = 1/100.  # 20 times per second
+SEND_STATE_INTERVAL = 1/30.  # 10 times per second
