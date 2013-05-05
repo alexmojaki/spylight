@@ -92,7 +92,20 @@ class Wall(RelativeWidget, KVStringAble):
 {indent}    pos: {instance}.pos
 {indent}    size: {instance}.size
 {indent}    texture: {instance}.texture
+{indent}    tex_coords: {instance}.tex_coords
 '''
+
+    def kv_string(self, instance='self', indent=8):
+        # Fix the texture scaling.
+        nb_repeat_x = self.size[0] / self.SECTION_SIZE[0]
+        nb_repeat_y = self.size[1] / self.SECTION_SIZE[1]
+        self.tex_coords = (
+            0, 0,
+            nb_repeat_x, 0,
+            nb_repeat_x, -nb_repeat_y,
+            0, -nb_repeat_y
+        )
+        return super(Wall, self).kv_string(instance, indent)
 
 
 class HorizWall(Wall):

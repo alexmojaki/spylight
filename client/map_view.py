@@ -20,6 +20,7 @@ _MAP_VIEW_KV_TEMPLATE = '''
             pos: self.pos
             size: self.size
             texture:self.groundTexture
+            tex_coords: self.tex_coords
 {hidden}
         StencilUnUse
 {lightened_areas}
@@ -82,8 +83,18 @@ class MapView(RelativeWidget):
         Logger.info("SL|MapView: Final kv file: %s", final_kv)
         Builder.load_string(final_kv)
 
-        super(MapView, self).__init__(size=self._to_pixel(cellMap.size),
-                                      pos=(0, 0))
+        # Fix the texture scaling.
+        size = self._to_pixel(cellMap.size)
+        nb_repeat_x = size[0] / c.CELL_SIZE
+        nb_repeat_y = size[1] / c.CELL_SIZE
+        self.tex_coords = (
+            0, 0,
+            nb_repeat_x, 0,
+            nb_repeat_x, -nb_repeat_y,
+            0, -nb_repeat_y
+        )
+
+        super(MapView, self).__init__(size=size, pos=(0, 0))
 
         for obj in self.lightened_areas:  # To add the object's sprite
             self.add_widget(obj)
