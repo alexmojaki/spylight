@@ -65,10 +65,12 @@ class PlayerVision(KVStringAble):
     indices = AliasProperty(get_i, set_i, bind=('dummy_toggle',))
 
     def update(self, vision_data):
-        self._v = vision_data
+        self._v = []
         for i in range(0, len(vision_data), 4):
-            self._v[i] += self.char.offsetx
-            self._v[i+1] += self.char.offsety
+            self._v.append(vision_data[i] + self.char.offsetx)
+            self._v.append(vision_data[i+1] + self.char.offsety)
+            self._v.append(0)
+            self._v.append(0)
         self._i = range(0, len(vision_data)/4)
         # Tell kivy to update the mesh
         self.dummy_toggle = not self.dummy_toggle
