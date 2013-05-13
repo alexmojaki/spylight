@@ -1,6 +1,7 @@
 #Human friendlier map, see map_parser.py for more details
 title: uber map
-players: 2 2
+# The following line means 0 mercenary and 1 spy
+players: 0 1
 size: 100 46
 +-----------------------------+--------------------------------------------------------------------+
 |                             |                          C                                        T|
