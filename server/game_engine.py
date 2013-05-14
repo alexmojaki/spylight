@@ -208,7 +208,17 @@ class VisibleObject(object):
         super(VisibleObject, self).__init__()
         self.posx = x
         self.posy = y
-        self.type = const.ITEMS_TYPE_IDS['unkown'] # has to be overwritten by children
+        self.type = const.ITEMS_TYPE_IDS['unkown'] # has to be overwritten by childrengetvision
+
+    def update(self):
+        """
+            This method has to be overriden by children classes.
+            This method's purpose is to update the state of the object. For instance if
+            an object has to evolve over time...
+            There will be no time parameter so it is up to the object itself to store its creation time
+            and compute by itself the detla between now() and its creation.
+        """
+        return self
 
 # ----------------- actionable items related ---------------
 
@@ -257,11 +267,12 @@ class ProximityObject(VisibleObject):
     def activate(self, player):
         """
         Activates/Enables on the ProximityObject.
-        If no action is available for the current player (because it is too far or anything else)
-        it will return False.
-        Else, if there is an action to be done
+        - If no action is available for the current player (because it is too far or anything else)
+        AND it will return False.
+
+        - Else, if there is an action to be done
         and this action has just been done
-        if will return True
+        AND it will return True
         """
         return False
 
@@ -272,7 +283,7 @@ class MineAIPO(ActionableItem, ProximityObject):
     def __init__(self, *args):
         new_args = [const.MINE_BOMB_ACTIVATION_RANGE]
         new_args.extends(args)
-        super(MineAI, self).__init__(*new_args)
+        super(MineAIPO, self).__init__(*new_args)
         self.type = const.ITEMS_TYPE_IDS['mine']
         # ProximityObject's related
         self.weapon = MineWeapon()
@@ -287,8 +298,10 @@ class MineAIPO(ActionableItem, ProximityObject):
             return False
 
     def activate(self, player):
-        if type(player) is SpyPlayer: # If a spy is in range for bombing him
+        dist = utils.dist(((self.pos_col + 0.5) * const.CELL_SIZE, (self.pos_row + 0.5) * const.CELL_SIZE), (player.posx. player.posy))
+        if type(player) is SpyPlayer and dist <= self.range_of_action: # If a spy is in range for bombing him
             self.weapon.damage(player) # Then, bomb him
+            GameEngine().remove_new_actionable_item(self) # And... ourselves at the same time
             return True # TODO: Catch this return value in the GameEngine to send the bomb event to clients
         else:
             return False
@@ -410,6 +423,8 @@ class GameEngine(object):
             p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
             # ---------- Update player's visible objects list ----------
+            # Note: Here we only go through the visible objects that are in a given range, not through all of them
+            # We will go through the complete list, in order to update them, later in this method
             del p.visible_objects[:] # Empty the list
 
             for row in xrange(row_start, row_end+1):
@@ -428,6 +443,7 @@ class GameEngine(object):
                         pass # There was nothing at this (row,col) position...
 
             # ---------- Update player's visible players list ----------
+
             del p.visible_players[:] # Empty the list
             # Re-populate it
             for p2 in self.__players:
@@ -435,6 +451,24 @@ class GameEngine(object):
                     continue # Do not include ourself in visible objects
                 if p.occlusion_polygon.intersects(p2.hitbox):
                     p.visible_players.append((p2.player_id, p2.posx, p2.posy, p2.move_angle))
+        # end of by player loop
+
+        # Now go through all of the visible items to update them
+        for row in xrange(0, self.slmap.height):
+            for col in xrange(0, self.slmap.width):
+                try:
+                    for item in self.__actionable_items[self.__map_item_key_from_row_col(row, col)]:
+                        item.update()
+                except KeyError:
+                    pass # There was nothing at this (row,col) position...
+                try:
+                    for item in self.__proximity_objects[self.__map_item_key_from_row_col(row, col)]:
+                        item.update()
+                        # Try to activate the proximity object on this player
+                        for p_ in self.__players:
+                            item.activate(p_)
+                except KeyError:
+                    pass # There was nothing at this (row,col) position...
 
 
     def __game_finished(self):
