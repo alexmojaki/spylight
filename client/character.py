@@ -9,6 +9,7 @@ from kivy.core.window import Window
 
 from client import utils
 from client.environment import KVStringAble, RelativeWidget
+from common import game_constants as const
 
 Builder.load_string('''
 <Character>:
@@ -75,6 +76,20 @@ class PlayerVision(KVStringAble):
         # Tell kivy to update the mesh
         self.dummy_toggle = not self.dummy_toggle
 
+class SpyPlayerVision(PlayerVision):
+    def __init__(self, *args):
+        super(SpyPlayerVision, self).__init__(*args)
+
+    def update(self, vision_data):
+        self._v = [self.char.screenpos[0], self.char.screenpos[1], 0, 0]
+        for i in range(0, len(vision_data), 4):
+            self._v.append(vision_data[i] + self.char.offsetx)
+            self._v.append(vision_data[i+1] + self.char.offsety)
+            self._v.append(0)
+            self._v.append(0)
+        self._i = range(0, len(vision_data)/4 + 1) # + 1 for the initial point that is the character/centre of the "disc "vision
+        # Tell kivy to update the mesh
+        self.dummy_toggle = not self.dummy_toggle
 
 class Character(Widget):
     offsetx = NumericProperty(0)
@@ -107,7 +122,10 @@ class Character(Widget):
 
     def get_vision(self):
         if not self._vision:
-            self._vision = PlayerVision(self)
+            if self.team == const.SPY_TEAM:
+                self._vision = SpyPlayerVision(self)
+            else:
+                self._vision = PlayerVision(self)
         return self._vision
 
 
