@@ -55,7 +55,7 @@ class ActionManager(object):
             if keyboardState[i]:
                 s = s + dir_values[i]
 
-        direction = dir_to_angle[s]
+        direction = float(dir_to_angle[s])
         speed = 0 if s == 0 else 1 if keyboardState[4] else self._WALK_SPEED
 
         # Send direction, run state
