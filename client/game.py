@@ -94,9 +94,19 @@ class SpylightGame(Widget):
         self.char.set_game_pos(init_response['pos'])  # Also updates the map
 
     def update(self, data):
+        """
+        Dispatches the updates coming from the server to the concerned objects
+        The events (shots, pirating initiation, etc.) are handled in
+        self._display_events()
+        """
         Logger.debug('SL|SLGame: update parameter: %s', data)
 
         if data['type'] == 'update':
+            if data['s'] == 1:
+                Logger.info('SL|Game: Dead! dead! dead!')
+                # TODO remove listeners
+                return
+
             self.char.update(data)
             self.hud.update(data)
             self.mv.update(data)
@@ -113,6 +123,7 @@ class SpylightGame(Widget):
                         p.update(player_updates[i])
                     except KeyError:
                         p.visible = False
+            self._display_events(data['ev'])
 
         elif data['type'] == 'end':
             self._am.unbind()
@@ -122,3 +133,17 @@ class SpylightGame(Widget):
 
         else:
             Logger.warn('SL|Game: frame type not recognized: %s', data['type'])
+
+        def _display_events(self, evts):
+            """
+            Dispatches the display of events to the concerned objects. Will
+            eventually be merged with update() once the events and stuff are
+            properly defined.
+            """
+            if evts:
+                self.hud.evt_log.update('TODO')
+
+            # Shots
+            # Term pirating start
+            # Term pirating end
+            pass
