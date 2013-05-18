@@ -7,7 +7,7 @@ from client.utils import spritePath
 # Changing kivy specific settings: must be done before loading other stuff.
 from kivy.config import Config  # http://kivy.org/docs/api-kivy.config.html
 Config.set('kivy', 'window_icon', spritePath.format('mercenary'))
-Config.set('kivy', 'log_level', 'info')  # Change here to see debug messages
+Config.set('kivy', 'log_level', 'debug')  # Change here to see debug messages
 # Config.set('kivy', 'log_enable', '0')
 # Config.set('graphics', 'width', '400')
 # Config.set('graphics', 'height', '400')

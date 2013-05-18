@@ -12,12 +12,20 @@
 <CapInfo>:
     size: 100, 40
     size_hint: None, None
-    minutes: 0
 
     Label:
         pos: root.pos
         size: root.size
         text: root.percentage
+
+<EventLog>:
+    size: 200, 40
+    size_hint: None, None
+
+    Label:
+        pos: root.pos
+        size: root.size
+        text: root.text
 
 <HPBar>:
     size_hint: None, None
@@ -43,6 +51,7 @@
     timer: timer
     cap_info: cap_info
     hp_bar: hp_bar
+    evt_log: evt_log
 
     HUDArea:
         anchor_x: 'left'
@@ -61,3 +70,9 @@
         anchor_y: 'top'
         CapInfo:
             id: cap_info
+
+    HUDArea:
+        anchor_x: 'center'
+        anchor_y: 'top'
+        EventLog:
+            id: evt_log

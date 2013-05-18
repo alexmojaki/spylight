@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from kivy.uix.widget import Widget
 from kivy.properties import StringProperty, NumericProperty
 from kivy.lang import Builder
@@ -28,13 +30,23 @@ class Timer(Widget):
 
 class CapInfo(Widget):
     capFormat = "Terminal {0}: {1}%"
-    percentage = StringProperty('')
+    percentage = StringProperty('Piratage: N.R.')
 
     def update(self, status_array):
-        new_status = []
-        for status in status_array:
-            new_status.append(self.capFormat.format(*status))
-        self.percentage = '\n'.join(new_status)
+        if not status_array:
+            self.percentage = 'Piratage: N.R.'
+        else:
+            new_status = []
+            for status in status_array:
+                new_status.append(self.capFormat.format(*status))
+            self.percentage = '\n'.join(new_status)
+
+
+class EventLog(Widget):
+    text = StringProperty('Il ne se passe rien pour le moment (dans ev)')
+
+    def update(self, new_event):
+        self.text = 'Evt reçu. TODO détailler format evts'
 
 
 class HPBar(Widget):
