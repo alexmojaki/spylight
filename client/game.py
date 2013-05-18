@@ -134,16 +134,16 @@ class SpylightGame(Widget):
         else:
             Logger.warn('SL|Game: frame type not recognized: %s', data['type'])
 
-        def _display_events(self, evts):
-            """
-            Dispatches the display of events to the concerned objects. Will
-            eventually be merged with update() once the events and stuff are
-            properly defined.
-            """
-            if evts:
-                self.hud.evt_log.update('TODO')
+    def _display_events(self, evts):
+        """
+        Dispatches the display of events to the concerned objects. Will
+        eventually be merged with update() once the events and stuff are
+        properly defined.
+        """
+        if evts:
+            self.hud.evt_log.update('TODO')
 
-            # Shots
-            # Term pirating start
-            # Term pirating end
-            pass
+        # Shots
+        # Term pirating start
+        # Term pirating end
+        pass

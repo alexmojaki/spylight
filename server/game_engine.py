@@ -27,8 +27,15 @@ _logger.setLevel(logging.INFO)
 class Player(object):
     """Player class"""
     PLAYER_RADIUS = 5
-    STATUS_ALIVE = 1
-    STATUS_DEAD = 0
+    STATUS_ALIVE = const.STATUS_ALIVE
+    STATUS_DEAD = const.STATUS_DEAD
+    STATUS_WAITING_RESPAWN = const.STATUS_WAITING_RESPAWN
+    STATUS_SLOW_1 = const.STATUS_SLOW_1
+    STATUS_SLOW_2 = const.STATUS_SLOW_2
+    STATUS_SLOW_3 = const.STATUS_SLOW_3
+    STATUS_SLOW_4 = const.STATUS_SLOW_4
+    STATUS_SLOW_5 = const.STATUS_SLOW_5
+    STATUS_STUNNED = const.STATUS_STUNNED
     SPY_TEAM = const.SPY_TEAM
     MERC_TEAM = const.MERC_TEAM
 
@@ -142,9 +149,12 @@ class MercenaryPlayer(Player):
         self.weapon = MercGunWeapon()
 
     def compute_sight_polygon_coords(self):
-        r = radians(self.sight_angle)
-        cos_r, sin_r = cos(r), sin(r)
-        self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]]) * matrix([[self.posx, self.posx - self.sight_range/2, self.posx + self.sight_range/2], [self.posy, self.posy + self.sight_range, self.posy + self.sight_range]])).transpose().tolist()
+        cos_r, sin_r = cos(self.sight_angle), sin(self.sight_angle)
+        self.sight_polygon_coords = (matrix([[cos_r, -sin_r], [sin_r, cos_r]])
+        * matrix([[0, -self.sight_range/2, self.sight_range/2], [0,
+        +self.sight_range, +self.sight_range]]) + matrix([[self.posx,
+        self.posx, self.posx], [self.posy, self.posy, self.posy]])).\
+        transpose().tolist()
 
     def get_state(self):
         gs = super(MercenaryPlayer, self).get_state()

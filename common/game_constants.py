@@ -5,6 +5,16 @@ GAME_DURATION = 3  # in minutes
 SPY_TEAM = 1
 MERC_TEAM = 0
 
+STATUS_ALIVE = 0
+STATUS_DEAD = 1
+STATUS_WAITING_RESPAWN = 2
+STATUS_SLOW_1 = 3
+STATUS_SLOW_2 = 4
+STATUS_SLOW_3 = 5
+STATUS_SLOW_4 = 6
+STATUS_SLOW_5 = 7
+STATUS_STUNNED = 8
+
 MAX_SPY_SPEED = 30  # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
 MAX_MERC_SPEED = 30  # /!\ @WARNING: /!\ This value needs to be smaller than const.CELL_SIZE, else collisions won't work
 
