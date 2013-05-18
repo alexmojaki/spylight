@@ -233,15 +233,6 @@ received: invalid message field `type`'
         try:
             angle = data['d']
             speed = data['s']
-            # TODO Remove the next six lines when the right type will be sent
-            #      by clients
-            if isinstance(angle, int):
-                angle = float(angle)
-            try:
-                speed = float(speed)
-            except ValueError:
-                pass
-            # TOTO -End-
             if not isinstance(angle, float) or angle < 0 or angle > 360:
                 print 'Wrong input received: invalid message field `d`'
                 self.update_status(self.CONNECTION_STOP)
