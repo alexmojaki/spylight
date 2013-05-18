@@ -56,7 +56,7 @@ class ActionManager(object):
                 s = s + dir_values[i]
 
         direction = float(dir_to_angle[s])
-        speed = 0 if s == 0 else 1 if keyboardState[4] else self._WALK_SPEED
+        speed = 0.0 if s == 0 else 1.0 if keyboardState[4] else self._WALK_SPEED
 
         # Send direction, run state
         Logger.debug("SL|Action: direction: %s, speed: %s", direction, speed)
