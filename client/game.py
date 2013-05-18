@@ -25,13 +25,14 @@ class GameScreen(Screen):
 
         game = SpylightGame(serverip, serverport, team, nick, self)
         self.add_widget(game)
+        self.app = kwargs['app']
 
     def goToPauseScreen(self, instance, value):
         if not value:  # False means key up event
             Logger.info('SL|GameScreen: TODO: Pause Screen')
 
     def goToPostGameScreen(self, data):
-        Logger.info('SL|GameScreen: TODO: Post Game Screen')
+        self.app.displayPostGameScreen(data)
 
 
 class SpylightGame(Widget):
@@ -116,6 +117,7 @@ class SpylightGame(Widget):
         elif data['type'] == 'end':
             self._am.unbind()
             self._ni.disconnect()
+            Logger.info('SL|Game: %s', data)
             self.screenMgr.goToPostGameScreen(data)
 
         else:

@@ -392,24 +392,25 @@ class GameEngine(object):
             # ------- Update player's sight -------
             # Parametrize things for occlusion (get obstacles that need to be taken into account by occlusion)
             sight_direction = self.__get_normalized_direction_vector_from_angle(p.sight_angle) * p.sight_range
-            vect = ((int(p.posx), int(p.posy)), tuple((p.posx + sight_direction[0], p.posy + sight_direction[1])))
+            # A bit bruteforce here, let's use a circle instead of the real shaped vision
+            # Just because there won't be many items to go through anyway
+            # and for simplicity's and implementation speed's sakes
+            y_start = max(0, p.posy - p.sight_range)
+            y_end = min(self.slmap.max_y, p.posy + p.sight_range)
+            x_start = max(0, p.posx - p.sight_range)
+            x_end = min(self.slmap.max_x, p.posx + p.sight_range)
+            row_start   = utils.norm_to_cell(y_start)
+            row_end     = utils.norm_to_cell(y_end)
+            col_start   = utils.norm_to_cell(x_start)
+            col_end     = utils.norm_to_cell(x_end)
+            vect = ((x_start, y_start), (x_end, y_end))
             self.__for_obstacle_in_range(vect, self.__occlusion_get_obstacle_in_range_callback, player=p)
             p.compute_sight_polygon_coords()
             # Launch occlusion
             p.sight_vertices, p.occlusion_polygon = occlusion(p.posx, p.posy, p.sight_polygon_coords, p.obstacles_in_sight, p.obstacles_in_sight_n)
 
-        for p in self.__players:
-
             # ---------- Update player's visible objects list ----------
             del p.visible_objects[:] # Empty the list
-
-            # A bite bruteforce here, let's use a circle instead of the real shaped vision
-            # Just because there won't be many items to go through anyway
-            # and for simplicity's and implementation speed's sakes
-            row_start   = utils.norm_to_cell(max(0, p.posy - p.sight_range))
-            row_end     = utils.norm_to_cell(min(self.slmap.max_y, p.posy + p.sight_range))
-            col_start   = utils.norm_to_cell(max(0, p.posx - p.sight_range))
-            col_end     = utils.norm_to_cell(min(self.slmap.max_x, p.posx + p.sight_range))
 
             for row in xrange(row_start, row_end+1):
                 for col in xrange(col_start, col_end+1):
@@ -505,12 +506,12 @@ class GameEngine(object):
 
     def __occlusion_get_obstacle_in_range_callback(self, vector, row, col, **kwargs):
         p = kwargs['player']
-
+        x, y = col * const.CELL_SIZE, row * const.CELL_SIZE
         p.obstacles_in_sight.extend(
-            [col, row,
-            col + const.CELL_SIZE, row,
-            col + const.CELL_SIZE, row + const.CELL_SIZE,
-            col, row + const.CELL_SIZE])
+            [x, y,
+            x + const.CELL_SIZE, y,
+            x + const.CELL_SIZE, y + const.CELL_SIZE,
+            x, y + const.CELL_SIZE])
         p.obstacles_in_sight_n += 8
         return None # just to explicitely tell the calling function to continue (I hate implicit things)
 
@@ -553,7 +554,7 @@ class GameEngine(object):
                     terminal = TerminalAI(row * const.CELL_SIZE, col * const.CELL_SIZE)
                     self.push_new_item(terminal)
 
-        self.__total_time = 60  # TODO: Update with the real time read from the map file.
+        self.__total_time = 600  # TODO: Update with the real time read from the map file.
         self.__max_player_number = 1  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players

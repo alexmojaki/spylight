@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+
 from kivy.lang import Builder
-from kivy.properties import NumericProperty, ReferenceListProperty, ListProperty, BooleanProperty, AliasProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, BooleanProperty, AliasProperty
 
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -7,6 +9,7 @@ from kivy.core.window import Window
 
 from client import utils
 from client.environment import KVStringAble, RelativeWidget
+from common import game_constants as const
 
 Builder.load_string('''
 <Character>:
@@ -48,30 +51,45 @@ class PlayerVision(KVStringAble):
 '''
 
     def get_v(self):
-        print 'get_v'
         return self._v
 
     def set_v(self, val):
-        print 'set_v'
         self._v = val
 
     def get_i(self):
-        print 'get_i'
         return self._i
 
     def set_i(self, val):
-        print 'set_i'
         self._i = val
 
     vertices = AliasProperty(get_v, set_v, bind=('dummy_toggle',))
     indices = AliasProperty(get_i, set_i, bind=('dummy_toggle',))
 
     def update(self, vision_data):
+        self._v = []
+        for i in range(0, len(vision_data), 4):
+            self._v.append(vision_data[i] + self.char.offsetx)
+            self._v.append(vision_data[i+1] + self.char.offsety)
+            self._v.append(0)
+            self._v.append(0)
         self._i = range(0, len(vision_data)/4)
-        self._v = vision_data
         # Tell kivy to update the mesh
         self.dummy_toggle = not self.dummy_toggle
 
+class SpyPlayerVision(PlayerVision):
+    def __init__(self, *args):
+        super(SpyPlayerVision, self).__init__(*args)
+
+    def update(self, vision_data):
+        self._v = [self.char.screenpos[0], self.char.screenpos[1], 0, 0]
+        for i in range(0, len(vision_data), 4):
+            self._v.append(vision_data[i] + self.char.offsetx)
+            self._v.append(vision_data[i+1] + self.char.offsety)
+            self._v.append(0)
+            self._v.append(0)
+        self._i = range(0, len(vision_data)/4 + 1) # + 1 for the initial point that is the character/centre of the "disc "vision
+        # Tell kivy to update the mesh
+        self.dummy_toggle = not self.dummy_toggle
 
 class Character(Widget):
     offsetx = NumericProperty(0)
@@ -104,7 +122,10 @@ class Character(Widget):
 
     def get_vision(self):
         if not self._vision:
-            self._vision = PlayerVision(self)
+            if self.team == const.SPY_TEAM:
+                self._vision = SpyPlayerVision(self)
+            else:
+                self._vision = PlayerVision(self)
         return self._vision
 
 
@@ -145,6 +166,13 @@ class Replica(RelativeWidget, KVStringAble):
 
 # The order of the entries must be coherent with the value of the team ids in common.game_constants
 teams = [
-    {'name': 'e mercenaire', 'sprite': utils.spritePath.format('mercenary')},
-    {'name': '\'espion', 'sprite': utils.spritePath.format('spy')}
+    {
+        'name': 'e mercenaire',
+        'sprite': utils.spritePath.format('mercenary'),
+        'win_msg': 'Les mercenaires ont défendu avec succès le complexe!'
+    }, {
+        'name': '\'espion',
+        'sprite': utils.spritePath.format('spy'),
+        'win_msg': 'Les objectifs des espions ont été accomplis avec succès.'
+    }
 ]
