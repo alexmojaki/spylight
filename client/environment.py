@@ -2,10 +2,10 @@ from kivy.properties import ListProperty
 from kivy.uix.widget import Widget
 from kivy.lang import Builder
 from kivy.logger import Logger
+from kivy.clock import Clock
 
 from client import utils
 from common import game_constants as const
-
 Builder.load_file(utils.kvPath.format('environment'))
 
 
@@ -171,3 +171,18 @@ class Mine(Widget):
     def __init__(self, pos, **kwargs):
         self.pos = pos[0]-10, pos[1]-10
         super(Mine, self).__init__(**kwargs)
+
+
+class Shot(Widget):
+    points = ListProperty([])
+
+    def __init__(self, origin, target, parent, **kwargs):
+        self.points = [origin[0], origin[1], target[0], target[1]]
+        self._parent = parent  # Care! self.parent is used by Kivy
+        super(Shot, self).__init__(**kwargs)
+        parent.add_widget(self)
+        Clock.schedule_once(self.remove_shot_callback, 0.5)
+        # TODO: use schedule interval to make it move?
+
+    def remove_shot_callback(self, dt):
+        self._parent.remove_widget(self)

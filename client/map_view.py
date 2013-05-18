@@ -5,7 +5,7 @@ from kivy.logger import Logger
 import common.game_constants as c
 from common.map_parser import SpyLightMap
 from client import utils
-from client.environment import RelativeWidget, Camera, VertWall, HorizWall, BlockWall, Terminal
+from client.environment import RelativeWidget, Camera, VertWall, HorizWall, BlockWall, Terminal, Shot
 
 
 _MAP_VIEW_KV_TEMPLATE = '''
@@ -178,3 +178,6 @@ class MapView(RelativeWidget):
         self.always_visible.append(wall)
         self.bind(pos=wall.update_pos)
         self.__dict__[wall.kvname] = wall
+
+    def draw_shot(self, target):
+        Shot(self.char.screenpos, target, self)

@@ -63,6 +63,7 @@ class ActionManager(object):
         self._ni.send(MessageFactory.move(direction, speed))
 
     def notify_shoot(self, window, mouseevent):
+        self.game.mv.draw_shot(Window.mouse_pos)  # TODO: test only, to remove
         self._ni.send(MessageFactory.shoot(
             self._get_angle_with_char(Window.mouse_pos)))
 
