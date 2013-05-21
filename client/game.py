@@ -84,7 +84,7 @@ class SpylightGame(Widget):
                 self.players[player[1]] = Replica(nick=player[0],
                                                   playerid=player[1],
                                                   team=player[2],
-                                                  pos=(200, 200))
+                                                  pos=(-42, -42))
 
         self.mv = MapView(loaded_map, self.char, self.players)
         self.add_widget(self.mv)
@@ -105,7 +105,6 @@ class SpylightGame(Widget):
             if data['s'] == 1:
                 Logger.info('SL|Game: Dead! dead! dead!')
                 # TODO remove listeners
-                return
 
             self.char.update(data)
             self.hud.update(data)

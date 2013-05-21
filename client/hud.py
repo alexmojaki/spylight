@@ -43,7 +43,8 @@ class CapInfo(Widget):
 
 
 class EventLog(Widget):
-    text = StringProperty('Il ne se passe rien pour le moment (dans ev)')
+    # text = StringProperty('Il ne se passe rien pour le moment (dans ev)')
+    text = StringProperty('')
 
     def update(self, new_event):
         self.text = 'Evt reçu. TODO détailler format evts'
