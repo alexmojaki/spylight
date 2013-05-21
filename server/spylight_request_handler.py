@@ -324,6 +324,7 @@ received: invalid message field `type`'
                     #       kills to display.
         terminals = []  # TODO: Call the right GameEngine method to get the
                         #       terminal pirating progressions.
+        terminals = [[1, 100], [2, 100], [3, 100]]
         events = []  # TODO: Call the right GameEngine method to get the new
                      #       events.
         time = GameEngine().get_remaining_time()
