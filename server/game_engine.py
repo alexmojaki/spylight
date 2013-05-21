@@ -564,7 +564,7 @@ class GameEngine(object):
                     terminal = TerminalAI(row * const.CELL_SIZE, col * const.CELL_SIZE)
                     self.push_new_item(terminal)
 
-        self.__total_time = 600  # TODO: Update with the real time read from the map file.
+        self.__total_time = 120  # TODO: Update with the real time read from the map file.
         self.__max_player_number = self.slmap.nb_players[Player.SPY_TEAM] + self.slmap.nb_players[Player.MERC_TEAM]  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
@@ -644,8 +644,8 @@ class GameEngine(object):
 
     def get_game_statistics(self):
         # TODO: Return the game statistics useful to build the `end` frame.
-        return {'winners': Player.SPY_TEAM, 'ttime': int(round(self.
-                __start_time - time()))}
+        return {'winners': Player.SPY_TEAM, 'ttime': int(round(time() -
+                __start_time))}
 
     def start_auto_mode(self):
         """
