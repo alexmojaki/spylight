@@ -565,7 +565,7 @@ class GameEngine(object):
                     self.push_new_item(terminal)
 
         self.__total_time = 600  # TODO: Update with the real time read from the map file.
-        self.__max_player_number = 1  # TODO: Update with the true player number
+        self.__max_player_number = self.slmap.nb_players()[Player.SPY_TEAM] + self.slmap.nb_players()[Player.MERC_TEAM]  # TODO: Update with the true player number
                                       #       read from the map file.
         # Loading players
         start_merc_pids = 0 # firt merc pid to be assigned
