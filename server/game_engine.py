@@ -220,6 +220,16 @@ class VisibleObject(object):
         """
         return self
 
+    def update(self):
+        """
+            This method has to be overriden by children classes.
+            This method's purpose is to update the state of the object. For instance if
+            an object has to evolve over time...
+            There will be no time parameter so it is up to the object itself to store its creation time
+            and compute by itself the detla between now() and its creation.
+        """
+        return self
+
 # ----------------- actionable items related ---------------
 
 class ActionableItem(VisibleObject):
