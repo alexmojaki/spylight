@@ -133,7 +133,7 @@ class SpyPlayer(Player):
         return gs
 
     def __str__(self):
-        return super(MercenaryPlayer, self).__str__()
+        return super(SpyPlayer, self).__str__()
 
     def __repr__(self):
         return str(self)
